@@ -1,0 +1,1 @@
+-- Database Schema for Airline Ticket Agency Management
