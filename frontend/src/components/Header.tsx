@@ -1,92 +1,304 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 interface HeaderProps {
   title?: string;
+  onNavigate?: (page: string) => void;
 }
 
-const Header: React.FC<HeaderProps> = ({ title }) => {
+const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
+  const [showNotif, setShowNotif] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // Close popup when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotif(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const mockNotifications = [
+    { id: 1, title: 'Thanh toán thành công', content: 'Đơn đặt chỗ #BKG-8892 đã được thanh toán 4,500,000 VND.', time: '10 phút trước', read: false },
+    { id: 2, title: 'Khách hàng yêu cầu đổi vé', content: 'Khách hàng Nguyễn Văn A yêu cầu đổi chuyến bay VN123.', time: '2 giờ trước', read: false },
+    { id: 3, title: 'Cập nhật hệ thống', content: 'Hệ thống sẽ bảo trì từ 2h00 - 4h00 sáng ngày mai.', time: '1 ngày trước', read: true },
+  ];
+
   return (
     <header className="header">
-      <div className="search-bar">
-        <span className="material-icons-round">search</span>
-        <input type="text" placeholder="Tìm kiếm mã vé, khách hàng..." />
+      {/* Search */}
+      <div className="header-search">
+        <span className="material-icons-round search-icon">search</span>
+        <input type="text" placeholder="Tìm kiếm mã vé, khách hàng, chuyến bay..." />
       </div>
-      
-      <div className="header-actions">
-        <button className="icon-btn">
-          <span className="material-icons-round">notifications</span>
-          <span className="badge-dot"></span>
-        </button>
-        <button className="icon-btn">
+
+      <div className="header-right">
+        {/* Notification Bell */}
+        <div className="notif-container" ref={notifRef}>
+          <button
+            className="header-icon-btn"
+            onClick={() => setShowNotif(!showNotif)}
+            title="Thông báo"
+          >
+            <span className="material-icons-round">notifications</span>
+            <span className="notif-dot"></span>
+          </button>
+
+          {/* Popup Thông Báo */}
+          {showNotif && (
+            <div className="notif-popup">
+              <div className="notif-header">
+                <h3>Thông báo</h3>
+                <button className="mark-read-btn">Đánh dấu đã đọc</button>
+              </div>
+              <div className="notif-list">
+                {mockNotifications.map(n => (
+                  <div key={n.id} className={`notif-item ${n.read ? 'read' : 'unread'}`}>
+                    <div className="notif-icon-wrap">
+                      <span className="material-icons-round">notifications</span>
+                    </div>
+                    <div className="notif-content">
+                      <h4>{n.title}</h4>
+                      <p>{n.content}</p>
+                      <span className="notif-time">{n.time}</span>
+                    </div>
+                    {!n.read && <div className="unread-dot"></div>}
+                  </div>
+                ))}
+              </div>
+              <div className="notif-footer">
+                <button>Xem tất cả thông báo</button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Help */}
+        <button className="header-icon-btn" title="Trợ giúp">
           <span className="material-icons-round">help_outline</span>
         </button>
-        <div className="divider"></div>
-        <p className="current-page-label">{title}</p>
+
       </div>
 
       <style>{`
         .header {
-          height: 64px;
-          background: white;
-          border-bottom: 1px solid var(--border);
-          padding: 0 var(--space-xl);
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          gap: 16px;
+          padding: 0 28px;
+          height: 64px;
+          min-height: 64px;
+          background: #ffffff;
+          border-bottom: 1px solid #f1f5f9;
           position: sticky;
           top: 0;
-          z-index: 10;
+          z-index: 50;
+          box-shadow: 0 1px 8px rgba(0,0,0,0.04);
         }
-        .search-bar {
+
+        /* Search bar */
+        .header-search {
+          flex: 1;
+          max-width: 480px;
           display: flex;
           align-items: center;
-          background: var(--bg-main);
-          border-radius: 20px;
-          padding: 8px 16px;
-          width: 400px;
-          gap: var(--space-sm);
+          background: #f8fafc;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          padding: 0 14px;
+          gap: 10px;
+          transition: border-color 0.2s, box-shadow 0.2s;
         }
-        .search-bar input {
+        .header-search:focus-within {
+          border-color: #0e74be;
+          box-shadow: 0 0 0 3px rgba(14, 116, 190, 0.1);
+        }
+        .search-icon {
+          font-size: 20px;
+          color: #94a3b8;
+          flex-shrink: 0;
+        }
+        .header-search input {
+          flex: 1;
           border: none;
           background: transparent;
           outline: none;
-          width: 100%;
           font-size: 14px;
+          color: #1e293b;
+          height: 40px;
+          font-family: inherit;
         }
-        .material-icons-round { color: var(--text-muted); font-size: 20px; }
-        
-        .header-actions {
+        .header-search input::placeholder { color: #94a3b8; }
+
+        /* Right section */
+        .header-right {
           display: flex;
           align-items: center;
-          gap: var(--space-md);
+          gap: 8px;
+          margin-left: auto;
         }
-        .icon-btn {
+
+        /* Icon buttons */
+        .header-icon-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 10px;
+          background: transparent;
+          border: none;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          color: #64748b;
           position: relative;
-          color: var(--text-secondary);
-          padding: 8px;
-          border-radius: 50%;
-          transition: background 0.2s;
+          transition: background 0.2s, color 0.2s;
         }
-        .icon-btn:hover { background: var(--bg-main); }
-        .badge-dot {
+        .header-icon-btn:hover {
+          background: #f1f5f9;
+          color: #0e74be;
+        }
+        .header-icon-btn .material-icons-round { font-size: 22px; }
+
+        /* Notification dot */
+        .notif-dot {
           position: absolute;
           top: 8px;
           right: 8px;
           width: 8px;
           height: 8px;
-          background: var(--danger);
           border-radius: 50%;
+          background: #ef4444;
           border: 2px solid white;
         }
-        .divider {
-          width: 1px;
-          height: 24px;
-          background: var(--border);
+
+        /* Notif Popup Container */
+        .notif-container { position: relative; }
+        
+        .notif-popup {
+          position: absolute;
+          top: 50px;
+          right: 0;
+          width: 360px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          border: 1px solid #f1f5f9;
+          overflow: hidden;
+          z-index: 1000;
+          animation: slideDown 0.2s ease-out;
         }
-        .current-page-label {
-          font-size: 14px;
+
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .notif-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 16px 20px;
+          border-bottom: 1px solid #f1f5f9;
+        }
+        .notif-header h3 { font-size: 16px; font-weight: 700; margin: 0; color: #1e293b; }
+        .mark-read-btn { font-size: 12px; font-weight: 600; color: #0e74be; border: none; background: transparent; cursor: pointer; }
+        .mark-read-btn:hover { text-decoration: underline; }
+
+        .notif-list { max-height: 400px; overflow-y: auto; }
+        .notif-item {
+          display: flex;
+          gap: 12px;
+          padding: 16px 20px;
+          border-bottom: 1px solid #f1f5f9;
+          transition: background 0.2s;
+          cursor: pointer;
+        }
+        .notif-item:hover { background: #f8fafc; }
+        .notif-item.unread { background: #eff6ff; }
+        .notif-item.unread:hover { background: #e0f2fe; }
+
+        .notif-icon-wrap {
+          width: 40px;
+          height: 40px;
+          border-radius: 50%;
+          background: #e2e8f0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #64748b;
+          flex-shrink: 0;
+        }
+        .notif-item.unread .notif-icon-wrap { background: #bae6fd; color: #0e74be; }
+
+        .notif-content h4 { font-size: 14px; font-weight: 600; margin: 0 0 4px 0; color: #1e293b; }
+        .notif-content p { font-size: 13px; color: #64748b; margin: 0 0 6px 0; line-height: 1.4; }
+        .notif-time { font-size: 11px; font-weight: 600; color: #94a3b8; }
+
+        .unread-dot {
+          width: 8px;
+          height: 8px;
+          background: #ef4444;
+          border-radius: 50%;
+          margin-top: 6px;
+        }
+
+        .notif-footer { padding: 12px; text-align: center; border-top: 1px solid #f1f5f9; background: #f8fafc; }
+        .notif-footer button { font-size: 13px; font-weight: 600; color: #1e293b; background: transparent; border: none; cursor: pointer; width: 100%; }
+        .notif-footer button:hover { color: #0e74be; }
+
+        .header-divider {
+          width: 1px;
+          height: 32px;
+          background: #e2e8f0;
+          margin: 0 4px;
+        }
+
+        /* User profile button */
+        .header-user {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 6px 10px 6px 6px;
+          border-radius: 10px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+        .header-user:hover { background: #f8fafc; }
+
+        .header-avatar {
+          width: 36px;
+          height: 36px;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #1e293b, #334155);
+          color: white;
+          font-size: 13px;
+          font-weight: 700;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          flex-shrink: 0;
+        }
+
+        .header-user-info {
+          display: flex;
+          flex-direction: column;
+          text-align: left;
+        }
+        .header-user-name {
+          font-size: 13px;
+          font-weight: 700;
+          color: #1e293b;
+          line-height: 1.2;
+          white-space: nowrap;
+        }
+        .header-user-role {
+          font-size: 11px;
+          color: #64748b;
           font-weight: 500;
-          color: var(--text-secondary);
         }
       `}</style>
     </header>

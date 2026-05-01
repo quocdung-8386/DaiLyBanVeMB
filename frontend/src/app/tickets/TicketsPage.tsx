@@ -76,7 +76,8 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
 
           {/* Table */}
           <Card className="table-card">
-            <table className="data-table">
+          <div className="table-responsive">
+            <table className="booking-table">
               <thead>
                 <tr>
                   <th>Mã vé</th>
@@ -92,16 +93,32 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
               <tbody>
                 {tickets.map((t, i) => (
                   <tr key={i}>
-                    <td><span className="text-primary font-medium">{t.id}</span></td>
-                    <td><span className="pnr-badge">{t.pnr}</span></td>
                     <td>
-                      <p className="name">{t.customer}</p>
+                      <div className="tx-id">{t.id.substring(0, 4)}<br/>{t.id.substring(4)}</div>
                     </td>
                     <td>
-                      <p className="route">{t.routeFrom} <span className="material-icons-round icon-sm">flight_takeoff</span> {t.routeTo}</p>
+                      <div className="booking-id blue-border">{t.pnr}</div>
                     </td>
-                    <td><p className="text-muted">{t.date}</p></td>
-                    <td><p className="price">{t.total}</p></td>
+                    <td>
+                      <div className="customer-info">
+                        <div className="customer-avatar">{t.customer.split(' ').map(w => w[0]).slice(-2).join('')}</div>
+                        <div>
+                          <p className="name">{t.customer}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="flight-info">
+                        <p className="route"><strong>{t.routeFrom}</strong> <span className="material-icons-round">flight_takeoff</span> <strong>{t.routeTo}</strong></p>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="date-info">
+                        <p className="date">{t.date.split(' ')[0]}</p>
+                        <p className="time">{t.date.split(' ')[1]}</p>
+                      </div>
+                    </td>
+                    <td><p className="price">{t.total} đ</p></td>
                     <td>
                       <span className={`status-badge ${t.badge}`}>
                         <span className="dot"></span>
@@ -109,14 +126,17 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                       </span>
                     </td>
                     <td>
-                      <button className="action-btn" onClick={() => setSelectedTicketId(t.id)}>
-                        <span className="material-icons-round text-primary">visibility</span>
-                      </button>
+                      <div className="action-buttons">
+                        <button className="action-btn view" title="Xem chi tiết" onClick={() => setSelectedTicketId(t.id)}>
+                          <span className="material-icons-round">visibility</span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
             <div className="pagination">
               <p>Hiển thị <strong>1</strong> đến <strong>4</strong> trong <strong>128</strong> kết quả</p>
               <div className="page-controls">
@@ -485,29 +505,43 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
         .select-wrapper select { width: 100%; border: none; background: transparent; outline: none; appearance: none; padding-right: 20px; cursor: pointer; color: var(--text-secondary); font-weight: 500; }
         .select-wrapper .arrow { position: absolute; right: 12px; font-size: 18px; pointer-events: none; }
 
-        .table-card { padding: 0; overflow: hidden; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .data-table th { padding: 16px var(--space-lg); font-size: 12px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border); background: #fcfcfc; text-transform: uppercase; }
-        .data-table td { padding: 16px var(--space-lg); border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 14px; }
+        .table-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .booking-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; }
+        .booking-table th { padding: 16px var(--space-lg); font-size: 12px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; background: #fcfcfc; text-transform: uppercase; white-space: nowrap; }
+        .booking-table td { padding: 16px var(--space-lg); border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
+        .booking-table tr:hover td { background: #f8fafc; }
         
-        .pnr-badge { background: #f0f0f0; padding: 4px 10px; border-radius: 4px; font-weight: 600; font-family: monospace; letter-spacing: 1px; }
-        .route { display: flex; align-items: center; gap: 4px; font-weight: 500; }
-        .icon-sm { font-size: 14px; color: var(--text-muted); }
-        .price { font-weight: 600; }
+        .tx-id { font-family: monospace; font-size: 13px; font-weight: 700; color: #475569; display: inline-block; text-align: center; line-height: 1.2; letter-spacing: 1px; }
+        .booking-id { font-family: monospace; font-size: 13px; font-weight: 700; background: #f0f4ff; color: #0e74be; padding: 6px 12px; border-radius: 6px; display: inline-block; text-align: center; line-height: 1.2; letter-spacing: 1px; border: 1px solid #bfdbfe; }
         
-        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+        .customer-info { display: flex; align-items: center; gap: 12px; }
+        .customer-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; text-transform: uppercase; }
+        .customer-info .name { font-size: 14px; font-weight: 600; margin: 0; color: #1e293b; }
+        
+        .flight-info .route { font-size: 14px; display: flex; align-items: center; gap: 4px; margin: 0; }
+        .flight-info .route .material-icons-round { font-size: 14px; color: #94a3b8; }
+        
+        .date-info .date { font-size: 14px; font-weight: 500; margin: 0 0 2px 0; color: #1e293b; }
+        .date-info .time { font-size: 12px; color: #64748b; margin: 0; }
+        
+        .price { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; }
+        
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
         .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
         .status-badge.success { background: #e6f4ea; color: #137333; }
         .status-badge.success .dot { background: #137333; }
-        .status-badge.warning { background: #fef7e0; color: #b06000; }
-        .status-badge.warning .dot { background: #b06000; }
-        .status-badge.danger { background: #fce8e6; color: #c5221f; }
-        .status-badge.danger .dot { background: #c5221f; }
-        .status-badge.default { background: #f1f3f4; color: #5f6368; }
-        .status-badge.default .dot { background: #5f6368; }
+        .status-badge.warning { background: #fef08a; color: #854d0e; }
+        .status-badge.warning .dot { background: #854d0e; }
+        .status-badge.danger { background: #fecaca; color: #991b1b; }
+        .status-badge.danger .dot { background: #991b1b; }
+        .status-badge.default { background: #f1f5f9; color: #64748b; }
+        .status-badge.default .dot { background: #64748b; }
 
-        .action-btn { background: transparent; border: none; cursor: pointer; padding: 4px; border-radius: 50%; transition: background 0.2s; display: flex; align-items: center; justify-content: center; }
-        .action-btn:hover { background: var(--bg-main); }
+        .action-buttons { display: flex; gap: 4px; }
+        .action-btn { display: flex; align-items: center; justify-content: center; color: #0e74be; padding: 6px; border-radius: 6px; transition: all 0.2s; border: none; background: #eff6ff; cursor: pointer; }
+        .action-btn .material-icons-round { font-size: 18px; }
+        .action-btn.view:hover { background: #dbeafe; color: #1e40af; }
 
         .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px var(--space-lg); font-size: 13px; color: var(--text-secondary); }
         .pagination strong { color: var(--text-main); }
@@ -602,6 +636,9 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
         .td-footer-row { display: flex; gap: 8px; }
         .td-btn-sec { flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; }
         .td-btn-change { background: #f0f4ff !important; color: #1e40af !important; border: 1px solid #bfdbfe !important; }
+
+        @keyframes tdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tdSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
         /* ══ ĐỔI VÉ MODAL ══ */
         .cv-backdrop { position: fixed; inset: 0; background: rgba(10,20,50,0.6); backdrop-filter: blur(4px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: tdFadeIn 0.2s ease; }

@@ -6,26 +6,87 @@ import Button from '../../components/Button';
 
 interface BookingPageProps {
   onNavigate?: (id: string) => void;
+  initialFlight?: any;
+  onCheckout?: (ticket: any) => void;
 }
 
-const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
-  const [view, setView] = useState<'list' | 'create'>('list');
+const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, onCheckout }) => {
+  const [view, setView] = useState<'list' | 'create'>(initialFlight ? 'create' : 'list');
+  const [flightData, setFlightData] = useState<any>(initialFlight || null);
+  const [editingBooking, setEditingBooking] = useState<any>(null);
+  const [viewingItem, setViewingItem] = useState<any>(null);
 
-  const bookings = [
+  const [bookingsList, setBookingsList] = useState([
     { id: 'BKG-8A2F9', customer: 'Nguyễn Văn Trường', phone: '0901234567', routeFrom: 'SGN', routeTo: 'HAN', flightId: 'VN-214', flightClass: 'Phổ thông', date: '12 Thg 10, 2023', time: '08:30 AM', total: '3,250,000', status: 'Đã xác nhận', badge: 'success', initials: 'NT' },
     { id: 'BKG-7X1M4', customer: 'Trần Thị Lan', phone: '0987654321', routeFrom: 'DAD', routeTo: 'SGN', flightId: 'VJ-102', flightClass: 'Thương gia', date: '15 Thg 10, 2023', time: '14:00 PM', total: '5,100,000', status: 'Chờ xử lý', badge: 'warning', initials: 'TL' },
     { id: 'BKG-2K9P0', customer: 'Lê Văn Đạt', phone: '0912345678', routeFrom: 'HAN', routeTo: 'PQC', flightId: 'QH-305', flightClass: 'Phổ thông', date: '10 Thg 10, 2023', time: '09:15 AM', total: '2,800,000', status: 'Đã hủy', badge: 'danger', initials: 'LĐ' },
-  ];
+  ]);
+
+  const [customerName, setCustomerName] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+
+  const handleHoldBooking = () => {
+    const newBooking = {
+      id: `BKG-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+      customer: customerName || 'Khách hàng mới',
+      phone: customerPhone || 'Chưa cung cấp',
+      routeFrom: flightData?.from || 'SGN',
+      routeTo: flightData?.to || 'HAN',
+      flightId: flightData?.id || 'VN-204',
+      flightClass: flightData?.cls || 'Phổ thông',
+      date: 'Hôm nay', // Fake current date
+      time: flightData?.departure || '08:00 AM',
+      total: ((flightData?.price || 1850000) * 1.1).toLocaleString('vi'),
+      status: 'Chờ xử lý',
+      badge: 'warning',
+      initials: (customerName || 'KH').substring(0, 2).toUpperCase()
+    };
+    setBookingsList([newBooking, ...bookingsList]);
+    setView('list');
+    setCustomerName('');
+    setCustomerPhone('');
+  };
+
+  const handleConfirmBooking = () => {
+    if (onCheckout) {
+      onCheckout({
+        id: `BKG-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
+        pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        customer: customerName || 'Khách hàng mới',
+        routeFrom: flightData?.from || 'SGN',
+        routeTo: flightData?.to || 'HAN',
+        airportFrom: flightData?.from === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
+        airportTo: flightData?.to === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
+        date: 'Hôm nay',
+        total: ((flightData?.price || 1850000) * 1.1).toLocaleString('vi'),
+        gate: '--',
+        terminal: 'T1',
+        seat: '--',
+        boarding: flightData?.departure || '08:00 AM',
+        badge: 'info',
+        status: 'Chờ thanh toán'
+      });
+    } else if (onNavigate) {
+      onNavigate('payments');
+    }
+  };
 
   return (
     <div className="layout">
       <Sidebar activeItem="booking" onNavigate={onNavigate} />
       <div className="main-container">
-        <Header title={view === 'list' ? "Danh sách Booking - Airline System" : "Tạo mới Booking - Airline System"} />
+        <Header />
         
         <main className="content">
           {view === 'list' ? (
             <>
+              {/* Breadcrumb List View */}
+              <div className="breadcrumb">
+                <span className="link" onClick={() => onNavigate && onNavigate('dashboard')}>Dashboard</span>
+                <span className="material-icons-round separator">chevron_right</span>
+                <span className="current">Quản lý Đặt chỗ</span>
+              </div>
+
               {/* Header List View */}
               <div className="page-header">
                 <div>
@@ -79,6 +140,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
 
               {/* Table */}
               <Card className="table-card">
+                <div className="table-responsive">
                 <table className="booking-table">
                   <thead>
                     <tr>
@@ -92,14 +154,14 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {bookings.map((b, i) => (
+                    {bookingsList.map((b, i) => (
                       <tr key={i}>
                         <td>
                           <div className="booking-id">{b.id.substring(0, 4)}<br/>{b.id.substring(4)}</div>
                         </td>
                         <td>
                           <div className="customer-info">
-                            <div className="avatar">{b.initials}</div>
+                            <div className="customer-avatar">{b.initials}</div>
                             <div>
                               <p className="name">{b.customer}</p>
                               <p className="phone">{b.phone}</p>
@@ -128,12 +190,18 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                           </span>
                         </td>
                         <td>
-                          <button className="action-btn"><span className="material-icons-round">more_vert</span></button>
+                          <div className="action-buttons">
+                            <button className="action-btn view" title="Xem chi tiết" onClick={() => setViewingItem(b)}><span className="material-icons-round">visibility</span></button>
+                            <button className="action-btn issue" title="Xuất vé" onClick={() => onNavigate && onNavigate('issue_ticket')}><span className="material-icons-round">receipt</span></button>
+                            <button className="action-btn edit" title="Chỉnh sửa" onClick={() => setEditingBooking(b)}><span className="material-icons-round">edit</span></button>
+                            <button className="action-btn delete" title="Xóa"><span className="material-icons-round">delete</span></button>
+                          </div>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
+                </div>
                 <div className="pagination">
                   <p>Hiển thị <strong>1</strong> đến <strong>10</strong> trong số <strong>97</strong> kết quả</p>
                   <div className="page-controls">
@@ -161,7 +229,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                   <h1>Tạo mới Booking</h1>
                   <p>Điền thông tin chi tiết để hoàn tất quá trình đặt chỗ.</p>
                 </div>
-                <Button variant="outline" onClick={() => setView('list')}>
+                <Button variant="outline" onClick={() => {
+                  if (initialFlight) {
+                    onNavigate && onNavigate('flights');
+                  } else {
+                    setView('list');
+                  }
+                }}>
                   <span className="material-icons-round">arrow_back</span>
                   Quay lại
                 </Button>
@@ -174,34 +248,34 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                   <Card className="form-card mb-md">
                     <div className="flight-summary-header">
                       <div className="f-airline">
-                        <span className="airline-logo vn">VN</span>
+                        <span className="airline-logo" style={{ background: flightData?.bg || '#005a8c' }}>{flightData?.logo || 'VN'}</span>
                         <div>
-                          <p className="name">Vietnam Airlines</p>
-                          <p className="plane">VN-204 • Airbus A321</p>
+                          <p className="name">{flightData?.airline || 'Vietnam Airlines'}</p>
+                          <p className="plane">{flightData?.id || 'VN-204'} • {flightData?.aircraft || 'Airbus A321'}</p>
                         </div>
                       </div>
                       <span className="status-label">KHỞI HÀNH ĐÚNG GIỜ</span>
                     </div>
                     <div className="flight-summary-route">
                       <div className="loc">
-                        <h2>SGN</h2>
-                        <p>TP. Hồ Chí Minh</p>
-                        <h3>08:00</h3>
+                        <h2>{flightData?.from || 'SGN'}</h2>
+                        <p>{flightData?.from === 'HAN' ? 'Hà Nội' : flightData?.from === 'SGN' ? 'TP. Hồ Chí Minh' : flightData?.from === 'DAD' ? 'Đà Nẵng' : 'Điểm đi'}</p>
+                        <h3>{flightData?.departure || '08:00'}</h3>
                       </div>
                       <div className="dur">
-                        <p>2h 15m</p>
+                        <p>{flightData?.duration || '2h 15m'}</p>
                         <div className="line"><span className="material-icons-round">flight</span></div>
                         <p className="type">Bay thẳng</p>
                       </div>
                       <div className="loc text-right">
-                        <h2>HAN</h2>
-                        <p>Hà Nội</p>
-                        <h3>10:15</h3>
+                        <h2>{flightData?.to || 'HAN'}</h2>
+                        <p>{flightData?.to === 'HAN' ? 'Hà Nội' : flightData?.to === 'SGN' ? 'TP. Hồ Chí Minh' : flightData?.to === 'DAD' ? 'Đà Nẵng' : 'Điểm đến'}</p>
+                        <h3>{flightData?.arrival || '10:15'}</h3>
                       </div>
                     </div>
                     <div className="flight-summary-price">
                       <span>Giá vé cơ bản (1 Người lớn)</span>
-                      <span className="price-val text-primary">1.850.000đ</span>
+                      <span className="price-val text-primary">{(flightData?.price || 1850000).toLocaleString('vi')}đ</span>
                     </div>
                   </Card>
 
@@ -219,7 +293,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                         <label>Họ và Tên (In hoa không dấu)</label>
                         <div className="input-box">
                           <span className="material-icons-round">badge</span>
-                          <input type="text" placeholder="NGUYEN VAN A" />
+                          <input type="text" placeholder="NGUYEN VAN A" value={customerName} onChange={e => setCustomerName(e.target.value)} />
                         </div>
                       </div>
                       <div className="form-field">
@@ -297,7 +371,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                         <label>Số điện thoại liên hệ</label>
                         <div className="input-box">
                           <span className="material-icons-round">phone</span>
-                          <input type="text" placeholder="090 123 4567" />
+                          <input type="text" placeholder="090 123 4567" value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
                         </div>
                       </div>
                       <div className="form-field">
@@ -325,7 +399,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                     <div className="summary-body">
                       <div className="summary-row">
                         <span>Giá vé cơ bản (x1)</span>
-                        <span>1.850.000 đ</span>
+                        <span>{(flightData?.price || 1850000).toLocaleString('vi')} đ</span>
                       </div>
                       <div className="summary-row">
                         <span>Hành lý thêm</span>
@@ -333,19 +407,19 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
                       </div>
                       <div className="summary-row">
                         <span>Thuế & Phí (10%)</span>
-                        <span>185.000 đ</span>
+                        <span>{((flightData?.price || 1850000) * 0.1).toLocaleString('vi')} đ</span>
                       </div>
                     </div>
                     <div className="summary-total">
                       <span>Tổng cộng</span>
-                      <h2>2.035.000 đ</h2>
+                      <h2>{((flightData?.price || 1850000) * 1.1).toLocaleString('vi')} đ</h2>
                     </div>
                     <div className="summary-actions">
-                      <Button className="w-full mb-sm btn-primary-alt">
+                      <Button className="w-full mb-sm btn-primary-alt" onClick={handleConfirmBooking}>
                         <span className="material-icons-round">check_circle</span>
                         Xác nhận Booking
                       </Button>
-                      <Button variant="outline" className="w-full text-primary border-primary">
+                      <Button variant="outline" className="w-full text-primary border-primary" onClick={handleHoldBooking}>
                         <span className="material-icons-round">hourglass_empty</span>
                         Giữ chỗ (24h)
                       </Button>
@@ -358,10 +432,130 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
         </main>
       </div>
 
+      {/* Edit Booking Popup */}
+      {editingBooking && (
+        <div className="popup-overlay" onClick={() => setEditingBooking(null)}>
+          <div className="popup-card" onClick={e => e.stopPropagation()}>
+            <div className="popup-header">
+              <div className="popup-title">
+                <div className="popup-icon"><span className="material-icons-round text-primary">edit</span></div>
+                <div>
+                  <h3>Chỉnh sửa Đặt chỗ</h3>
+                  <p>Mã: <strong>{editingBooking.id}</strong></p>
+                </div>
+              </div>
+              <button className="popup-close" onClick={() => setEditingBooking(null)}>
+                <span className="material-icons-round">close</span>
+              </button>
+            </div>
+            <div className="popup-body">
+              <div className="form-group mb-sm">
+                <label>Trạng thái</label>
+                <select defaultValue={editingBooking.status}>
+                  <option value="Đã xác nhận">Đã xác nhận</option>
+                  <option value="Chờ xử lý">Chờ xử lý</option>
+                  <option value="Đã hủy">Đã hủy</option>
+                </select>
+              </div>
+              <div className="form-group mb-sm">
+                <label>Họ và Tên khách hàng</label>
+                <input type="text" defaultValue={editingBooking.customer} />
+              </div>
+              <div className="form-group mb-sm">
+                <label>Số điện thoại</label>
+                <input type="text" defaultValue={editingBooking.phone} />
+              </div>
+              <div className="form-group">
+                <label>Ghi chú thay đổi</label>
+                <textarea rows={3} placeholder="Nhập lý do hoặc chi tiết thay đổi..." style={{ width: '100%', border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', outline: 'none', resize: 'vertical' }}></textarea>
+              </div>
+            </div>
+            <div className="popup-footer">
+              <button className="btn-cancel" onClick={() => setEditingBooking(null)}>Hủy</button>
+              <button className="btn-save" onClick={() => setEditingBooking(null)}>
+                <span className="material-icons-round" style={{fontSize: 18}}>save</span>
+                Cập nhật thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Popup */}
+      {viewingItem && (
+        <div className="popup-overlay" onClick={() => setViewingItem(null)}>
+          <div className="popup-card" onClick={e => e.stopPropagation()}>
+            <div className="popup-header">
+              <div className="popup-title">
+                <div className="popup-icon" style={{ background: '#e0e7ff', color: 'var(--primary)' }}><span className="material-icons-round">visibility</span></div>
+                <div>
+                  <h3>Chi tiết Đặt chỗ</h3>
+                  <p>Mã: <strong>{viewingItem.id}</strong></p>
+                </div>
+              </div>
+              <button className="popup-close" onClick={() => setViewingItem(null)}>
+                <span className="material-icons-round">close</span>
+              </button>
+            </div>
+            <div className="popup-body">
+              <div className="form-grid" style={{ gridTemplateColumns: '1fr', gap: '12px' }}>
+                <div className="detail-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Khách hàng:</span>
+                  <strong style={{ color: '#1e293b' }}>{viewingItem.customer} ({viewingItem.phone})</strong>
+                </div>
+                <div className="detail-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Hành trình:</span>
+                  <strong style={{ color: '#1e293b' }}>{viewingItem.routeFrom} ➔ {viewingItem.routeTo}</strong>
+                </div>
+                <div className="detail-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Chuyến bay:</span>
+                  <strong style={{ color: '#1e293b' }}>{viewingItem.flightId} ({viewingItem.flightClass})</strong>
+                </div>
+                <div className="detail-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Thời gian:</span>
+                  <strong style={{ color: '#1e293b' }}>{viewingItem.time} - {viewingItem.date}</strong>
+                </div>
+                <div className="detail-row" style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '8px' }}>
+                  <span style={{ color: '#64748b' }}>Tổng tiền:</span>
+                  <strong style={{ color: 'var(--primary)', fontSize: '16px' }}>{viewingItem.total} đ</strong>
+                </div>
+                <div className="detail-row" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ color: '#64748b' }}>Trạng thái:</span>
+                  <strong style={{ color: viewingItem.badge === 'success' ? '#10b981' : viewingItem.badge === 'warning' ? '#f59e0b' : '#ef4444' }}>{viewingItem.status}</strong>
+                </div>
+              </div>
+            </div>
+            <div className="popup-footer">
+              <button className="btn-save" onClick={() => setViewingItem(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
-        .layout { display: flex; min-height: 100vh; }
-        .main-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); overflow-x: hidden; }
-        .content { padding: var(--space-xl); max-width: 1200px; margin: 0 auto; width: 100%; }
+        @keyframes tdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tdSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Edit Popup Styles */
+        .popup-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(3px); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: tdFadeIn 0.2s ease; }
+        .popup-card { background: white; border-radius: 16px; width: 480px; max-width: 90vw; display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,0.18); animation: tdSlideUp 0.2s ease; overflow: hidden; }
+        .popup-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: white; }
+        .popup-title { display: flex; gap: 12px; align-items: center; }
+        .popup-icon { width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; display: flex; align-items: center; justify-content: center; }
+        .popup-title h3 { font-size: 17px; margin: 0 0 2px; color: #1e293b; font-weight: 700; }
+        .popup-title p { font-size: 13px; color: #64748b; margin: 0; }
+        .popup-close { background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; color: #94a3b8; display: flex; transition: all 0.2s; }
+        .popup-close:hover { background: #f1f5f9; color: #1e293b; }
+        .popup-body { padding: 24px; }
+        .form-group { display: flex; flex-direction: column; gap: 6px; }
+        .form-group label { font-size: 13px; font-weight: 600; color: #334155; }
+        .form-group input, .form-group select { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; background: white; }
+        .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
+        .popup-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #f1f5f9; background: #f8fafc; }
+        .btn-cancel { padding: 10px 20px; border: 1px solid var(--border); border-radius: 8px; background: white; cursor: pointer; font-size: 14px; font-weight: 600; color: #64748b; transition: all 0.2s; }
+        .btn-cancel:hover { border-color: #94a3b8; color: #1e293b; }
+        .btn-save { display: flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: 8px; background: var(--primary); color: white; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.2s; }
+        .btn-save:hover { background: #1d4ed8; }
 
         /* Helpers */
         .text-primary { color: var(--primary); }
@@ -372,10 +566,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
         .mb-lg { margin-bottom: var(--space-lg); }
         .flex-1 { flex: 1; }
         .flex-2 { flex: 2; }
+
         
         /* Typography */
         .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl); }
-        .page-header h1 { font-size: 24px; margin-bottom: 4px; }
+        .page-header h1 { font-size: 24px; margin-bottom: 4px; font-weight: 700; }
         .page-header p { color: var(--text-secondary); font-size: 14px; }
 
         /* List View: Filters */
@@ -394,15 +589,16 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
         .btn-filter { color: var(--primary); border-color: var(--primary-light); background: #f0f4ff; }
 
         /* List View: Table */
-        .table-card { padding: 0; overflow: hidden; }
-        .booking-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .booking-table th { padding: 16px var(--space-lg); font-size: 12px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border); background: #fcfcfc; text-transform: uppercase; }
-        .booking-table td { padding: 16px var(--space-lg); border-bottom: 1px solid var(--border); vertical-align: middle; }
+        .table-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+        .table-responsive { width: 100%; overflow-x: auto; }
+        .booking-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; }
+        .booking-table th { padding: 16px var(--space-lg); font-size: 12px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border); background: #fcfcfc; text-transform: uppercase; white-space: nowrap; }
+        .booking-table td { padding: 16px var(--space-lg); border-bottom: 1px solid var(--border); vertical-align: middle; white-space: nowrap; }
         
-        .booking-id { font-family: monospace; font-size: 13px; font-weight: 600; background: #f5f5f5; padding: 4px 8px; border-radius: 4px; display: inline-block; text-align: center; line-height: 1.2; letter-spacing: 1px; color: var(--text-main); border: 1px solid #e0e0e0; }
+        .booking-id { font-family: monospace; font-size: 13px; font-weight: 600; background: #f5f5f5; padding: 6px 12px; border-radius: 4px; display: inline-block; text-align: center; line-height: 1.2; letter-spacing: 1px; color: var(--text-main); border: 1px solid #e0e0e0; }
         
         .customer-info { display: flex; align-items: center; gap: 12px; }
-        .avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
+        .customer-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex-shrink: 0; }
         .customer-info .name { font-size: 14px; font-weight: 600; margin-bottom: 2px; color: var(--text-main); }
         .customer-info .phone { font-size: 12px; color: var(--text-muted); }
         
@@ -415,17 +611,22 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
         
         .price { font-size: 14px; font-weight: 600; }
         
-        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-        .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; white-space: nowrap; }
+        .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
         .status-badge.success { background: #e6f4ea; color: #137333; }
         .status-badge.success .dot { background: #137333; }
-        .status-badge.warning { background: #fef7e0; color: #b06000; }
-        .status-badge.warning .dot { background: #b06000; }
-        .status-badge.danger { background: #fce8e6; color: #c5221f; }
-        .status-badge.danger .dot { background: #c5221f; }
+        .status-badge.warning { background: #fef08a; color: #854d0e; }
+        .status-badge.warning .dot { background: #854d0e; }
+        .status-badge.danger { background: #fecaca; color: #991b1b; }
+        .status-badge.danger .dot { background: #991b1b; }
         
-        .action-btn { color: var(--text-muted); padding: 4px; border-radius: 50%; transition: background 0.2s; }
-        .action-btn:hover { background: var(--bg-main); color: var(--text-main); }
+        .action-buttons { display: flex; gap: 4px; }
+        .action-btn { display: flex; align-items: center; justify-content: center; color: var(--text-muted); padding: 6px; border-radius: 6px; transition: all 0.2s; border: none; background: transparent; cursor: pointer; }
+        .action-btn .material-icons-round { font-size: 18px; }
+        .action-btn.view:hover { background: #e0e7ff; color: var(--primary); }
+        .action-btn.issue:hover { background: #e6f4ea; color: #137333; }
+        .action-btn.edit:hover { background: #fef7e0; color: #b06000; }
+        .action-btn.delete:hover { background: #fce8e6; color: #c5221f; }
 
         .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px var(--space-lg); border-top: 1px solid var(--border); font-size: 13px; color: var(--text-secondary); }
         .pagination strong { color: var(--text-main); }
@@ -493,18 +694,20 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate }) => {
         .text-area:focus { border-color: var(--primary); }
 
         /* Summary Sidebar */
-        .summary-card { padding: 0; overflow: hidden; }
-        .summary-header { display: flex; justify-content: space-between; align-items: center; padding: var(--space-md) var(--space-lg); background: #fcfcfc; border-bottom: 1px solid var(--border); }
-        .summary-header h3 { font-size: 16px; margin: 0; }
-        .summary-body { padding: var(--space-lg); display: flex; flex-direction: column; gap: 12px; border-bottom: 1px dashed var(--border); }
-        .summary-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
-        .summary-total { padding: var(--space-lg); display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; }
-        .summary-total span { font-size: 13px; color: var(--text-secondary); }
-        .summary-total h2 { font-size: 28px; color: var(--primary); margin: 0; line-height: 1.2; }
-        .summary-actions { padding: 0 var(--space-lg) var(--space-lg) var(--space-lg); }
-        .btn-primary-alt { background: #005a8c; color: white; display: flex; justify-content: center; align-items: center; }
-        .btn-primary-alt:hover { background: #00426b; }
-        .border-primary { border-color: var(--primary); }
+        .summary-card { padding: 0; overflow: hidden; border: none; box-shadow: 0 10px 30px rgba(0,0,0,0.04); border-radius: 20px; background: white; }
+        .summary-header { display: flex; justify-content: space-between; align-items: center; padding: 24px; background: #fafbfc; border-bottom: 1px solid #f1f5f9; }
+        .summary-header h3 { font-size: 17px; font-weight: 700; color: #1e293b; margin: 0; }
+        .summary-body { padding: 24px; display: flex; flex-direction: column; gap: 16px; border-bottom: 1px dashed #e2e8f0; }
+        .summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #64748b; font-weight: 500; }
+        .summary-row span:last-child { color: #1e293b; font-weight: 600; }
+        .summary-total { padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; background: #f8faff; }
+        .summary-total span { font-size: 13px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+        .summary-total h2 { font-size: 32px; color: var(--primary); margin: 0; line-height: 1; font-weight: 800; }
+        .summary-actions { padding: 24px; background: white; display: flex; flex-direction: column; gap: 12px; }
+        .btn-primary-alt { background: linear-gradient(135deg, #005a8c, #003d5c); color: white; border: none; height: 48px; border-radius: 12px; font-weight: 700; box-shadow: 0 4px 12px rgba(0,90,140,0.2); }
+        .btn-primary-alt:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,90,140,0.3); }
+        .border-primary { border: 2px solid var(--primary); color: var(--primary); height: 48px; border-radius: 12px; font-weight: 700; }
+        .border-primary:hover { background: #eff6ff; }
       `}</style>
     </div>
   );

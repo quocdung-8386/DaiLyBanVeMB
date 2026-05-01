@@ -32,12 +32,17 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
     <div className="layout">
       <Sidebar activeItem="dashboard" onNavigate={onNavigate} />
       <div className="main-container">
-        <Header title="Dashboard - Hệ thống Quản lý Bán vé Máy bay" />
-        
+        <Header />
         <main className="content">
-          <div className="welcome-section">
-            <h1>Tổng quan hệ thống</h1>
-            <p>Cập nhật nhanh tình hình kinh doanh hôm nay.</p>
+          <div className="breadcrumb">
+            <span className="current">Dashboard</span>
+          </div>
+
+          <div className="page-header">
+            <div>
+              <h1>Tổng quan hệ thống</h1>
+              <p>Cập nhật nhanh tình hình kinh doanh hôm nay.</p>
+            </div>
           </div>
 
           <div className="ai-insight">
@@ -54,8 +59,10 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             {metrics.map((m, i) => (
               <Card key={i} className="metric-card">
                 <div className="metric-header">
-                  <span className="material-icons-round metric-icon">{m.icon}</span>
                   <p className="metric-title">{m.title}</p>
+                  <div className="metric-icon-box">
+                    <span className="material-icons-round metric-icon">{m.icon}</span>
+                  </div>
                 </div>
                 <h2 className="metric-value">{m.value}</h2>
                 <p className={`metric-change ${m.trend}`}>
@@ -76,11 +83,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
               }>
                 <div className="chart-placeholder">
                   <div className="bar-chart">
-                    <div className="bar" style={{height: '40%'}}></div>
-                    <div className="bar" style={{height: '60%'}}></div>
-                    <div className="bar" style={{height: '45%'}}></div>
-                    <div className="bar" style={{height: '80%'}}></div>
-                    <div className="bar" style={{height: '55%'}}></div>
+                    <div className="bar" style={{ height: '40%' }}></div>
+                    <div className="bar" style={{ height: '60%' }}></div>
+                    <div className="bar" style={{ height: '45%' }}></div>
+                    <div className="bar" style={{ height: '80%' }}></div>
+                    <div className="bar" style={{ height: '55%' }}></div>
                   </div>
                 </div>
               </Card>
@@ -150,37 +157,46 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
       <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
 
       <style>{`
-        .layout { display: flex; min-height: 100vh; }
-        .main-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
-        .content { padding: var(--space-xl); max-width: 1400px; margin: 0 auto; width: 100%; }
-
-        .welcome-section { margin-bottom: var(--space-xl); }
-        .welcome-section h1 { font-size: 28px; margin-bottom: 4px; }
-        .welcome-section p { color: var(--text-secondary); }
+        .page-header h1 { margin-bottom: 4px; }
+        .page-header p { color: var(--text-secondary); font-size: 14px; }
 
         .ai-insight {
-          background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+          background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
           color: white;
-          padding: var(--space-lg);
+          padding: 24px;
           border-radius: var(--radius-lg);
           display: flex;
           align-items: center;
-          gap: var(--space-lg);
+          gap: 20px;
           margin-bottom: var(--space-xl);
-          box-shadow: 0 4px 20px rgba(26, 115, 232, 0.3);
+          box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
+          position: relative;
+          overflow: hidden;
+        }
+        .ai-insight::after {
+          content: '';
+          position: absolute;
+          top: -50%;
+          right: -10%;
+          width: 200px;
+          height: 200px;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
         }
         .ai-icon {
-          width: 56px;
-          height: 56px;
+          width: 52px;
+          height: 52px;
           background: rgba(255, 255, 255, 0.2);
-          border-radius: 50%;
+          backdrop-filter: blur(4px);
+          border-radius: 14px;
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
         }
-        .ai-icon .material-icons-round { font-size: 32px; }
-        .ai-content h3 { color: white; font-size: 18px; margin-bottom: 4px; }
-        .ai-content p { font-style: italic; opacity: 0.9; }
+        .ai-icon .material-icons-round { font-size: 28px; }
+        .ai-content h3 { color: white; font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+        .ai-content p { font-size: 14px; opacity: 0.9; line-height: 1.5; font-weight: 500; }
 
         .metrics-grid {
           display: grid;
@@ -188,54 +204,79 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           gap: var(--space-lg);
           margin-bottom: var(--space-xl);
         }
-        .metric-header { display: flex; align-items: center; gap: var(--space-sm); margin-bottom: var(--space-md); }
-        .metric-icon { color: var(--primary); font-size: 24px; }
-        .metric-title { font-size: 13px; color: var(--text-secondary); font-weight: 500; }
-        .metric-value { font-size: 24px; margin-bottom: var(--space-sm); }
-        .metric-change { font-size: 12px; display: flex; align-items: center; gap: 4px; }
+        .metric-card { padding: 24px; }
+        .metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+        .metric-icon-box {
+          width: 44px;
+          height: 44px;
+          background: var(--primary-light);
+          color: var(--primary);
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .metric-icon { font-size: 22px; }
+        .metric-title { font-size: 13px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-value { font-size: 26px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; letter-spacing: -0.02em; }
+        .metric-change { font-size: 13px; display: flex; align-items: center; gap: 4px; font-weight: 600; }
         .metric-change.up { color: var(--success); }
         .metric-change .material-icons-round { font-size: 16px; }
 
         .data-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-xl); }
         .left-panel, .right-panel { display: flex; flex-direction: column; gap: var(--space-xl); }
 
-        .btn-group { display: flex; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
-        .btn-group :global(.btn) { border: none; border-radius: 0; border-right: 1px solid var(--border); }
-        .btn-group :global(.btn:last-child) { border-right: none; }
-
-        .chart-placeholder { height: 200px; display: flex; align-items: flex-end; padding-top: var(--space-lg); }
-        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 100%; gap: var(--space-md); }
-        .bar { background: var(--primary-light); width: 100%; border-radius: 4px 4px 0 0; transition: background 0.3s; }
-        .bar:hover { background: var(--primary); }
+        .chart-placeholder { height: 220px; display: flex; align-items: flex-end; padding: 20px 0 10px; }
+        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 100%; gap: 12px; }
+        .bar { 
+          background: linear-gradient(to top, var(--primary-light), var(--primary)); 
+          width: 100%; 
+          border-radius: 6px 6px 2px 2px; 
+          transition: all 0.3s;
+          opacity: 0.8;
+        }
+        .bar:hover { opacity: 1; transform: scaleX(1.05); }
 
         .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { text-align: left; padding: 12px; font-size: 12px; color: var(--text-muted); border-bottom: 1px solid var(--border); }
-        .data-table td { padding: 16px 12px; font-size: 14px; border-bottom: 1px solid var(--border); }
+        .data-table th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
+        .data-table td { padding: 16px; font-size: 14px; border-bottom: 1px solid var(--border); color: var(--text-main); }
+        .data-table tr:last-child td { border-bottom: none; }
 
-        .pie-chart-container { display: flex; align-items: center; gap: var(--space-xl); }
+        .pie-chart-container { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 10px 0; }
         .pie-chart-placeholder {
-          width: 120px;
-          height: 120px;
+          width: 140px;
+          height: 140px;
           border-radius: 50%;
-          background: conic-gradient(var(--primary) 0% 45%, var(--primary-light) 45% 75%, #eee 75% 100%);
+          background: conic-gradient(var(--primary) 0% 45%, #60a5fa 45% 75%, #e2e8f0 75% 100%);
+          box-shadow: inset 0 0 0 30px white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
         }
-        .legend { flex: 1; }
-        .legend li { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 13px; }
-        .legend li span:last-child { margin-left: auto; font-weight: 600; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .pie-chart-placeholder::after {
+          content: '45%';
+          font-size: 20px;
+          font-weight: 800;
+          color: var(--text-main);
+        }
+        .legend { width: 100%; display: flex; flex-direction: column; gap: 10px; }
+        .legend li { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+        .legend li span:last-child { margin-left: auto; font-weight: 700; color: var(--text-main); }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
         .dot-primary { background: var(--primary); }
-        .dot-info { background: var(--primary-light); }
-        .dot-muted { background: #eee; }
+        .dot-info { background: #60a5fa; }
+        .dot-muted { background: #e2e8f0; }
 
-        .link-text { font-size: 12px; color: var(--primary); font-weight: 500; }
-        .flight-list { display: flex; flex-direction: column; gap: var(--space-md); }
-        .flight-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-main); border-radius: var(--radius-md); }
-        .flight-info { display: flex; align-items: center; gap: var(--space-md); }
-        .flight-icon { width: 36px; height: 36px; border-radius: var(--radius-sm); background: white; display: flex; align-items: center; justify-content: center; color: var(--primary); }
-        .flight-id { font-size: 14px; font-weight: 600; margin: 0; }
-        .flight-route { font-size: 12px; color: var(--text-muted); margin: 0; }
+        .flight-list { display: flex; flex-direction: column; gap: 12px; }
+        .flight-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; transition: all 0.2s; }
+        .flight-item:hover { border-color: var(--primary-light); background: white; shadow: var(--shadow-sm); }
+        .flight-info { display: flex; align-items: center; gap: 16px; }
+        .flight-icon { width: 40px; height: 40px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; color: var(--primary); border: 1px solid #e2e8f0; }
+        .flight-id { font-size: 14px; font-weight: 700; color: var(--text-main); margin: 0; }
+        .flight-route { font-size: 12px; color: var(--text-secondary); margin: 2px 0 0; font-weight: 500; }
         .flight-status-container { text-align: right; }
-        .flight-time { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+        .flight-time { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
       `}</style>
     </div>
   );

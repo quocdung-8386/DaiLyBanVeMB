@@ -108,56 +108,111 @@ Bao gồm quản lý chuyến bay, đặt chỗ, vé, khách hàng, thanh toán 
 
 ```
 DaiLyBanVeMB/
-├── frontend/                    # Next.js 16 App Router
-│   └── src/
-│       ├── app/
-│       │   ├── page.tsx         # Router chính (SPA)
-│       │   ├── dashboard/       # Trang tổng quan
-│       │   ├── flights/         # Quản lý chuyến bay
-│       │   ├── booking/         # Đặt chỗ
-│       │   ├── tickets/         # Vé máy bay & Boarding Pass
-│       │   ├── payments/        # Thanh toán & lịch sử
-│       │   ├── customers/       # Quản lý khách hàng
-│       │   ├── settings/        # Quản lý hệ thống (Admin)
-│       │   ├── reports/         # Báo cáo thống kê
-│       │   ├── users/           # Quản lý người dùng
-│       │   └── login/           # Đăng nhập
-│       └── components/
-│           ├── Sidebar.tsx      # Menu điều hướng
-│           ├── Header.tsx       # Thanh tiêu đề
-│           ├── Card.tsx         # Card component
-│           └── Button.tsx       # Button component
+├── frontend/                        # Next.js 16 App Router
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx           # Root layout
+│   │   │   ├── page.tsx             # Trang chính (Điều hướng module)
+│   │   │   ├── login/               # Đăng nhập
+│   │   │   │   └── LoginPage.tsx
+│   │   │   ├── dashboard/           # Trang tổng quan
+│   │   │   │   └── Dashboard.tsx
+│   │   │   ├── flights/             # Quản lý chuyến bay
+│   │   │   │   ├── FlightsPage.tsx
+│   │   │   │   └── [id]/            # Chi tiết chuyến bay
+│   │   │   ├── booking/             # Đặt chỗ
+│   │   │   │   ├── BookingPage.tsx
+│   │   │   │   ├── [id]/            # Chi tiết đặt chỗ
+│   │   │   │   └── create/          # Quy trình đặt chỗ mới
+│   │   │   ├── tickets/             # Quản lý Vé máy bay
+│   │   │   │   ├── TicketsPage.tsx
+│   │   │   │   ├── cancel/          # Hủy vé
+│   │   │   │   │   └── CancelTicketPage.tsx
+│   │   │   │   ├── exchange/        # Đổi vé
+│   │   │   │   │   └── ExchangeTicketPage.tsx
+│   │   │   │   └── issue/           # Xuất vé
+│   │   │   │       └── IssueTicketPage.tsx
+│   │   │   ├── refund-management/   # Quản lý hoàn tiền
+│   │   │   │   └── RefundManagementPage.tsx
+│   │   │   ├── payments/            # Thanh toán
+│   │   │   │   ├── PaymentsPage.tsx
+│   │   │   │   ├── history/         # Lịch sử thanh toán
+│   │   │   │   └── invoice/         # Hóa đơn
+│   │   │   ├── customers/           # Quản lý khách hàng
+│   │   │   │   └── CustomersPage.tsx
+│   │   │   ├── settings/            # Cài đặt hệ thống
+│   │   │   │   ├── SettingsPage.tsx
+│   │   │   │   └── system-config/   # Cấu hình tham số
+│   │   │   ├── reports/             # Báo cáo thống kê
+│   │   │   │   └── ReportsPage.tsx
+│   │   │   ├── users/               # Quản lý người dùng
+│   │   │   │   ├── UsersPage.tsx
+│   │   │   │   └── roles/           # Phân quyền
+│   │   │   ├── profile/             # Hồ sơ cá nhân
+│   │   │   │   └── ProfilePage.tsx
+│   │   │   ├── loyalty/             # Chương trình tích điểm
+│   │   │   │   └── LoyaltyPage.tsx
+│   │   │   ├── audit-log/           # Nhật ký hệ thống
+│   │   │   │   └── AuditLogPage.tsx
+│   │   │   ├── ai-admin/            # Quản trị AI
+│   │   │   │   └── AiAdminPage.tsx
+│   │   │   └── core-data/           # Dữ liệu nền tảng
+│   │   │       ├── airlines/        # Quản lý hãng bay
+│   │   │       ├── airports/        # Quản lý sân bay
+│   │   │       ├── fare-rules/      # Quy định giá vé
+│   │   │       ├── policies/        # Chính sách đại lý
+│   │   │       └── routes/          # Tuyến bay
+│   │   ├── components/              # Shared Components (Core UI)
+│   │   │   ├── AppLayout.tsx        # Layout chung của app
+│   │   │   ├── Sidebar.tsx          # Menu điều hướng
+│   │   │   ├── Header.tsx           # Thanh tiêu đề
+│   │   │   ├── Card.tsx             # Card component
+│   │   │   └── Button.tsx           # Button component
+│   │   ├── hooks/                   # Custom React hooks
+│   │   ├── services/                # API service calls
+│   │   ├── types/                   # TypeScript types/interfaces
+│   │   ├── utils/                   # Utility functions
+│   │   └── index.css                # Global styles
+│   ├── next.config.mjs
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── tsconfig.node.json
 │
-├── backend/                     # FastAPI Python
+├── backend/                         # FastAPI Python
 │   ├── app/
-│   │   ├── main.py              # Entry point
-│   │   ├── api/                 # Route handlers
-│   │   ├── models/              # SQLAlchemy models
-│   │   ├── schemas/             # Pydantic schemas
-│   │   ├── services/            # Business logic
-│   │   ├── repositories/        # Data access layer
-│   │   ├── core/                # Config, security
-│   │   ├── dependencies/        # DI dependencies
-│   │   ├── ai/                  # AI/ML features
-│   │   └── utils/               # Tiện ích
-│   ├── migrations/              # Alembic migrations
-│   ├── tests/                   # Unit & integration tests
+│   │   ├── main.py                  # Entry point
+│   │   ├── api/                     # Route handlers
+│   │   ├── models/                  # SQLAlchemy models
+│   │   ├── schemas/                 # Pydantic schemas
+│   │   ├── services/                # Business logic
+│   │   ├── repositories/            # Data access layer
+│   │   ├── core/                    # Config, security
+│   │   ├── dependencies/            # DI dependencies
+│   │   ├── ai/                      # AI/ML features
+│   │   ├── background_tasks/        # Tác vụ nền
+│   │   ├── notifications/           # Hệ thống thông báo
+│   │   └── utils/                   # Tiện ích
+│   ├── migrations/                  # Alembic migrations
+│   ├── tests/                       # Unit & integration tests
 │   └── requirements.txt
 │
-├── database/                    # PostgreSQL
-│   ├── init.sql                 # Schema khởi tạo
-│   └── backups/                 # Backup files
+├── database/                        # PostgreSQL
+│   ├── scripts/
+│   │   ├── schema.sql               # Schema khởi tạo
+│   │   ├── seed.sql                 # Dữ liệu mẫu
+│   │   └── procedures.sql           # Stored procedures
+│   └── backups/                     # Backup files
 │
-├── docs/                        # Tài liệu
-│   ├── api/                     # API docs
-│   └── diagrams/                # ERD, sequence diagrams
+├── docs/                            # Tài liệu
+│   ├── API.md
+│   ├── api/                         # API docs chi tiết
+│   └── diagrams/                    # ERD, sequence diagrams
 │
-├── docker/                      # Docker
+├── docker/                          # Docker
 │   ├── docker-compose.yml
 │   ├── Dockerfile.frontend
 │   └── Dockerfile.backend
 │
-├── .env                         # Biến môi trường (không commit)
 ├── .gitignore
 └── README.md
 ```

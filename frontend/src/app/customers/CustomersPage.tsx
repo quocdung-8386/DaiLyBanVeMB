@@ -10,7 +10,20 @@ interface CustomersPageProps {
 
 const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<any>(null);
+  const [viewingItem, setViewingItem] = useState<any>(null);
+
+  const handleOpenAdd = () => {
+    setEditingCustomer(null);
+    setShowCustomerModal(true);
+  };
+
+  const handleOpenEdit = (customer: any) => {
+    setEditingCustomer(customer);
+    setShowCustomerModal(true);
+  };
 
   const metrics = [
     { title: 'Tổng Khách hàng', value: '1,248', change: '+12% so với tháng trước', icon: 'groups', color: 'primary' },
@@ -58,7 +71,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                 <span className="material-icons-round">cloud_upload</span>
                 Nhập danh sách
               </Button>
-              <Button onClick={() => setShowAddModal(true)}>
+              <Button onClick={handleOpenAdd}>
                 <span className="material-icons-round">person_add</span>
                 Thêm khách hàng
               </Button>
@@ -96,7 +109,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                 />
               </div>
               <div className="input-with-icon select-wrapper flex-1">
-                <select defaultValue="all">
+                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
                   <option value="all">Tất cả hạng thẻ</option>
                   <option value="platinum">Platinum</option>
                   <option value="gold">Gold</option>
@@ -155,8 +168,8 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                     </td>
                     <td>
                       <div className="flex-row gap-xs">
-                        <button className="action-btn" title="Xem chi tiết"><span className="material-icons-round text-primary">visibility</span></button>
-                        <button className="action-btn" title="Chỉnh sửa"><span className="material-icons-round text-muted">edit</span></button>
+                        <button className="action-btn" title="Xem chi tiết" onClick={() => setViewingItem(c)}><span className="material-icons-round text-primary">visibility</span></button>
+                        <button className="action-btn" title="Chỉnh sửa" onClick={() => handleOpenEdit(c)}><span className="material-icons-round text-warning">edit</span></button>
                       </div>
                     </td>
                   </tr>
@@ -179,21 +192,21 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
         </main>
       </div>
 
-      {/* ══════════════ MODAL: Thêm khách hàng ══════════════ */}
-      {showAddModal && (
-        <div className="cust-modal-backdrop" onClick={() => setShowAddModal(false)}>
+      {/* ══════════════ MODAL: Thêm/Sửa khách hàng ══════════════ */}
+      {showCustomerModal && (
+        <div className="cust-modal-backdrop" onClick={() => setShowCustomerModal(false)}>
           <div className="cust-modal-box" onClick={e => e.stopPropagation()}>
 
             {/* Header */}
             <div className="cust-modal-header">
               <div className="cust-modal-title-row">
-                <span className="cust-modal-icon"><span className="material-icons-round">person_add</span></span>
+                <span className="cust-modal-icon"><span className="material-icons-round">{editingCustomer ? 'edit' : 'person_add'}</span></span>
                 <div>
-                  <h2>Thông Tin Khách Hàng</h2>
-                  <p>Nhập thông tin chi tiết để tạo hồ sơ khách hàng mới.</p>
+                  <h2>{editingCustomer ? 'Chỉnh Sửa Khách Hàng' : 'Thêm Khách Hàng Mới'}</h2>
+                  <p>{editingCustomer ? `Đang chỉnh sửa khách hàng: ${editingCustomer.id}` : 'Nhập thông tin chi tiết để tạo hồ sơ khách hàng mới.'}</p>
                 </div>
               </div>
-              <button className="cust-close-btn" onClick={() => setShowAddModal(false)}>
+              <button className="cust-close-btn" onClick={() => setShowCustomerModal(false)}>
                 <span className="material-icons-round">close</span>
               </button>
             </div>
@@ -212,14 +225,14 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                     <label>HỌ VÀ TÊN <span className="req">*</span></label>
                     <div className="cust-input-wrap">
                       <span className="material-icons-round">badge</span>
-                      <input type="text" placeholder="VD: NGUYEN VAN A" />
+                      <input type="text" placeholder="VD: NGUYEN VAN A" defaultValue={editingCustomer?.name || ''} />
                     </div>
                   </div>
                   <div className="cust-form-group">
                     <label>GIỚI TÍNH</label>
                     <div className="cust-input-wrap select">
                       <span className="material-icons-round">people</span>
-                      <select>
+                      <select defaultValue="Nam">
                         <option>Nam</option>
                         <option>Nữ</option>
                         <option>Khác</option>
@@ -240,7 +253,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                     <label>HỘ CHIẾU / CCCD <span className="req">*</span></label>
                     <div className="cust-input-wrap">
                       <span className="material-icons-round">perm_identity</span>
-                      <input type="text" placeholder="Nhập số giấy tờ" />
+                      <input type="text" placeholder="Nhập số giấy tờ" defaultValue={editingCustomer?.id || ''} />
                     </div>
                   </div>
                 </div>
@@ -257,14 +270,14 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                     <label>SỐ ĐIỆN THOẠI <span className="req">*</span></label>
                     <div className="cust-input-wrap">
                       <span className="material-icons-round">phone</span>
-                      <input type="tel" placeholder="+84 901 234 567" />
+                      <input type="tel" placeholder="+84 901 234 567" defaultValue={editingCustomer?.phone || ''} />
                     </div>
                   </div>
                   <div className="cust-form-group">
                     <label>EMAIL</label>
                     <div className="cust-input-wrap">
                       <span className="material-icons-round">mail</span>
-                      <input type="email" placeholder="khachhang@email.com" />
+                      <input type="email" placeholder="khachhang@email.com" defaultValue={editingCustomer?.email || ''} />
                     </div>
                   </div>
                 </div>
@@ -290,12 +303,12 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                     <label>LOẠI KHÁCH HÀNG</label>
                     <div className="cust-input-wrap select">
                       <span className="material-icons-round">person</span>
-                      <select>
-                        <option>Cá Nhân (Phổ Thông)</option>
-                        <option>Cá Nhân (Silver)</option>
-                        <option>Cá Nhân (Gold)</option>
-                        <option>Cá Nhân (Platinum)</option>
-                        <option>Doanh Nghiệp</option>
+                      <select defaultValue={editingCustomer?.tier || 'Cá Nhân (Phổ Thông)'}>
+                        <option value="Member">Cá Nhân (Phổ Thông)</option>
+                        <option value="Silver">Cá Nhân (Silver)</option>
+                        <option value="Gold">Cá Nhân (Gold)</option>
+                        <option value="Platinum">Cá Nhân (Platinum)</option>
+                        <option value="Doanh Nghiệp">Doanh Nghiệp</option>
                       </select>
                       <span className="material-icons-round arrow">expand_more</span>
                     </div>
@@ -304,7 +317,7 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
                     <label>ĐIỂM TÍCH LŨY THẺ</label>
                     <div className="cust-input-wrap">
                       <span className="material-icons-round">add_circle_outline</span>
-                      <input type="number" defaultValue={0} min={0} />
+                      <input type="number" defaultValue={editingCustomer?.points || 0} min={0} />
                     </div>
                   </div>
                 </div>
@@ -323,11 +336,64 @@ const CustomersPage: React.FC<CustomersPageProps> = ({ onNavigate }) => {
 
             {/* Footer */}
             <div className="cust-modal-footer">
-              <button className="cust-btn-cancel" onClick={() => setShowAddModal(false)}>HỦY BỎ</button>
-              <button className="cust-btn-save">
+              <button className="cust-btn-cancel" onClick={() => setShowCustomerModal(false)}>HỦY BỎ</button>
+              <button className="cust-btn-save" onClick={() => setShowCustomerModal(false)}>
                 <span className="material-icons-round">save</span>
-                LƯU THÔNG TIN
+                {editingCustomer ? 'CẬP NHẬT' : 'LƯU THÔNG TIN'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Details Popup */}
+      {viewingItem && (
+        <div className="cust-modal-backdrop" onClick={() => setViewingItem(null)}>
+          <div className="cust-modal-box" style={{ width: '480px' }} onClick={e => e.stopPropagation()}>
+            <div className="cust-modal-header">
+              <div className="cust-modal-title-row">
+                <span className="cust-modal-icon"><span className="material-icons-round">person</span></span>
+                <div>
+                  <h2>Chi tiết Khách hàng</h2>
+                  <p>Mã KH: <strong>{viewingItem.id}</strong></p>
+                </div>
+              </div>
+              <button className="cust-close-btn" onClick={() => setViewingItem(null)}>
+                <span className="material-icons-round">close</span>
+              </button>
+            </div>
+            <div className="cust-modal-body">
+              <div className="cust-section" style={{ background: 'white' }}>
+                <div className="cust-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '10px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Họ và tên:</span>
+                    <strong style={{ color: '#1e293b' }}>{viewingItem.name}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '10px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Email:</span>
+                    <strong style={{ color: '#1e293b' }}>{viewingItem.email}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '10px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>SĐT:</span>
+                    <strong style={{ color: '#1e293b' }}>{viewingItem.phone}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '10px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Hạng thẻ:</span>
+                    <strong style={{ color: '#1e293b' }}>{viewingItem.tier} ({viewingItem.points} điểm)</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #e2e8f0', paddingBottom: '10px' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Tổng chi tiêu:</span>
+                    <strong style={{ color: '#1e293b' }}>{viewingItem.spent}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b', fontSize: '13px' }}>Ngày tham gia:</span>
+                    <strong style={{ color: '#1e293b' }}>{viewingItem.joinDate}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="cust-modal-footer">
+              <button className="cust-btn-save" onClick={() => setViewingItem(null)}>ĐÓNG</button>
             </div>
           </div>
         </div>

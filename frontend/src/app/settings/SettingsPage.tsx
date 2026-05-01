@@ -48,7 +48,38 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<TabType>('airlines');
   const [dateFilter, setDateFilter] = useState<'today' | 'week' | 'month' | 'custom'>('today');
   const [modal, setModal] = useState<'airline' | 'airport' | 'route' | 'flight' | null>(null);
-  const closeModal = () => setModal(null);
+  const [editingItem, setEditingItem] = useState<any>(null);
+  const [flightStep, setFlightStep] = useState(1);
+  const [airlineStep, setAirlineStep] = useState(1);
+  const [airportStep, setAirportStep] = useState(1);
+  const [routeStep, setRouteStep] = useState(1);
+
+  const handleOpenAdd = (type: 'airline' | 'airport' | 'route' | 'flight') => {
+    setEditingItem(null);
+    setModal(type);
+    setFlightStep(1);
+    setAirlineStep(1);
+    setAirportStep(1);
+    setRouteStep(1);
+  };
+
+  const handleOpenEdit = (type: 'airline' | 'airport' | 'route' | 'flight', item: any) => {
+    setEditingItem(item);
+    setModal(type);
+    setFlightStep(1);
+    setAirlineStep(1);
+    setAirportStep(1);
+    setRouteStep(1);
+  };
+
+  const closeModal = () => {
+    setModal(null);
+    setEditingItem(null);
+    setFlightStep(1);
+    setAirlineStep(1);
+    setAirportStep(1);
+    setRouteStep(1);
+  };
 
   const tabs: { id: TabType; label: string; icon: string }[] = [
     { id: 'airlines', label: 'Hãng hàng không', icon: 'flight' },
@@ -64,12 +95,22 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
     { id: 'custom', label: 'Tuỳ chỉnh' },
   ];
 
-  const StatusBadge = ({ status }: { status: string }) => (
-    <span className={`status-pill ${status === 'active' ? 'success' : 'inactive'}`}>
-      <span className="dot" />
-      {status === 'active' ? 'Hoạt động' : 'Tạm ngừng'}
-    </span>
-  );
+  const StatusBadge = ({ status }: { status: string }) => {
+    const config: Record<string, { label: string; class: string }> = {
+      active: { label: 'Hoạt động', class: 'success' },
+      inactive: { label: 'Tạm ngừng', class: 'inactive' },
+      pending: { label: 'Chờ xử lý', class: 'warning' },
+      cancelled: { label: 'Đã hủy', class: 'danger' },
+      full: { label: 'Hết ghế', class: 'danger' },
+    };
+    const s = config[status] || { label: status, class: 'inactive' };
+    return (
+      <span className={`status-pill ${s.class}`}>
+        <span className="dot" />
+        {s.label}
+      </span>
+    );
+  };
 
   const airlineLogoColor = (iata: string) => {
     const map: Record<string, { bg: string; color: string }> = {
@@ -109,7 +150,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
           </div>
 
           {/* Tabs */}
-          <div className="tab-bar">
+          <div className="tabs-nav">
             {tabs.map((t) => (
               <button
                 key={t.id}
@@ -135,48 +176,50 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
                   Lọc
                 </button>
                 <div className="spacer" />
-                <Button onClick={() => setModal('airline')}>
+                <Button onClick={() => handleOpenAdd('airline')}>
                   <span className="material-icons-round">add</span>
                   Thêm hãng bay
                 </Button>
               </div>
 
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Logo</th>
-                    <th>Tên hãng</th>
-                    <th>Mã (IATA)</th>
-                    <th>Quốc gia</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {airlines.map((a, i) => (
-                    <tr key={i}>
-                      <td>
-                        <span className="airline-logo" style={{ background: a.bg, color: a.color }}>
-                          {a.logo}
-                        </span>
-                      </td>
-                      <td>
-                        <p className="font-semibold">{a.name}</p>
-                        <p className="text-xs text-muted">{a.subtitle}</p>
-                      </td>
-                      <td><span className="mono-code">{a.iata}</span></td>
-                      <td>{a.country}</td>
-                      <td><StatusBadge status={a.status} /></td>
-                      <td>
-                        <div className="action-row">
-                          <button className="icon-btn edit"><span className="material-icons-round">edit</span></button>
-                          <button className="icon-btn delete"><span className="material-icons-round">delete</span></button>
-                        </div>
-                      </td>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Logo</th>
+                      <th>Tên hãng</th>
+                      <th>Mã (IATA)</th>
+                      <th>Quốc gia</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {airlines.map((a, i) => (
+                      <tr key={i}>
+                        <td>
+                          <span className="airline-logo" style={{ background: a.bg, color: a.color }}>
+                            {a.logo}
+                          </span>
+                        </td>
+                        <td>
+                          <p className="font-semibold">{a.name}</p>
+                          <p className="text-xs text-muted">{a.subtitle}</p>
+                        </td>
+                        <td><span className="mono-code">{a.iata}</span></td>
+                        <td>{a.country}</td>
+                        <td><StatusBadge status={a.status} /></td>
+                        <td>
+                          <div className="action-row">
+                            <button className="icon-btn edit" onClick={() => handleOpenEdit('airline', a)}><span className="material-icons-round">edit</span></button>
+                            <button className="icon-btn delete"><span className="material-icons-round">delete</span></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="pagination">
                 <p>Hiển thị 1 đến 4 trong <strong>120</strong> kết quả</p>
@@ -205,58 +248,60 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
                   Lọc
                 </button>
                 <div className="spacer" />
-                <Button onClick={() => setModal('airport')}>
+                <Button onClick={() => handleOpenAdd('airport')}>
                   <span className="material-icons-round">add</span>
                   Thêm sân bay
                 </Button>
               </div>
 
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Mã (IATA)</th>
-                    <th>Tên sân bay</th>
-                    <th>Thành phố</th>
-                    <th>Quốc gia</th>
-                    <th>Loại</th>
-                    <th>Nhà ga</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {airports.map((ap, i) => (
-                    <tr key={i}>
-                      <td>
-                        <span className="airport-code">{ap.code}</span>
-                      </td>
-                      <td>
-                        <p className="font-semibold">{ap.name}</p>
-                      </td>
-                      <td>{ap.city}</td>
-                      <td>{ap.country}</td>
-                      <td>
-                        <span className={`type-badge ${ap.type === 'Quốc tế' ? 'intl' : 'dom'}`}>
-                          {ap.type}
-                        </span>
-                      </td>
-                      <td>
-                        <span className="terminal-badge">
-                          <span className="material-icons-round">business</span>
-                          {ap.terminals}
-                        </span>
-                      </td>
-                      <td><StatusBadge status={ap.status} /></td>
-                      <td>
-                        <div className="action-row">
-                          <button className="icon-btn edit"><span className="material-icons-round">edit</span></button>
-                          <button className="icon-btn delete"><span className="material-icons-round">delete</span></button>
-                        </div>
-                      </td>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Sân bay (IATA)</th>
+                      <th>Tên sân bay</th>
+                      <th>Thành phố</th>
+                      <th>Quốc gia</th>
+                      <th>Loại</th>
+                      <th>Nhà ga</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {airports.map((ap, i) => (
+                      <tr key={i}>
+                        <td>
+                          <span className="airport-code">{ap.code}</span>
+                        </td>
+                        <td>
+                          <p className="font-semibold">{ap.name}</p>
+                        </td>
+                        <td>{ap.city}</td>
+                        <td>{ap.country}</td>
+                        <td>
+                          <span className={`type-badge ${ap.type === 'Quốc tế' ? 'intl' : 'dom'}`}>
+                            {ap.type}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="terminal-badge">
+                            <span className="material-icons-round">business</span>
+                            {ap.terminals}
+                          </span>
+                        </td>
+                        <td><StatusBadge status={ap.status} /></td>
+                        <td>
+                          <div className="action-row">
+                            <button className="icon-btn edit" onClick={() => handleOpenEdit('airport', ap)}><span className="material-icons-round">edit</span></button>
+                            <button className="icon-btn delete"><span className="material-icons-round">delete</span></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="pagination">
                 <p>Hiển thị 1 đến 6 trong <strong>85</strong> kết quả</p>
@@ -290,60 +335,62 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
                   <span className="material-icons-round arrow-icon">expand_more</span>
                 </div>
                 <div className="spacer" />
-                <Button onClick={() => setModal('route')}>
+                <Button onClick={() => handleOpenAdd('route')}>
                   <span className="material-icons-round">add</span>
                   Thêm tuyến bay
                 </Button>
               </div>
 
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Mã tuyến</th>
-                    <th>Hành trình</th>
-                    <th>Hãng bay</th>
-                    <th>Khoảng cách</th>
-                    <th>Thời gian</th>
-                    <th>Tần suất</th>
-                    <th>Giá cơ bản</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {routes.map((r, i) => {
-                    const lc = airlineLogoColor(r.airline);
-                    return (
-                      <tr key={i}>
-                        <td><span className="mono-code primary">{r.code}</span></td>
-                        <td>
-                          <div className="route-cell">
-                            <span className="airport-chip">{r.from}</span>
-                            <span className="material-icons-round route-arrow">flight_takeoff</span>
-                            <span className="airport-chip">{r.to}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="airline-logo sm" style={{ background: lc.bg, color: lc.color }}>
-                            {r.airline}
-                          </span>
-                        </td>
-                        <td className="text-muted">{r.distance}</td>
-                        <td className="font-medium">{r.duration}</td>
-                        <td className="text-muted">{r.frequency}</td>
-                        <td className="font-bold text-primary">{r.baseFare}</td>
-                        <td><StatusBadge status={r.status} /></td>
-                        <td>
-                          <div className="action-row">
-                            <button className="icon-btn edit"><span className="material-icons-round">edit</span></button>
-                            <button className="icon-btn delete"><span className="material-icons-round">delete</span></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              <div className="table-responsive">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Mã tuyến</th>
+                      <th>Hành trình</th>
+                      <th>Hãng bay</th>
+                      <th>Khoảng cách</th>
+                      <th>Thời gian</th>
+                      <th>Tần suất</th>
+                      <th>Giá cơ bản</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {routes.map((r, i) => {
+                      const lc = airlineLogoColor(r.airline);
+                      return (
+                        <tr key={i}>
+                          <td><span className="mono-code primary">{r.code}</span></td>
+                          <td>
+                            <div className="route-cell">
+                              <span className="airport-chip">{r.from}</span>
+                              <span className="material-icons-round route-arrow">flight_takeoff</span>
+                              <span className="airport-chip">{r.to}</span>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="airline-logo sm" style={{ background: lc.bg, color: lc.color }}>
+                              {r.airline}
+                            </span>
+                          </td>
+                          <td className="text-muted">{r.distance}</td>
+                          <td className="font-medium">{r.duration}</td>
+                          <td className="text-muted">{r.frequency}</td>
+                          <td className="font-bold text-primary">{r.baseFare}</td>
+                          <td><StatusBadge status={r.status} /></td>
+                          <td>
+                            <div className="action-row">
+                              <button className="icon-btn edit" onClick={() => handleOpenEdit('route', r)}><span className="material-icons-round">edit</span></button>
+                              <button className="icon-btn delete"><span className="material-icons-round">delete</span></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="pagination">
                 <p>Hiển thị 1 đến 5 trong <strong>230</strong> kết quả</p>
@@ -380,78 +427,105 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
                   <input type="date" />
                 </div>
                 <div className="spacer" />
-                <Button onClick={() => setModal('flight')}>
+                <Button onClick={() => handleOpenAdd('flight')}>
                   <span className="material-icons-round">add</span>
                   Thêm chuyến bay
                 </Button>
               </div>
 
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Mã chuyến</th>
-                    <th>Hành trình</th>
-                    <th>Hãng bay</th>
-                    <th>Ngày bay</th>
-                    <th>Khởi hành</th>
-                    <th>Tàu bay</th>
-                    <th>Ghế trống</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {flights.map((f, i) => {
-                    const lc = airlineLogoColor(f.airline);
-                    const seatPct = Math.round(((f.seats - f.available) / f.seats) * 100);
-                    return (
-                      <tr key={i}>
-                        <td>
-                          <p className="mono-code primary">{f.code}</p>
-                          <p className="text-xs text-muted">{f.route}</p>
-                        </td>
-                        <td>
-                          <div className="route-cell">
-                            <span className="airport-chip">{f.from}</span>
-                            <span className="material-icons-round route-arrow">flight_takeoff</span>
-                            <span className="airport-chip">{f.to}</span>
-                          </div>
-                        </td>
-                        <td>
-                          <span className="airline-logo sm" style={{ background: lc.bg, color: lc.color }}>{f.airline}</span>
-                        </td>
-                        <td className="text-sm">{f.date}</td>
-                        <td>
-                          <p className="font-semibold">{f.depart}</p>
-                          <p className="text-xs text-muted">→ {f.arrive}</p>
-                        </td>
-                        <td className="text-muted text-sm">{f.aircraft}</td>
-                        <td>
-                          <div className="seat-info">
-                            <div className="seat-bar">
-                              <div className="seat-fill" style={{ width: `${seatPct}%`, background: seatPct >= 100 ? '#ef4444' : seatPct > 75 ? '#f59e0b' : '#22c55e' }}></div>
+              <div className="table-responsive">
+                <table className="data-table" style={{ minWidth: '1200px' }}>
+                  <thead>
+                    <tr>
+                      <th>Chuyến bay / Hãng</th>
+                      <th>Hành trình (Route)</th>
+                      <th>Lịch trình</th>
+                      <th>Tàu bay</th>
+                      <th>Tình trạng ghế</th>
+                      <th>Trạng thái</th>
+                      <th>Hành động</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {flights.map((f, i) => {
+                      const lc = airlineLogoColor(f.airline);
+                      const seatPct = Math.round(((f.seats - f.available) / f.seats) * 100);
+                      return (
+                        <tr key={i}>
+                          <td>
+                            <div className="flight-cell">
+                              <span className="airline-logo sm" style={{ background: lc.bg, color: lc.color }}>{f.airline}</span>
+                              <div>
+                                <p className="mono-code primary" style={{ fontSize: '14px' }}>{f.code}</p>
+                                <p className="text-xs text-muted">{ { VN: 'Vietnam Airlines', VJ: 'VietJet Air', QH: 'Bamboo Airways', SQ: 'Singapore Airlines' }[f.airline] || f.airline }</p>
+                              </div>
                             </div>
-                            <p className="text-xs">{f.available}/{f.seats} trống</p>
-                          </div>
-                        </td>
-                        <td>
-                          <span className={`status-pill ${f.status === 'active' ? 'success' : f.status === 'full' ? 'danger' : 'inactive'
-                            }`}>
-                            <span className="dot" />
-                            {f.status === 'active' ? 'Hoạt động' : f.status === 'full' ? 'Hết ghế' : 'Tạm ngừng'}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="action-row">
-                            <button className="icon-btn edit"><span className="material-icons-round">edit</span></button>
-                            <button className="icon-btn delete"><span className="material-icons-round">delete</span></button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                          </td>
+                          <td>
+                            <div className="route-cell-v2">
+                              <div className="rt-node">
+                                <span className="rt-code">{f.from}</span>
+                              </div>
+                              <div className="rt-line-box">
+                                <div className="rt-line"></div>
+                                <span className="material-icons-round">flight</span>
+                              </div>
+                              <div className="rt-node">
+                                <span className="rt-code">{f.to}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="schedule-cell">
+                              <div className="sch-date">
+                                <span className="material-icons-round">calendar_today</span>
+                                {f.date}
+                              </div>
+                              <div className="sch-time">
+                                <span className="font-bold">{f.depart}</span>
+                                <span className="material-icons-round">arrow_forward</span>
+                                <span className="text-muted">{f.arrive}</span>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="aircraft-cell">
+                              <span className="material-icons-round">airplanemode_active</span>
+                              <div>
+                                <p className="font-medium">{f.aircraft}</p>
+                                <p className="text-xs text-muted">A321-200</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <div className="seat-info-v2">
+                              <div className="seat-label">
+                                <span>{f.available} / {f.seats}</span>
+                                <span className="pct">{100 - seatPct}%</span>
+                              </div>
+                              <div className="seat-bar">
+                                <div className="seat-fill" style={{ width: `${100 - seatPct}%`, background: seatPct >= 90 ? '#ef4444' : seatPct > 70 ? '#f59e0b' : '#10b981' }}></div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className={`status-pill ${f.status === 'active' ? 'success' : f.status === 'full' ? 'danger' : 'inactive'}`}>
+                              <span className="dot" />
+                              {f.status === 'active' ? 'Sẵn sàng' : f.status === 'full' ? 'Hết ghế' : 'Tạm dừng'}
+                            </span>
+                          </td>
+                          <td>
+                            <div className="action-row">
+                              <button className="icon-btn edit" title="Sửa" onClick={() => handleOpenEdit('flight', f)}><span className="material-icons-round">edit</span></button>
+                              <button className="icon-btn delete" title="Xóa"><span className="material-icons-round">delete</span></button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
 
               <div className="pagination">
                 <p>Hiển thị 1 đến 5 trong <strong>312</strong> chuyến bay</p>
@@ -459,7 +533,6 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
                   <button className="page-btn"><span className="material-icons-round">chevron_left</span></button>
                   <button className="page-btn active">1</button>
                   <button className="page-btn">2</button>
-                  <button className="page-btn">3</button>
                   <button className="page-btn dots">...</button>
                   <button className="page-btn"><span className="material-icons-round">chevron_right</span></button>
                 </div>
@@ -468,33 +541,62 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
           )}
         </main>
       </div>
-
-      {/* ══════════════ MODAL: Thêm chuyến bay ══════════════ */}
       {modal === 'flight' && (
         <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal-box modal-xl" onClick={e => e.stopPropagation()}>
+          <div className="modal-box modal-xl" style={{ display:'flex', flexDirection:'column', maxHeight:'90vh' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-row">
                 <span className="modal-icon-box bg-green"><span className="material-icons-round">airplanemode_active</span></span>
                 <div>
-                  <h2>Thêm chuyến bay mới</h2>
-                  <p>Khai báo đầy đủ thông tin chuyến bay vào hệ thống</p>
+                  <h2>{editingItem ? 'Cập nhật chuyến bay' : 'Thêm chuyến bay mới'}</h2>
+                  <p>{editingItem ? `Đang chỉnh sửa chuyến bay ${editingItem.code}` : 'Khai báo đầy đủ thông tin chuyến bay vào hệ thống'}</p>
                 </div>
               </div>
               <button className="modal-close" onClick={closeModal}><span className="material-icons-round">close</span></button>
             </div>
-            <div className="modal-body">
-
-              {/* Section: Thông tin cơ bản */}
-              <div className="form-section">
-                <div className="form-section-title">
-                  <span className="material-icons-round">info</span>
-                  Thông tin cơ bản
-                </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Mã chuyến bay <span className="required">*</span></label>
-                    <input type="text" placeholder="VD: VN248" className="mono-input" />
+            <div className="wizard-stepper">
+              <div className={`wizard-step ${flightStep === 1 ? 'active' : flightStep > 1 ? 'completed' : ''}`} onClick={() => setFlightStep(1)}>
+                <span className="step-num">{flightStep > 1 ? <span className="material-icons-round">check</span> : '1'}</span>
+                <span className="step-label">Cơ bản</span>
+              </div>
+              <div className={`step-line${flightStep > 1 ? ' done' : ''}`} />
+              <div className={`wizard-step ${flightStep === 2 ? 'active' : flightStep > 2 ? 'completed' : ''}`} onClick={() => setFlightStep(2)}>
+                <span className="step-num">{flightStep > 2 ? <span className="material-icons-round">check</span> : '2'}</span>
+                <span className="step-label">Lịch trình</span>
+              </div>
+              <div className={`step-line${flightStep > 2 ? ' done' : ''}`} />
+              <div className={`wizard-step ${flightStep === 3 ? 'active' : flightStep > 3 ? 'completed' : ''}`} onClick={() => setFlightStep(3)}>
+                <span className="step-num">{flightStep > 3 ? <span className="material-icons-round">check</span> : '3'}</span>
+                <span className="step-label">Tàu bay</span>
+              </div>
+              <div className={`step-line${flightStep > 3 ? ' done' : ''}`} />
+              <div className={`wizard-step ${flightStep === 4 ? 'active' : flightStep > 4 ? 'completed' : ''}`} onClick={() => setFlightStep(4)}>
+                <span className="step-num">{flightStep > 4 ? <span className="material-icons-round">check</span> : '4'}</span>
+                <span className="step-label">Giá vé</span>
+              </div>
+              <div className={`step-line${flightStep > 4 ? ' done' : ''}`} />
+              <div className={`wizard-step ${flightStep === 5 ? 'active' : ''}`} onClick={() => setFlightStep(5)}>
+                <span className="step-num">5</span>
+                <span className="step-label">Ghi chú</span>
+              </div>
+            </div>
+            <div className="modal-body" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+              {flightStep === 1 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">info</span>Thông tin cơ bản</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Mã chuyến bay <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: VN248" className="mono-input" defaultValue={editingItem?.code || ''} />
+                    </div>
+                    <div className="form-group">
+                      <label>Hãng khai thác <span className="required">*</span></label>
+                      <select defaultValue={editingItem?.airline || 'VN'}>
+                        <option value="VN">Vietnam Airlines (VN)</option>
+                        <option value="VJ">VietJet Air (VJ)</option>
+                        <option value="QH">Bamboo Airways (QH)</option>
+                      </select>
+                    </div>
                   </div>
                   <div className="form-group">
                     <label>Tuyến bay (Route) <span className="required">*</span></label>
@@ -505,156 +607,133 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
                       <option>QH-201 (HAN → HPH)</option>
                     </select>
                   </div>
-                  <div className="form-group">
-                    <label>Hãng khai thác <span className="required">*</span></label>
-                    <select>
-                      <option>Vietnam Airlines (VN)</option>
-                      <option>VietJet Air (VJ)</option>
-                      <option>Bamboo Airways (QH)</option>
-                    </select>
-                  </div>
                 </div>
-              </div>
-
-              {/* Section: Ngày & Giờ */}
-              <div className="form-section">
-                <div className="form-section-title">
-                  <span className="material-icons-round">schedule</span>
-                  Ngày & Giờ bay
-                </div>
-                <div className="form-row form-row-3">
-                  <div className="form-group">
-                    <label>Ngày bay <span className="required">*</span></label>
-                    <input type="date" />
-                  </div>
-                  <div className="form-group">
-                    <label>Giờ khởi hành <span className="required">*</span></label>
-                    <input type="time" />
-                  </div>
-                  <div className="form-group">
-                    <label>Giờ dự kiến đến <span className="required">*</span></label>
-                    <input type="time" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section: Tàu bay & Ghế */}
-              <div className="form-section">
-                <div className="form-section-title">
-                  <span className="material-icons-round">airline_seat_recline_normal</span>
-                  Tàu bay & Ghế ngồi
-                </div>
-                <div className="form-row form-row-3">
-                  <div className="form-group">
-                    <label>Loại tàu bay <span className="required">*</span></label>
-                    <select>
-                      <option>Boeing 787 Dreamliner</option>
-                      <option>Airbus A321</option>
-                      <option>Airbus A320</option>
-                      <option>Embraer 190</option>
-                      <option>Boeing 737-800</option>
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label>Số hiệu tàu</label>
-                    <input type="text" placeholder="VD: VN-A851" className="mono-input" />
-                  </div>
-                  <div className="form-group">
-                    <label>Tổng số ghế <span className="required">*</span></label>
-                    <input type="number" placeholder="VD: 280" min={1} />
-                  </div>
-                </div>
-                <div className="form-row form-row-3">
-                  <div className="form-group">
-                    <label>Ghế Hạng Nhất (First)</label>
-                    <input type="number" placeholder="0" min={0} />
-                  </div>
-                  <div className="form-group">
-                    <label>Ghế Thương gia (Business)</label>
-                    <input type="number" placeholder="0" min={0} />
-                  </div>
-                  <div className="form-group">
-                    <label>Ghế Phổ thông (Economy) <span className="required">*</span></label>
-                    <input type="number" placeholder="VD: 250" min={1} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Section: Giá vé */}
-              <div className="form-section">
-                <div className="form-section-title">
-                  <span className="material-icons-round">attach_money</span>
-                  Giá vé cơ bản (đồng)
-                </div>
-                <div className="form-row form-row-3">
-                  <div className="form-group">
-                    <label>Economy (Phổ thông) <span className="required">*</span></label>
-                    <div className="input-prefix">
-                      <span>đ</span>
-                      <input type="number" placeholder="VD: 890000" min={0} />
+              )}
+              {flightStep === 2 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">schedule</span>Ngày & Giờ bay</p>
+                  <div className="form-row form-row-3">
+                    <div className="form-group">
+                      <label>Ngày bay <span className="required">*</span></label>
+                      <input type="date" />
                     </div>
-                  </div>
-                  <div className="form-group">
-                    <label>Business (Thương gia)</label>
-                    <div className="input-prefix">
-                      <span>đ</span>
-                      <input type="number" placeholder="VD: 3500000" min={0} />
+                    <div className="form-group">
+                      <label>Giờ khởi hành <span className="required">*</span></label>
+                      <input type="time" defaultValue={editingItem?.depart || ''} />
                     </div>
-                  </div>
-                  <div className="form-group">
-                    <label>First (Hạng nhất)</label>
-                    <div className="input-prefix">
-                      <span>đ</span>
-                      <input type="number" placeholder="VD: 8000000" min={0} />
+                    <div className="form-group">
+                      <label>Giờ dự kiến đến <span className="required">*</span></label>
+                      <input type="time" defaultValue={editingItem?.arrive || ''} />
                     </div>
                   </div>
                 </div>
-              </div>
-
-              {/* Section: Trạng thái & Ghi chú */}
-              <div className="form-section">
-                <div className="form-section-title">
-                  <span className="material-icons-round">settings</span>
-                  Cài đặt & Ghi chú
+              )}
+              {flightStep === 3 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">airline_seat_recline_normal</span>Tàu bay & Ghế ngồi</p>
+                  <div className="form-row form-row-3" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Loại tàu bay <span className="required">*</span></label>
+                      <select>
+                        <option>Boeing 787 Dreamliner</option>
+                        <option>Airbus A321</option>
+                        <option>Airbus A320</option>
+                        <option>Embraer 190</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Số hiệu tàu</label>
+                      <input type="text" placeholder="VD: VN-A851" className="mono-input" />
+                    </div>
+                    <div className="form-group">
+                      <label>Tổng số ghế <span className="required">*</span></label>
+                      <input type="number" placeholder="280" min={1} defaultValue={editingItem?.seats || 280} />
+                    </div>
+                  </div>
+                  <div className="form-row form-row-3">
+                    <div className="form-group">
+                      <label>Ghế Hạng Nhất (First)</label>
+                      <input type="number" placeholder="0" min={0} />
+                    </div>
+                    <div className="form-group">
+                      <label>Ghế Thương gia (Business)</label>
+                      <input type="number" placeholder="0" min={0} />
+                    </div>
+                    <div className="form-group">
+                      <label>Ghế Phổ thông (Economy) <span className="required">*</span></label>
+                      <input type="number" placeholder="250" min={1} />
+                    </div>
+                  </div>
                 </div>
-                <div className="form-row">
-                  <div className="form-group">
-                    <label>Trạng thái chuyến bay</label>
-                    <div className="radio-group">
-                      <label className="radio-opt active-opt">
-                        <input type="radio" name="fl-status" defaultChecked />
-                        <span className="material-icons-round">check_circle</span> Hoạt động
-                      </label>
-                      <label className="radio-opt">
-                        <input type="radio" name="fl-status" />
-                        <span className="material-icons-round">pause_circle</span> Tạm ngừng
-                      </label>
+              )}
+              {flightStep === 4 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">attach_money</span>Giá vé cơ bản (VNĐ)</p>
+                  <div className="form-row form-row-3">
+                    <div className="form-group">
+                      <label>Economy <span className="required">*</span></label>
+                      <div className="input-prefix"><span>đ</span><input type="number" placeholder="890000" min={0} /></div>
+                    </div>
+                    <div className="form-group">
+                      <label>Business</label>
+                      <div className="input-prefix"><span>đ</span><input type="number" placeholder="3500000" min={0} /></div>
+                    </div>
+                    <div className="form-group">
+                      <label>First Class</label>
+                      <div className="input-prefix"><span>đ</span><input type="number" placeholder="8000000" min={0} /></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {flightStep === 5 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">settings</span>Cài đặt & Ghi chú</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Trạng thái chuyến bay</label>
+                      <div className="radio-group">
+                        <label className={`radio-opt ${(!editingItem || editingItem.status === 'active') ? 'active-opt' : ''}`}>
+                          <input type="radio" name="fl-status" defaultChecked={!editingItem || editingItem.status === 'active'} />
+                          <span className="material-icons-round">check_circle</span> Hoạt động
+                        </label>
+                        <label className={`radio-opt ${editingItem?.status === 'inactive' ? 'active-opt' : ''}`}>
+                          <input type="radio" name="fl-status" defaultChecked={editingItem?.status === 'inactive'} />
+                          <span className="material-icons-round">pause_circle</span> Tạm ngừng
+                        </label>
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Loại khai thác</label>
+                      <div className="radio-group">
+                        <label className="radio-opt"><input type="radio" name="fl-codeshare" defaultChecked /><span className="material-icons-round">flight</span> Độc lập</label>
+                        <label className="radio-opt"><input type="radio" name="fl-codeshare" /><span className="material-icons-round">compare_arrows</span> Code-share</label>
+                      </div>
                     </div>
                   </div>
                   <div className="form-group">
-                    <label>Học phần</label>
-                    <div className="radio-group">
-                      <label className="radio-opt">
-                        <input type="radio" name="fl-codeshare" defaultChecked />
-                        <span className="material-icons-round">flight</span> Độc lập
-                      </label>
-                      <label className="radio-opt">
-                        <input type="radio" name="fl-codeshare" />
-                        <span className="material-icons-round">compare_arrows</span> Code-share
-                      </label>
-                    </div>
+                    <label>Ghi chú nội bộ</label>
+                    <textarea placeholder="Nhập ghi chú cho chuyến bay này..." rows={3} className="form-textarea"></textarea>
                   </div>
                 </div>
-                <div className="form-group">
-                  <label>Ghi chú nội bộ</label>
-                  <textarea placeholder="Nhập ghi chú cho chuyến bay này..." rows={3} className="form-textarea"></textarea>
-                </div>
-              </div>
-
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={closeModal}>Hủy</button>
-              <button className="btn-save"><span className="material-icons-round">save</span> Lưu chuyến bay</button>
+              <div className="spacer" />
+              {flightStep > 1 && (
+                <button className="btn-cancel" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setFlightStep(s => s - 1)}>
+                  <span className="material-icons-round">arrow_back</span> Quay lại
+                </button>
+              )}
+              {flightStep < 5 ? (
+                <button className="btn-save" onClick={() => setFlightStep(s => s + 1)}>
+                  Tiếp theo <span className="material-icons-round">arrow_forward</span>
+                </button>
+              ) : (
+                <button className="btn-save" onClick={closeModal}>
+                  <span className="material-icons-round">save</span> {editingItem ? 'Cập nhật' : 'Lưu chuyến bay'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -663,70 +742,105 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
       {/* ══════════════ MODAL: Thêm hãng bay ══════════════ */}
       {modal === 'airline' && (
         <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-box modal-xl modal-wizard" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-row">
                 <span className="modal-icon-box"><span className="material-icons-round">flight</span></span>
                 <div>
-                  <h2>Thêm hãng hàng không</h2>
-                  <p>Điền thông tin hãng bay mới vào hệ thống</p>
+                  <h2>{editingItem ? 'Cập nhật hãng hàng không' : 'Thêm hãng hàng không'}</h2>
+                  <p>{editingItem ? `Đang chỉnh sửa hãng ${editingItem.name}` : 'Điền thông tin hãng bay mới vào hệ thống'}</p>
                 </div>
               </div>
               <button className="modal-close" onClick={closeModal}><span className="material-icons-round">close</span></button>
             </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Tên hãng bay <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: Vietnam Airlines" />
-                </div>
-                <div className="form-group">
-                  <label>Mã IATA <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: VN" maxLength={3} className="mono-input" />
-                </div>
+            <div className="wizard-stepper">
+              <div className={`wizard-step ${airlineStep === 1 ? 'active' : airlineStep > 1 ? 'completed' : ''}`} onClick={() => setAirlineStep(1)}>
+                <span className="step-num">{airlineStep > 1 ? <span className="material-icons-round">check</span> : '1'}</span>
+                <span className="step-label">Thông tin cơ bản</span>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Phân loại hãng</label>
-                  <select>
-                    <option>Full Service</option>
-                    <option>Low Cost</option>
-                    <option>Hybrid</option>
-                    <option>Premium</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Quốc gia <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: Việt Nam" />
-                </div>
+              <div className={`step-line${airlineStep > 1 ? ' done' : ''}`} />
+              <div className={`wizard-step ${airlineStep === 2 ? 'active' : ''}`} onClick={() => setAirlineStep(2)}>
+                <span className="step-num">2</span>
+                <span className="step-label">Nhận diện & Trạng thái</span>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Logo màu nền</label>
-                  <input type="color" defaultValue="#e0e7ff" className="color-input" />
+            </div>
+            <div className="modal-body" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+              {airlineStep === 1 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">business</span>Thông tin hãng</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Tên hãng bay <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: Vietnam Airlines" defaultValue={editingItem?.name || ''} />
+                    </div>
+                    <div className="form-group">
+                      <label>Mã IATA <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: VN" maxLength={3} className="mono-input" defaultValue={editingItem?.iata || ''} />
+                    </div>
+                  </div>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Phân loại hãng</label>
+                      <select defaultValue={editingItem?.subtitle || 'Full Service'}>
+                        <option>Full Service</option>
+                        <option>Low Cost</option>
+                        <option>Hybrid</option>
+                        <option>Premium</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Quốc gia <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: Việt Nam" defaultValue={editingItem?.country || ''} />
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Logo màu chữ</label>
-                  <input type="color" defaultValue="#3b82f6" className="color-input" />
+              )}
+              {airlineStep === 2 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">palette</span>Nhận diện & Trạng thái</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Logo màu nền</label>
+                      <input type="color" defaultValue={editingItem?.bg || "#e0e7ff"} className="color-input" />
+                    </div>
+                    <div className="form-group">
+                      <label>Logo màu chữ</label>
+                      <input type="color" defaultValue={editingItem?.color || "#3b82f6"} className="color-input" />
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 14 }}>
+                    <label>Trạng thái</label>
+                    <div className="radio-group" style={{ marginTop: 8 }}>
+                      <label className="radio-opt active-opt">
+                        <input type="radio" name="al-status" defaultChecked />
+                        <span className="material-icons-round">check_circle</span> Hoạt động
+                      </label>
+                      <label className="radio-opt">
+                        <input type="radio" name="al-status" />
+                        <span className="material-icons-round">pause_circle</span> Tạm ngừng
+                      </label>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Trạng thái</label>
-                <div className="radio-group">
-                  <label className="radio-opt active-opt">
-                    <input type="radio" name="al-status" defaultChecked />
-                    <span className="material-icons-round">check_circle</span> Hoạt động
-                  </label>
-                  <label className="radio-opt">
-                    <input type="radio" name="al-status" />
-                    <span className="material-icons-round">pause_circle</span> Tạm ngừng
-                  </label>
-                </div>
-              </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={closeModal}>Hủy</button>
-              <button className="btn-save"><span className="material-icons-round">save</span> Lưu hãng bay</button>
+              <div className="spacer" />
+              {airlineStep > 1 && (
+                <button className="btn-cancel" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setAirlineStep(s => s - 1)}>
+                  <span className="material-icons-round">arrow_back</span> Quay lại
+                </button>
+              )}
+              {airlineStep < 2 ? (
+                <button className="btn-save" onClick={() => setAirlineStep(s => s + 1)}>
+                  Tiếp theo <span className="material-icons-round">arrow_forward</span>
+                </button>
+              ) : (
+                <button className="btn-save" onClick={closeModal}>
+                  <span className="material-icons-round">save</span> {editingItem ? 'Cập nhật' : 'Lưu hãng bay'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -735,68 +849,103 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
       {/* ══════════════ MODAL: Thêm sân bay ══════════════ */}
       {modal === 'airport' && (
         <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal-box" onClick={e => e.stopPropagation()}>
+          <div className="modal-box modal-xl modal-wizard" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-row">
                 <span className="modal-icon-box"><span className="material-icons-round">connecting_airports</span></span>
                 <div>
-                  <h2>Thêm sân bay</h2>
-                  <p>Khai báo sân bay mới vào danh mục hệ thống</p>
+                  <h2>{editingItem ? 'Cập nhật sân bay' : 'Thêm sân bay'}</h2>
+                  <p>{editingItem ? `Đang chỉnh sửa sân bay ${editingItem.code}` : 'Khai báo sân bay mới vào danh mục hệ thống'}</p>
                 </div>
               </div>
               <button className="modal-close" onClick={closeModal}><span className="material-icons-round">close</span></button>
             </div>
-            <div className="modal-body">
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Tên sân bay <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: Sân bay Tân Sơn Nhất" />
-                </div>
-                <div className="form-group">
-                  <label>Mã IATA <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: SGN" maxLength={3} className="mono-input" />
-                </div>
+            <div className="wizard-stepper">
+              <div className={`wizard-step ${airportStep === 1 ? 'active' : airportStep > 1 ? 'completed' : ''}`} onClick={() => setAirportStep(1)}>
+                <span className="step-num">{airportStep > 1 ? <span className="material-icons-round">check</span> : '1'}</span>
+                <span className="step-label">Vị trí</span>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Thành phố / Tỉnh <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: TP. Hồ Chí Minh" />
-                </div>
-                <div className="form-group">
-                  <label>Quốc gia <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: Việt Nam" />
-                </div>
+              <div className={`step-line${airportStep > 1 ? ' done' : ''}`} />
+              <div className={`wizard-step ${airportStep === 2 ? 'active' : ''}`} onClick={() => setAirportStep(2)}>
+                <span className="step-num">2</span>
+                <span className="step-label">Cấu hình</span>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Loại sân bay</label>
-                  <select>
-                    <option>Quốc tế</option>
-                    <option>Nội địa</option>
-                  </select>
+            </div>
+            <div className="modal-body" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+              {airportStep === 1 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">location_on</span>Địa điểm</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Tên sân bay <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: Sân bay Tân Sơn Nhất" defaultValue={editingItem?.name || ''} />
+                    </div>
+                    <div className="form-group">
+                      <label>Mã IATA <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: SGN" maxLength={3} className="mono-input" defaultValue={editingItem?.code || ''} />
+                    </div>
+                  </div>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Thành phố / Tỉnh <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: TP. Hồ Chí Minh" defaultValue={editingItem?.city || ''} />
+                    </div>
+                    <div className="form-group">
+                      <label>Quốc gia <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: Việt Nam" defaultValue={editingItem?.country || 'Việt Nam'} />
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Số nhà ga</label>
-                  <input type="number" min={1} defaultValue={1} />
+              )}
+              {airportStep === 2 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">settings</span>Cấu hình & Trạng thái</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Loại sân bay</label>
+                      <select defaultValue={editingItem?.type || 'Quốc tế'}>
+                        <option>Quốc tế</option>
+                        <option>Nội địa</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Số nhà ga</label>
+                      <input type="number" min={1} defaultValue={editingItem?.terminals || 1} />
+                    </div>
+                  </div>
+                  <div className="form-group" style={{ marginBottom: 14 }}>
+                    <label>Trạng thái hoạt động</label>
+                    <div className="radio-group" style={{ marginTop: 8 }}>
+                      <label className="radio-opt active-opt">
+                        <input type="radio" name="ap-status" defaultChecked />
+                        <span className="material-icons-round">check_circle</span> Hoạt động
+                      </label>
+                      <label className="radio-opt">
+                        <input type="radio" name="ap-status" />
+                        <span className="material-icons-round">pause_circle</span> Tạm ngừng
+                      </label>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="form-group">
-                <label>Trạng thái</label>
-                <div className="radio-group">
-                  <label className="radio-opt active-opt">
-                    <input type="radio" name="ap-status" defaultChecked />
-                    <span className="material-icons-round">check_circle</span> Hoạt động
-                  </label>
-                  <label className="radio-opt">
-                    <input type="radio" name="ap-status" />
-                    <span className="material-icons-round">pause_circle</span> Tạm ngừng
-                  </label>
-                </div>
-              </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={closeModal}>Hủy</button>
-              <button className="btn-save"><span className="material-icons-round">save</span> Lưu sân bay</button>
+              <div className="spacer" />
+              {airportStep > 1 && (
+                <button className="btn-cancel" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setAirportStep(s => s - 1)}>
+                  <span className="material-icons-round">arrow_back</span> Quay lại
+                </button>
+              )}
+              {airportStep < 2 ? (
+                <button className="btn-save" onClick={() => setAirportStep(s => s + 1)}>
+                  Tiếp theo <span className="material-icons-round">arrow_forward</span>
+                </button>
+              ) : (
+                <button className="btn-save" onClick={closeModal}>
+                  <span className="material-icons-round">save</span> {editingItem ? 'Cập nhật' : 'Lưu sân bay'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -805,7 +954,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
       {/* ══════════════ MODAL: Thêm tuyến bay ══════════════ */}
       {modal === 'route' && (
         <div className="modal-backdrop" onClick={closeModal}>
-          <div className="modal-box modal-lg" onClick={e => e.stopPropagation()}>
+          <div className="modal-box modal-xl modal-wizard" style={{ maxHeight: '90vh' }} onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <div className="modal-title-row">
                 <span className="modal-icon-box"><span className="material-icons-round">route</span></span>
@@ -816,8 +965,24 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
               </div>
               <button className="modal-close" onClick={closeModal}><span className="material-icons-round">close</span></button>
             </div>
-            <div className="modal-body">
-              <div className="route-preview-bar">
+            <div className="wizard-stepper">
+              <div className={`wizard-step ${routeStep === 1 ? 'active' : routeStep > 1 ? 'completed' : ''}`} onClick={() => setRouteStep(1)}>
+                <span className="step-num">{routeStep > 1 ? <span className="material-icons-round">check</span> : '1'}</span>
+                <span className="step-label">Hành trình</span>
+              </div>
+              <div className={`step-line${routeStep > 1 ? ' done' : ''}`} />
+              <div className={`wizard-step ${routeStep === 2 ? 'active' : routeStep > 2 ? 'completed' : ''}`} onClick={() => setRouteStep(2)}>
+                <span className="step-num">{routeStep > 2 ? <span className="material-icons-round">check</span> : '2'}</span>
+                <span className="step-label">Thông số</span>
+              </div>
+              <div className={`step-line${routeStep > 2 ? ' done' : ''}`} />
+              <div className={`wizard-step ${routeStep === 3 ? 'active' : ''}`} onClick={() => setRouteStep(3)}>
+                <span className="step-num">3</span>
+                <span className="step-label">Trạng thái</span>
+              </div>
+            </div>
+            <div className="modal-body" style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+              <div className="route-preview-bar" style={{ marginBottom: '20px' }}>
                 <div className="rp-airport">
                   <span className="material-icons-round">flight_takeoff</span>
                   <div>
@@ -838,82 +1003,112 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
                   </div>
                 </div>
               </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Sân bay đi <span className="required">*</span></label>
-                  <select>
-                    <option value="SGN">SGN – Tân Sơn Nhất</option>
-                    <option value="HAN">HAN – Nội Bài</option>
-                    <option value="DAD">DAD – Đà Nẵng</option>
-                    <option value="PQC">PQC – Phú Quốc</option>
-                  </select>
+
+              {routeStep === 1 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">route</span>Thông tin hành trình</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Sân bay đi <span className="required">*</span></label>
+                      <select>
+                        <option value="SGN">SGN – Tân Sơn Nhất</option>
+                        <option value="HAN">HAN – Nội Bài</option>
+                        <option value="DAD">DAD – Đà Nẵng</option>
+                        <option value="PQC">PQC – Phú Quốc</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Sân bay đến <span className="required">*</span></label>
+                      <select>
+                        <option value="HAN">HAN – Nội Bài</option>
+                        <option value="SGN">SGN – Tân Sơn Nhất</option>
+                        <option value="DAD">DAD – Đà Nẵng</option>
+                        <option value="PQC">PQC – Phú Quốc</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Hãng khai thác <span className="required">*</span></label>
+                      <select>
+                        <option>Vietnam Airlines (VN)</option>
+                        <option>VietJet Air (VJ)</option>
+                        <option>Bamboo Airways (QH)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Mã tuyến <span className="required">*</span></label>
+                      <input type="text" placeholder="VD: VN-201" className="mono-input" />
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Sân bay đến <span className="required">*</span></label>
-                  <select>
-                    <option value="HAN">HAN – Nội Bài</option>
-                    <option value="SGN">SGN – Tân Sơn Nhất</option>
-                    <option value="DAD">DAD – Đà Nẵng</option>
-                    <option value="PQC">PQC – Phú Quốc</option>
-                  </select>
+              )}
+              {routeStep === 2 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">analytics</span>Thông số & Giá vé</p>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Khoảng cách (km)</label>
+                      <input type="number" placeholder="VD: 1137" />
+                    </div>
+                    <div className="form-group">
+                      <label>Thời gian bay</label>
+                      <input type="text" placeholder="VD: 2h 05m" />
+                    </div>
+                  </div>
+                  <div className="form-row" style={{ marginBottom: 14 }}>
+                    <div className="form-group">
+                      <label>Tần suất</label>
+                      <select>
+                        <option>Hàng ngày</option>
+                        <option>5 lần/tuần</option>
+                        <option>3 lần/tuần</option>
+                        <option>Theo mùa</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Giá vé cơ bản (đ) <span className="required">*</span></label>
+                      <input type="number" placeholder="VD: 890000" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Hãng khai thác <span className="required">*</span></label>
-                  <select>
-                    <option>Vietnam Airlines (VN)</option>
-                    <option>VietJet Air (VJ)</option>
-                    <option>Bamboo Airways (QH)</option>
-                  </select>
+              )}
+              {routeStep === 3 && (
+                <div className="wizard-page">
+                  <p className="wiz-section-title"><span className="material-icons-round">toggle_on</span>Trạng thái</p>
+                  <div className="form-group" style={{ marginBottom: 14 }}>
+                    <label>Trạng thái hoạt động</label>
+                    <div className="radio-group" style={{ marginTop: 8 }}>
+                      <label className="radio-opt active-opt">
+                        <input type="radio" name="rt-status" defaultChecked />
+                        <span className="material-icons-round">check_circle</span> Hoạt động
+                      </label>
+                      <label className="radio-opt">
+                        <input type="radio" name="rt-status" />
+                        <span className="material-icons-round">pause_circle</span> Tạm ngừng
+                      </label>
+                    </div>
+                  </div>
                 </div>
-                <div className="form-group">
-                  <label>Mã tuyến <span className="required">*</span></label>
-                  <input type="text" placeholder="VD: VN-201" className="mono-input" />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Khoảng cách (km)</label>
-                  <input type="number" placeholder="VD: 1137" />
-                </div>
-                <div className="form-group">
-                  <label>Thời gian bay</label>
-                  <input type="text" placeholder="VD: 2h 05m" />
-                </div>
-              </div>
-              <div className="form-row">
-                <div className="form-group">
-                  <label>Tần suất</label>
-                  <select>
-                    <option>Hàng ngày</option>
-                    <option>5 lần/tuần</option>
-                    <option>3 lần/tuần</option>
-                    <option>Theo mùa</option>
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label>Giá vé cơ bản (đ) <span className="required">*</span></label>
-                  <input type="number" placeholder="VD: 890000" />
-                </div>
-              </div>
-              <div className="form-group">
-                <label>Trạng thái</label>
-                <div className="radio-group">
-                  <label className="radio-opt active-opt">
-                    <input type="radio" name="rt-status" defaultChecked />
-                    <span className="material-icons-round">check_circle</span> Hoạt động
-                  </label>
-                  <label className="radio-opt">
-                    <input type="radio" name="rt-status" />
-                    <span className="material-icons-round">pause_circle</span> Tạm ngừng
-                  </label>
-                </div>
-              </div>
+              )}
             </div>
             <div className="modal-footer">
               <button className="btn-cancel" onClick={closeModal}>Hủy</button>
-              <button className="btn-save"><span className="material-icons-round">save</span> Lưu tuyến bay</button>
+              <div className="spacer" />
+              {routeStep > 1 && (
+                <button className="btn-cancel" style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={() => setRouteStep(s => s - 1)}>
+                  <span className="material-icons-round">arrow_back</span> Quay lại
+                </button>
+              )}
+              {routeStep < 3 ? (
+                <button className="btn-save" onClick={() => setRouteStep(s => s + 1)}>
+                  Tiếp theo <span className="material-icons-round">arrow_forward</span>
+                </button>
+              ) : (
+                <button className="btn-save" onClick={closeModal}>
+                  <span className="material-icons-round">save</span> {editingItem ? 'Cập nhật' : 'Lưu tuyến bay'}
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -937,8 +1132,9 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
         .date-btn .material-icons-round { font-size: 16px; }
 
         /* Tabs */
-        .tab-bar { display: flex; gap: 4px; border-bottom: 2px solid var(--border); margin-bottom: var(--space-lg); }
-        .tab-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; border-radius: 6px 6px 0 0; transition: all 0.2s; }
+        .tabs-nav { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid var(--border); padding-bottom: 2px; overflow-x: auto; scrollbar-width: none; }
+        .tabs-nav::-webkit-scrollbar { display: none; }
+        .tab-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border: none; background: transparent; cursor: pointer; font-size: 14px; font-weight: 500; color: var(--text-secondary); border-bottom: 2px solid transparent; margin-bottom: -2px; border-radius: 6px 6px 0 0; transition: all 0.2s; white-space: nowrap; }
         .tab-btn:hover { background: #f5f7fa; color: var(--primary); }
         .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); background: #f0f4ff; }
         .tab-btn .material-icons-round { font-size: 18px; }
@@ -974,8 +1170,12 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
         .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
         .status-pill.success { background: #e6f4ea; color: #137333; }
         .status-pill.success .dot { background: #137333; }
-        .status-pill.inactive { background: #fef7e0; color: #b06000; }
-        .status-pill.inactive .dot { background: #b06000; }
+        .status-pill.warning { background: #fef7e0; color: #b06000; }
+        .status-pill.warning .dot { background: #b06000; }
+        .status-pill.danger { background: #fce8e6; color: #c5221f; }
+        .status-pill.danger .dot { background: #c5221f; }
+        .status-pill.inactive { background: #f1f3f4; color: #5f6368; }
+        .status-pill.inactive .dot { background: #5f6368; }
 
         /* Misc badges */
         .mono-code { font-family: monospace; font-size: 13px; font-weight: 600; color: var(--text-secondary); letter-spacing: 0.5px; }
@@ -1067,6 +1267,10 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
         .btn-save:hover { background: #1d4ed8; }
         .btn-save .material-icons-round { font-size: 18px; }
 
+        /* Toolbar button fix */
+        .toolbar button { white-space: nowrap; flex-shrink: 0; }
+        .toolbar .spacer + button, .toolbar .spacer + .btn { margin-left: auto; }
+
         /* Flight tab extras */
         .input-date { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; background: white; }
         .input-date .material-icons-round { color: var(--text-muted); font-size: 18px; }
@@ -1082,17 +1286,72 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
         .modal-box.modal-xl { width: 760px; }
         .bg-green { background: #dcfce7 !important; color: #16a34a !important; }
 
-        /* Form sections */
-        .form-section { border: 1px solid var(--border); border-radius: 12px; padding: 16px; background: #fafbfc; overflow: hidden; }
-        .form-section-title { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px; }
-        .form-section-title .material-icons-round { font-size: 18px; color: var(--primary); }
-        .form-row-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-        .input-prefix { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: white; transition: border-color 0.2s; box-sizing: border-box; }
-        .input-prefix:focus-within { border-color: var(--primary); }
-        .input-prefix span { padding: 10px 12px; background: #f3f4f6; color: var(--text-secondary); font-weight: 600; font-size: 14px; border-right: 1px solid var(--border); flex-shrink: 0; }
-        .input-prefix input { flex: 1; border: none; outline: none; padding: 10px 8px; font-size: 14px; background: transparent; min-width: 0; width: 100%; box-sizing: border-box; }
-        .form-textarea { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; resize: vertical; font-family: inherit; transition: border-color 0.2s; box-sizing: border-box; }
-        .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+        /* Form sections (Accordion style as requested) */
+        .form-section { border: 1px solid #e2e8f0; border-radius: 16px; padding: 0; background: white; overflow: hidden; margin-bottom: 12px; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .form-section:hover { border-color: var(--primary); box-shadow: 0 4px 12px rgba(37,99,235,0.05); }
+        .form-section-title { display: flex; align-items: center; gap: 12px; font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.5px; padding: 20px 24px; cursor: pointer; user-select: none; }
+        .form-section-title .material-icons-round { font-size: 22px; color: var(--primary); }
+        .form-section-content { padding: 0 24px 24px; }
+        .form-row-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+        .input-prefix { display: flex; align-items: center; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: white; transition: all 0.2s; box-sizing: border-box; }
+        .input-prefix:focus-within { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+        .input-prefix span { padding: 10px 14px; background: #f8fafc; color: #64748b; font-weight: 700; font-size: 13px; border-right: 1px solid var(--border); flex-shrink: 0; }
+        .input-prefix input { flex: 1; border: none; outline: none; padding: 10px 12px; font-size: 14px; background: transparent; min-width: 0; width: 100%; box-sizing: border-box; font-weight: 500; }
+        .form-textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; resize: vertical; font-family: inherit; transition: all 0.2s; box-sizing: border-box; background: white; }
+        .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+        .form-textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+
+        /* Enhanced List Styles */
+        .flight-cell { display: flex; align-items: center; gap: 12px; }
+        .route-cell-v2 { display: flex; align-items: center; gap: 8px; background: #f8fafc; padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; width: fit-content; }
+        .rt-code { font-family: monospace; font-weight: 800; font-size: 15px; color: var(--primary); }
+        .rt-line-box { display: flex; align-items: center; gap: 4px; color: #94a3b8; }
+        .rt-line { width: 30px; height: 1px; background: #cbd5e1; position: relative; }
+        .rt-line-box .material-icons-round { font-size: 16px; transform: rotate(90deg); }
+        
+        .schedule-cell { display: flex; flex-direction: column; gap: 4px; }
+        .sch-date { font-size: 12px; color: #64748b; display: flex; align-items: center; gap: 4px; font-weight: 500; }
+        .sch-date .material-icons-round { font-size: 14px; }
+        .sch-time { display: flex; align-items: center; gap: 6px; font-size: 14px; }
+        .sch-time .material-icons-round { font-size: 14px; color: #94a3b8; }
+
+        .aircraft-cell { display: flex; align-items: center; gap: 10px; }
+        .aircraft-cell .material-icons-round { color: #64748b; font-size: 20px; }
+
+        .seat-info-v2 { width: 120px; }
+        .seat-label { display: flex; justify-content: space-between; font-size: 11px; font-weight: 600; color: #475569; margin-bottom: 6px; }
+        .seat-label .pct { color: #64748b; }
+        .seat-bar { height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden; border: 1px solid #e2e8f0; }
+        .seat-fill { height: 100%; border-radius: 10px; transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* Wizard Styles */
+        .modal-wizard { padding: 0 !important; display: flex; flex-direction: column; overflow: hidden; }
+        .wizard-stepper { display: flex; align-items: center; justify-content: space-between; padding: 24px 40px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+        .wizard-step { display: flex; flex-direction: column; align-items: center; gap: 8px; cursor: pointer; position: relative; z-index: 2; transition: all 0.2s; min-width: 60px; }
+        .step-num { width: 32px; height: 32px; border-radius: 50%; background: white; border: 2px solid #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: #64748b; transition: all 0.2s; }
+        .step-label { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        .wizard-step.active .step-num { border-color: var(--primary); background: var(--primary); color: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+        .wizard-step.active .step-label { color: var(--primary); }
+        .wizard-step.completed .step-num { border-color: #10b981; background: #10b981; color: white; }
+        .wizard-step.completed .step-label { color: #10b981; }
+        .wizard-step.completed .material-icons-round { font-size: 18px; }
+
+        .step-line { flex: 1; height: 2px; background: #e2e8f0; margin: 0 10px; margin-bottom: 22px; position: relative; }
+        .step-line.done { background: #10b981; }
+
+        .wizard-content-wrapper { flex: 1; overflow-y: auto; padding: 24px; min-height: 380px; position: relative; background: #fff; }
+        .wizard-page { animation: slideInRight 0.3s ease-out; }
+        @keyframes slideInRight { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        .wiz-section-title { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: var(--primary); margin: 0 0 20px 0; padding-bottom: 12px; border-bottom: 2px solid #e0e7ff; }
+        .wiz-section-title .material-icons-round { font-size: 20px; }
+
+        /* Horizontal Scroll fix for table */
+        .table-responsive { width: 100%; overflow-x: auto; scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; margin-bottom: 12px; }
+        .table-responsive::-webkit-scrollbar { height: 6px; }
+        .table-responsive::-webkit-scrollbar-track { background: transparent; }
+        .table-responsive::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .table-responsive::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
       `}</style>
     </div>
   );

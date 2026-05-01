@@ -7,146 +7,99 @@ import type { TicketData } from '../page';
 
 interface PaymentsPageProps {
   onNavigate?: (id: string) => void;
-  view?: 'history' | 'checkout' | 'success';
-  setView?: (view: 'history' | 'checkout' | 'success') => void;
+  view?: 'checkout' | 'success';
+  setView?: (view: 'checkout' | 'success') => void;
   ticketData?: TicketData | null;
+  onClose?: () => void;
 }
 
-const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history', setView, ticketData }) => {
+const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkout', setView, ticketData, onClose }) => {
+  const [paymentMode, setPaymentMode] = useState<'pos' | 'remote'>('pos');
+  const [posMethod, setPosMethod] = useState<'cash' | 'transfer' | 'card'>('cash');
+  const [localTicket, setLocalTicket] = useState<TicketData | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchError, setSearchError] = useState('');
+  
+  const currentTicket = ticketData || localTicket;
+  const [amountCollected, setAmountCollected] = useState<string>('');
 
-  const historyData = [
-    { id: 'TR-001', booking: 'BKG-8A2F9', customer: 'Nguyễn Văn Trường', total: '3.250.000đ', method: 'VNPay', status: 'Thành công', time: '12/10/2023 09:15', badge: 'success' },
-    { id: 'TR-002', booking: 'BKG-7X1M4', customer: 'Trần Thị Lan', total: '5.100.000đ', method: 'Momo', status: 'Thành công', time: '15/10/2023 14:30', badge: 'success' },
-    { id: 'TR-003', booking: 'BKG-9Y2K1', customer: 'Lê Quang Minh', total: '2.800.000đ', method: 'Visa', status: 'Đang xử lý', time: '16/10/2023 08:45', badge: 'warning' },
-    { id: 'TR-004', booking: 'BKG-3C4D5', customer: 'Phạm Thu Hà', total: '1.500.000đ', method: 'VNPay', status: 'Thất bại', time: '16/10/2023 11:20', badge: 'danger' },
+  React.useEffect(() => {
+    if (currentTicket) {
+      setAmountCollected(currentTicket.total ?? '0');
+    }
+  }, [currentTicket]);
+
+  const mockTickets = [
+    { id: '738-29481726', pnr: 'G7X9PQ', customer: 'Nguyễn Văn An', routeFrom: 'SGN', routeTo: 'HAN', date: '24/10/2023 08:30', total: '3,250,000', status: 'Đang hiệu lực', badge: 'success', airportFrom: 'Tân Sơn Nhất', airportTo: 'Nội Bài', gate: 'B12', terminal: 'T2', seat: '14A', boarding: '09:30' },
+    { id: '738-99283741', pnr: 'A2B4C6', customer: 'Trần Thị Bé', routeFrom: 'DAD', routeTo: 'SGN', date: '25/10/2023 14:15', total: '1,890,000', status: 'Đã hủy', badge: 'danger', airportFrom: 'Đà Nẵng', airportTo: 'Tân Sơn Nhất', gate: 'A5', terminal: 'T1', seat: '22C', boarding: '14:00' },
+    { id: '112-55443322', pnr: 'L9M1N2', customer: 'Lê Hữu Đạt', routeFrom: 'HAN', routeTo: 'PQC', date: '28/10/2023 09:40', total: '4,100,000', status: 'Đã hoàn tiền', badge: 'warning', airportFrom: 'Nội Bài', airportTo: 'Phú Quốc', gate: 'C3', terminal: 'T1', seat: '8B', boarding: '09:15' },
+    { id: '738-11229988', pnr: 'X7Y8Z9', customer: 'Phạm Tuấn Khải', routeFrom: 'SGN', routeTo: 'HPH', date: '02/11/2023 18:00', total: '2,450,000', status: 'Đã Void', badge: 'default', airportFrom: 'Tân Sơn Nhất', airportTo: 'Cát Bi', gate: 'B8', terminal: 'T2', seat: '31F', boarding: '17:30' },
   ];
 
+  const handleSearch = () => {
+    if (!searchQuery) return;
+    const query = searchQuery.trim().toUpperCase();
+    const found = mockTickets.find(t => t.pnr.toUpperCase() === query || t.id === query);
+    
+    if (found) {
+      setLocalTicket(found);
+      setSearchError('');
+    } else {
+      setSearchError('Không tìm thấy vé hoặc Booking nào khớp với mã vừa nhập.');
+    }
+  };
   return (
-    <div className="layout">
-      <Sidebar activeItem="payments" onNavigate={onNavigate} />
-      <div className="main-container">
-        <Header title={view === 'history' ? "Lịch sử giao dịch & Hóa đơn - Airline System" : "Thanh toán - Airline System"} />
-        
-        <main className="content">
-          {view === 'history' && (
-            <>
-              <div className="breadcrumb">
-                <span className="link" onClick={() => onNavigate && onNavigate('dashboard')}>Dashboard</span>
-                <span className="material-icons-round separator">chevron_right</span>
-                <span className="current">Thanh toán</span>
-              </div>
-              <div className="page-header">
-                <div>
-                  <h1>Lịch sử giao dịch & Hóa đơn</h1>
-                  <p>Quản lý và tra cứu các khoản thanh toán vé máy bay.</p>
-                </div>
-                <div className="flex-row gap-sm">
-                  <Button variant="outline">
-                    <span className="material-icons-round">download</span>
-                    Xuất báo cáo
-                  </Button>
-                </div>
-              </div>
+    <div className="payments-modal-container" onClick={(e) => e.stopPropagation()}>
+      <div className="pm-header">
+        <h2>{view === 'success' ? 'Hoàn tất giao dịch' : 'Thanh toán & Ghi nhận'}</h2>
+        {onClose && (
+          <button className="pm-close-btn" onClick={onClose}>
+            <span className="material-icons-round">close</span>
+          </button>
+        )}
+      </div>
+      
+      <div className="pm-content">
+        {view === 'checkout' && (
+          <>
 
-              <Card className="filter-card mb-lg">
-                <div className="filter-row">
-                  <div className="input-with-icon flex-1">
-                    <span className="material-icons-round">date_range</span>
-                    <input type="text" defaultValue="01/10/2023 - 31/10/2023" />
-                  </div>
-                  <div className="input-with-icon select-wrapper flex-1">
-                    <select defaultValue="all">
-                      <option value="all">Tất cả trạng thái</option>
-                      <option value="success">Thành công</option>
-                      <option value="pending">Đang xử lý</option>
-                    </select>
-                    <span className="material-icons-round arrow">expand_more</span>
-                  </div>
-                  <div className="input-with-icon select-wrapper flex-1">
-                    <select defaultValue="all">
-                      <option value="all">Tất cả phương thức</option>
-                      <option value="vnpay">VNPay</option>
-                      <option value="momo">Momo</option>
-                      <option value="visa">Thẻ tín dụng / Visa</option>
-                    </select>
-                    <span className="material-icons-round arrow">expand_more</span>
-                  </div>
-                  <Button className="btn-primary-alt">Lọc dữ liệu</Button>
-                </div>
-              </Card>
-
-              <Card className="table-card">
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Mã Giao Dịch</th>
-                      <th>Mã Booking</th>
-                      <th>Khách hàng</th>
-                      <th>Số tiền</th>
-                      <th>Phương thức</th>
-                      <th>Trạng thái</th>
-                      <th>Thời gian</th>
-                      <th>Hành động</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {historyData.map((t, i) => (
-                      <tr key={i}>
-                        <td><span className="text-primary font-medium">{t.id}</span></td>
-                        <td><span className="text-muted font-monospace">{t.booking}</span></td>
-                        <td><p className="font-medium">{t.customer}</p></td>
-                        <td><p className="font-bold">{t.total}</p></td>
-                        <td><span className="method-badge">{t.method}</span></td>
-                        <td>
-                          <span className={`status-badge ${t.badge}`}>
-                            <span className="dot"></span>
-                            {t.status}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="text-sm">
-                            <p>{t.time.split(' ')[0]}</p>
-                            <p className="text-muted">{t.time.split(' ')[1]}</p>
-                          </div>
-                        </td>
-                        <td>
-                          <button className="action-btn"><span className="material-icons-round">visibility</span></button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="pagination">
-                  <p>Hiển thị <strong>1-4</strong> trong số <strong>120</strong> giao dịch</p>
-                  <div className="page-controls">
-                    <button className="page-btn"><span className="material-icons-round">chevron_left</span></button>
-                    <button className="page-btn active">1</button>
-                    <button className="page-btn">2</button>
-                    <button className="page-btn">3</button>
-                    <button className="page-btn"><span className="material-icons-round">chevron_right</span></button>
-                  </div>
-                </div>
-              </Card>
-            </>
-          )}
-
-          {view === 'checkout' && (
-            <>
-              <div className="breadcrumb">
-                <span className="link" onClick={() => onNavigate && onNavigate('dashboard')}>Dashboard</span>
-                <span className="material-icons-round separator">chevron_right</span>
-                <span className="link" onClick={() => onNavigate && onNavigate('booking')}>Đặt chỗ</span>
-                <span className="material-icons-round separator">chevron_right</span>
-                <span className="current">Thanh toán</span>
-              </div>
-              <div className="page-header mb-lg">
-                <h1>Hoàn tất thanh toán</h1>
-                <Button variant="outline" onClick={() => setView && setView('history')}>Quay lại lịch sử</Button>
+              <div className="payment-mode-tabs mb-lg">
+                <button className={`pm-tab ${paymentMode === 'pos' ? 'active' : ''}`} onClick={() => setPaymentMode('pos')}>
+                  <span className="material-icons-round">point_of_sale</span>
+                  Thu tiền tại quầy
+                </button>
+                <button className={`pm-tab ${paymentMode === 'remote' ? 'active' : ''}`} onClick={() => setPaymentMode('remote')}>
+                  <span className="material-icons-round">qr_code_2</span>
+                  Gửi yêu cầu thanh toán
+                </button>
               </div>
 
-              <div className="checkout-layout">
-                <div className="checkout-main">
-                  <Card className="checkout-card mb-lg">
+              {!currentTicket ? (
+                <div className="search-booking-container">
+                  <Card className="search-card">
+                    <div className="search-icon-wrapper">
+                      <span className="material-icons-round">search</span>
+                    </div>
+                    <h2>Tìm kiếm thông tin thanh toán</h2>
+                    <p className="text-muted mb-lg">Nhập mã Booking (PNR) hoặc Mã vé để lấy dữ liệu thanh toán.</p>
+                    
+                    <div className="search-input-group">
+                      <input 
+                        type="text" 
+                        placeholder="VD: G7X9PQ hoặc 738-29481726" 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      />
+                      <Button className="btn-primary-alt" onClick={handleSearch}>Tìm kiếm</Button>
+                    </div>
+                    {searchError && <p className="text-danger mt-sm text-sm" style={{ textAlign: 'left' }}>{searchError}</p>}
+                  </Card>
+                </div>
+              ) : (
+                <div className="checkout-layout">
+                  <div className="checkout-main">
+                    <Card className="checkout-card mb-lg">
                     <div className="card-title">
                       <span className="material-icons-round text-primary">receipt</span>
                       <h3>Thông tin vé</h3>
@@ -154,69 +107,109 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
                     <div className="booking-info-grid">
                       <div>
                         <p className="label">MÃ VÉ</p>
-                        <p className="val text-primary font-bold">{ticketData?.id ?? 'N/A'}</p>
+                        <p className="val text-primary font-bold">{currentTicket?.id ?? 'N/A'}</p>
                       </div>
                       <div className="text-right">
                         <p className="label">CHUYẾN BAY</p>
-                        <p className="val font-bold">{ticketData?.routeFrom ?? '---'} <span className="material-icons-round icon-xs">flight_takeoff</span> {ticketData?.routeTo ?? '---'}</p>
-                        <p className="sub-val">PNR: {ticketData?.pnr ?? 'N/A'}</p>
+                        <p className="val font-bold">{currentTicket?.routeFrom ?? '---'} <span className="material-icons-round icon-xs">flight_takeoff</span> {currentTicket?.routeTo ?? '---'}</p>
+                        <p className="sub-val">PNR: {currentTicket?.pnr ?? 'N/A'}</p>
                       </div>
                       <div>
                         <p className="label">KHÁCH HÀNG</p>
-                        <p className="val font-medium">{ticketData?.customer ?? 'N/A'}</p>
+                        <p className="val font-medium">{currentTicket?.customer ?? 'N/A'}</p>
                       </div>
                       <div className="text-right">
                         <p className="label">NGÀY BAY</p>
-                        <p className="val font-medium">{ticketData?.date?.split(' ')[0] ?? 'N/A'}</p>
+                        <p className="val font-medium">{currentTicket?.date?.split(' ')[0] ?? 'N/A'}</p>
                       </div>
                       <div>
                         <p className="label">SÂN BAY CẤT CÁNH</p>
-                        <p className="val font-medium">{ticketData?.airportFrom ?? 'N/A'} ({ticketData?.routeFrom})</p>
+                        <p className="val font-medium">{currentTicket?.airportFrom ?? 'N/A'} ({currentTicket?.routeFrom})</p>
                       </div>
                       <div className="text-right">
                         <p className="label">CỔNG SOÁT VÉ / NHÀ GA</p>
-                        <p className="val font-medium">{ticketData?.gate ?? 'N/A'} / {ticketData?.terminal ?? 'N/A'}</p>
+                        <p className="val font-medium">{currentTicket?.gate ?? 'N/A'} / {currentTicket?.terminal ?? 'N/A'}</p>
                       </div>
                     </div>
                   </Card>
 
                   <Card className="checkout-card">
                     <div className="card-title">
-                      <span className="material-icons-round text-primary">payments</span>
-                      <h3>Phương thức thanh toán</h3>
+                      <span className="material-icons-round text-primary">{paymentMode === 'pos' ? 'payments' : 'share'}</span>
+                      <h3>{paymentMode === 'pos' ? 'Ghi nhận phương thức' : 'Tạo mã thanh toán từ xa'}</h3>
                     </div>
-                    <div className="payment-methods">
-                      <label className="method-option active">
-                        <input type="radio" name="payment" defaultChecked />
-                        <div className="method-icon"><span className="material-icons-round">qr_code_scanner</span></div>
-                        <div className="method-details">
-                          <h4>VNPAY-QR</h4>
-                          <p>Quét mã qua ứng dụng ngân hàng</p>
+                    {paymentMode === 'pos' ? (
+                      <div className="payment-methods">
+                        <label className={`method-option ${posMethod === 'cash' ? 'active' : ''}`}>
+                          <input type="radio" name="payment" checked={posMethod === 'cash'} onChange={() => setPosMethod('cash')} />
+                          <div className="method-icon bg-green"><span className="material-icons-round">payments</span></div>
+                          <div className="method-details">
+                            <h4>Tiền mặt</h4>
+                            <p>Khách trả tiền mặt tại quầy</p>
+                          </div>
+                        </label>
+                        {posMethod === 'cash' && (
+                          <div className="sub-form">
+                            <div className="form-group">
+                              <label>Khách đưa (VNĐ)</label>
+                              <input type="text" className="input-field" defaultValue={currentTicket?.total?.replace(/\D/g, '')} />
+                            </div>
+                            <div className="form-group">
+                              <label>Tiền thừa</label>
+                              <input type="text" className="input-field bg-light" readOnly value="0" />
+                            </div>
+                          </div>
+                        )}
+
+                        <label className={`method-option ${posMethod === 'transfer' ? 'active' : ''}`}>
+                          <input type="radio" name="payment" checked={posMethod === 'transfer'} onChange={() => setPosMethod('transfer')} />
+                          <div className="method-icon bg-primary"><span className="material-icons-round">account_balance</span></div>
+                          <div className="method-details">
+                            <h4>Chuyển khoản ngân hàng</h4>
+                            <p>Khách chuyển vào STK Đại lý</p>
+                          </div>
+                        </label>
+                        {posMethod === 'transfer' && (
+                          <div className="sub-form transfer-details">
+                            <p className="mb-sm"><strong>STK:</strong> 19034567890011 - Techcombank</p>
+                            <p className="mb-sm"><strong>Chủ tài khoản:</strong> CTY TNHH AIRLINE SYSTEM</p>
+                            <Button variant="outline" size="sm" className="w-full mt-sm btn-upload"><span className="material-icons-round">upload_file</span> Tải lên biên lai / UNC</Button>
+                          </div>
+                        )}
+
+                        <label className={`method-option ${posMethod === 'card' ? 'active' : ''}`}>
+                          <input type="radio" name="payment" checked={posMethod === 'card'} onChange={() => setPosMethod('card')} />
+                          <div className="method-icon bg-gray"><span className="material-icons-round">credit_card</span></div>
+                          <div className="method-details">
+                            <h4>Quẹt thẻ (Máy POS)</h4>
+                            <p>Visa, Master, JCB, Napas</p>
+                          </div>
+                        </label>
+                        {posMethod === 'card' && (
+                          <div className="sub-form">
+                            <div className="form-group">
+                              <label>Mã chuẩn chi (Approve Code)</label>
+                              <input type="text" className="input-field" placeholder="Nhập mã in trên biên lai POS" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="remote-payment-gen">
+                        <div className="qr-preview">
+                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=pay_me" alt="QR Code" />
+                          <p>Quét mã để thanh toán <strong>{currentTicket?.total ?? '0'} đ</strong></p>
                         </div>
-                      </label>
-                      <label className="method-option">
-                        <input type="radio" name="payment" />
-                        <div className="method-icon bg-pink"><span className="material-icons-round">account_balance_wallet</span></div>
-                        <div className="method-details">
-                          <h4>Ví MoMo</h4>
+                        <div className="remote-actions">
+                          <Button className="w-full btn-outline-primary mb-sm"><span className="material-icons-round">content_copy</span> Copy Link Thanh Toán</Button>
+                          <Button className="w-full btn-zalo"><span className="material-icons-round">chat</span> Gửi qua Zalo</Button>
                         </div>
-                      </label>
-                      <label className="method-option">
-                        <input type="radio" name="payment" />
-                        <div className="method-icon bg-gray"><span className="material-icons-round">credit_card</span></div>
-                        <div className="method-details">
-                          <h4>Thẻ tín dụng / Ghi nợ</h4>
-                          <p>Visa, Mastercard, JCB</p>
+                        <div className="polling-status mt-lg">
+                          <span className="spinner"></span>
+                          <p>Hệ thống đang chờ khách thanh toán...</p>
                         </div>
-                      </label>
-                      <label className="method-option">
-                        <input type="radio" name="payment" />
-                        <div className="method-icon bg-green"><span className="material-icons-round">payments</span></div>
-                        <div className="method-details">
-                          <h4>Tiền mặt tại đại lý</h4>
-                        </div>
-                      </label>
-                    </div>
+                      </div>
+                    )}
                   </Card>
                 </div>
 
@@ -228,7 +221,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
                     <div className="summary-body">
                       <div className="summary-row">
                         <span>Giá vé</span>
-                        <span>{ticketData?.total ?? 'N/A'} đ</span>
+                        <span>{currentTicket?.total ?? 'N/A'} đ</span>
                       </div>
                       <div className="summary-row">
                         <span>Thuế & Phí</span>
@@ -241,21 +234,26 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
                     </div>
                     <div className="summary-total">
                       <span>Tổng tiền</span>
-                      <h2>{ticketData?.total ?? 'N/A'} đ</h2>
+                      <h2>{currentTicket?.total ?? 'N/A'} đ</h2>
                     </div>
                     <div className="summary-actions">
+                      <div className="form-group mb-md mt-sm">
+                        <label className="text-sm font-semibold mb-xs" style={{ display: 'block' }}>Số tiền thu lần này (VNĐ)</label>
+                        <input type="text" className="input-field amount-input" value={amountCollected} onChange={(e) => setAmountCollected(e.target.value)} />
+                      </div>
                       <Button className="w-full mb-sm btn-primary-alt" onClick={() => setView && setView('success')}>
-                        <span className="material-icons-round">lock</span>
-                        Thanh toán ngay
+                        <span className="material-icons-round">done_all</span>
+                        Xác nhận thu tiền
                       </Button>
-                      <Button variant="outline" className="w-full text-danger border-danger">
+                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => { if(onClose) onClose(); else if(onNavigate) onNavigate('booking'); }}>
                         Hủy giao dịch
                       </Button>
-                      <p className="secure-note"><span className="material-icons-round">shield</span> Giao dịch được mã hóa an toàn</p>
+                      {paymentMode === 'remote' && <p className="secure-note"><span className="material-icons-round">info</span> Giao dịch sẽ tự động xác nhận khi nhận được tiền</p>}
                     </div>
                   </Card>
                 </div>
               </div>
+              )}
             </>
           )}
 
@@ -266,9 +264,9 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
                   <span className="material-icons-round">check_circle</span>
                 </div>
                 <h2>Thanh toán thành công!</h2>
-                <p>Booking <strong>{ticketData?.pnr ?? 'N/A'}</strong> đã được thanh toán và vé đã được xuất.</p>
+                <p>Booking <strong>{currentTicket?.pnr ?? 'N/A'}</strong> đã được thanh toán và vé đã được xuất.</p>
                 <div className="flex-row gap-sm mt-md justify-center">
-                  <Button variant="outline" onClick={() => setView && setView('history')}>Quay lại lịch sử</Button>
+                  <Button variant="outline" onClick={() => { if(onClose) onClose(); onNavigate && onNavigate('payment_history'); }}>Xem lịch sử giao dịch</Button>
                   <Button className="btn-primary-alt" onClick={() => window.print()}>
                     <span className="material-icons-round">print</span>
                     In vé máy bay
@@ -277,64 +275,64 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
               </div>
 
               <div className="tickets-display">
-                <h3>Boarding Pass — {ticketData?.customer ?? 'Hành khách'}</h3>
+                <h3>Boarding Pass — {currentTicket?.customer ?? 'Hành khách'}</h3>
                 <div className="tickets-grid mt-md">
                   {/* Printed ticket with real data */}
                   <Card className="issued-ticket-card">
                     <div className="it-header bg-primary">
                       <div className="flex-row justify-between">
                         <span className="airline-logo bg-white text-primary font-bold">VN</span>
-                        <span className="text-white font-monospace">PNR: {ticketData?.pnr ?? 'N/A'}</span>
+                        <span className="text-white font-monospace">PNR: {currentTicket?.pnr ?? 'N/A'}</span>
                       </div>
                       <h2 className="text-white mt-md">BOARDING PASS</h2>
                     </div>
                     <div className="it-body">
                       <div className="it-route mb-md">
                         <div className="loc">
-                          <h2>{ticketData?.routeFrom ?? '---'}</h2>
-                          <p>{ticketData?.airportFrom ?? 'N/A'}</p>
+                          <h2>{currentTicket?.routeFrom ?? '---'}</h2>
+                          <p>{currentTicket?.airportFrom ?? 'N/A'}</p>
                         </div>
                         <div className="dur">
                           <span className="material-icons-round text-primary">flight_takeoff</span>
                           <p>Bay thẳng</p>
                         </div>
                         <div className="loc text-right">
-                          <h2>{ticketData?.routeTo ?? '---'}</h2>
-                          <p>{ticketData?.airportTo ?? 'N/A'}</p>
+                          <h2>{currentTicket?.routeTo ?? '---'}</h2>
+                          <p>{currentTicket?.airportTo ?? 'N/A'}</p>
                         </div>
                       </div>
                       <div className="it-info-grid">
                         <div>
                           <p className="label">Hành khách</p>
-                          <p className="val">{ticketData?.customer?.toUpperCase() ?? 'N/A'}</p>
+                          <p className="val">{currentTicket?.customer?.toUpperCase() ?? 'N/A'}</p>
                         </div>
                         <div>
                           <p className="label">Ngày bay</p>
-                          <p className="val">{ticketData?.date?.split(' ')[0] ?? 'N/A'}</p>
+                          <p className="val">{currentTicket?.date?.split(' ')[0] ?? 'N/A'}</p>
                         </div>
                         <div>
                           <p className="label">Giờ khởi hành</p>
-                          <p className="val">{ticketData?.date?.split(' ')[1] ?? 'N/A'}</p>
+                          <p className="val">{currentTicket?.date?.split(' ')[1] ?? 'N/A'}</p>
                         </div>
                         <div>
                           <p className="label">Ghế (Seat)</p>
-                          <p className="val font-bold">{ticketData?.seat ?? 'N/A'}</p>
+                          <p className="val font-bold">{currentTicket?.seat ?? 'N/A'}</p>
                         </div>
                         <div>
                           <p className="label">Cổng soát vé</p>
-                          <p className="val font-bold">{ticketData?.gate ?? 'N/A'}</p>
+                          <p className="val font-bold">{currentTicket?.gate ?? 'N/A'}</p>
                         </div>
                         <div>
                           <p className="label">Nhà ga</p>
-                          <p className="val">{ticketData?.terminal ?? 'N/A'}</p>
+                          <p className="val">{currentTicket?.terminal ?? 'N/A'}</p>
                         </div>
                         <div>
                           <p className="label">Lên máy bay</p>
-                          <p className="val font-bold">{ticketData?.boarding ?? 'N/A'}</p>
+                          <p className="val font-bold">{currentTicket?.boarding ?? 'N/A'}</p>
                         </div>
                         <div>
                           <p className="label">Mã vé (Ticket No.)</p>
-                          <p className="val">{ticketData?.id ?? 'N/A'}</p>
+                          <p className="val">{currentTicket?.id ?? 'N/A'}</p>
                         </div>
                       </div>
                     </div>
@@ -349,13 +347,49 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
               </div>
             </div>
           )}
-        </main>
       </div>
 
       <style>{`
-        .layout { display: flex; min-height: 100vh; }
-        .main-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); overflow-x: hidden; }
-        .content { padding: var(--space-xl); max-width: 1200px; margin: 0 auto; width: 100%; }
+        .payments-modal-container {
+          background: #f8fafc;
+          border-radius: 20px;
+          width: 1000px;
+          max-width: 95vw;
+          max-height: 90vh;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+          animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes modalSlideUp {
+          from { transform: translateY(40px) scale(0.95); opacity: 0; }
+          to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        .pm-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 20px 24px;
+          background: white;
+          border-bottom: 1px solid var(--border);
+          flex-shrink: 0;
+        }
+        .pm-header h2 { font-size: 20px; color: var(--text-main); margin: 0; }
+        .pm-close-btn {
+          background: transparent; border: none; cursor: pointer;
+          width: 36px; height: 36px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          color: var(--text-secondary); transition: all 0.2s;
+        }
+        .pm-close-btn:hover { background: #f1f5f9; color: var(--danger); }
+
+        .pm-content {
+          flex: 1;
+          overflow-y: auto;
+          padding: 24px;
+        }
 
         .text-primary { color: var(--primary); }
         .text-danger { color: var(--danger); }
@@ -391,39 +425,16 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
         .page-header h1 { font-size: 24px; margin-bottom: 4px; }
         .page-header p { color: var(--text-secondary); font-size: 14px; }
 
-        /* History View */
-        .filter-card { padding: 12px var(--space-lg); }
-        .filter-row { display: flex; gap: var(--space-md); align-items: center; }
-        .input-with-icon { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; background: white; font-size: 13px; }
-        .input-with-icon input { border: none; background: transparent; outline: none; width: 100%; }
-        .select-wrapper { position: relative; }
-        .select-wrapper select { width: 100%; border: none; background: transparent; outline: none; appearance: none; padding-right: 20px; cursor: pointer; }
-        .select-wrapper .arrow { position: absolute; right: 12px; pointer-events: none; }
-        .btn-primary-alt { background: #005a8c; color: white; border: none; }
-        
-        .table-card { padding: 0; overflow: hidden; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; }
-        .data-table th { padding: 16px var(--space-lg); font-size: 12px; font-weight: 600; color: var(--text-secondary); border-bottom: 1px solid var(--border); background: #fcfcfc; text-transform: uppercase; }
-        .data-table td { padding: 16px var(--space-lg); border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 14px; }
-        
-        .method-badge { background: #f0f4ff; color: var(--primary); font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 600; }
-        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 500; }
-        .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; }
-        .status-badge.success { background: #e6f4ea; color: #137333; }
-        .status-badge.success .dot { background: #137333; }
-        .status-badge.warning { background: #fef7e0; color: #b06000; }
-        .status-badge.warning .dot { background: #b06000; }
-        .status-badge.danger { background: #fce8e6; color: #c5221f; }
-        .status-badge.danger .dot { background: #c5221f; }
+        /* Search Booking View */
+        .search-booking-container { display: flex; justify-content: center; align-items: center; padding: 40px 0; }
+        .search-card { max-width: 500px; width: 100%; text-align: center; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .search-icon-wrapper { width: 64px; height: 64px; background: #eff6ff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; }
+        .search-icon-wrapper .material-icons-round { font-size: inherit; }
+        .search-card h2 { font-size: 20px; margin-bottom: 8px; }
+        .search-input-group { display: flex; gap: 8px; margin-top: 24px; }
+        .search-input-group input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 15px; }
+        .search-input-group input:focus { border-color: var(--primary); }
 
-        .action-btn { background: transparent; border: none; cursor: pointer; padding: 4px; border-radius: 50%; color: var(--text-muted); transition: all 0.2s; }
-        .action-btn:hover { background: var(--bg-main); color: var(--text-main); }
-
-        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px var(--space-lg); font-size: 13px; color: var(--text-secondary); }
-        .page-controls { display: flex; gap: 4px; }
-        .page-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: var(--radius-sm); background: white; color: var(--text-secondary); font-size: 13px; cursor: pointer; transition: all 0.2s; }
-        .page-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
         /* Checkout View */
         .checkout-layout { display: flex; gap: var(--space-xl); align-items: flex-start; }
@@ -455,6 +466,36 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
         
         .method-details h4 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
         .method-details p { font-size: 12px; color: var(--text-secondary); }
+
+        .sub-form { padding: 12px 16px 16px 56px; background: #fcfcfc; border-radius: 0 0 8px 8px; border: 1px solid var(--border); border-top: none; margin-top: -16px; margin-bottom: 8px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .sub-form.transfer-details { display: block; }
+        .form-group label { font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; display: block; text-transform: uppercase; }
+        .input-field { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; transition: border 0.2s; }
+        .input-field:focus { border-color: var(--primary); }
+        .bg-light { background: #f1f5f9; color: var(--text-secondary); }
+        .btn-upload { color: var(--text-secondary); }
+
+        .remote-payment-gen { text-align: center; padding: 24px 0; }
+        .qr-preview { display: inline-flex; flex-direction: column; align-items: center; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: #fcfcfc; margin-bottom: 24px; }
+        .qr-preview img { width: 180px; height: 180px; margin-bottom: 16px; mix-blend-mode: multiply; }
+        .qr-preview p { font-size: 14px; color: var(--text-main); }
+        .qr-preview strong { font-size: 18px; color: var(--primary); display: block; margin-top: 4px; }
+        .remote-actions { max-width: 300px; margin: 0 auto; }
+        .btn-outline-primary { border: 1px solid var(--primary); color: var(--primary); background: transparent; }
+        .btn-outline-primary:hover { background: #eff6ff; }
+        .btn-zalo { background: #0068ff; color: white; border: none; }
+        .btn-zalo:hover { background: #005ce6; }
+        .polling-status { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+        .spinner { width: 24px; height: 24px; border: 3px solid #e2e8f0; border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .payment-mode-tabs { display: flex; gap: 12px; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
+        .pm-tab { display: flex; align-items: center; gap: 8px; padding: 12px 24px; border: none; background: #f1f5f9; border-radius: 8px; font-size: 15px; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
+        .pm-tab:hover { background: #e2e8f0; }
+        .pm-tab.active { background: #eff6ff; color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
+
+        .amount-input { font-size: 18px; font-weight: 700; color: var(--primary); text-align: right; }
+        .mb-xs { margin-bottom: 4px; }
 
         .summary-card { padding: 0; overflow: hidden; }
         .summary-header { padding: var(--space-md) var(--space-lg); background: #fcfcfc; border-bottom: 1px solid var(--border); }
@@ -505,8 +546,9 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'history
         .it-footer { padding: 16px 20px; background: #fafafa; border-top: 1px dashed var(--border); }
 
         @media print {
-          .sidebar, .header, .breadcrumb, .success-banner, .it-footer { display: none !important; }
-          .main-container { margin: 0; padding: 0; background: white; }
+          .pm-header, .pm-close-btn, .payment-mode-tabs, .checkout-sidebar { display: none !important; }
+          .payments-modal-container { box-shadow: none; max-width: none; background: white; }
+          .pm-content { padding: 0; overflow: visible; }
           .issued-ticket-card { break-inside: avoid; margin-bottom: 20px; border: 1px solid #000; box-shadow: none; }
           .it-header { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .tickets-grid { display: block; }

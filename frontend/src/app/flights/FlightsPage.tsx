@@ -6,53 +6,77 @@ import Button from '../../components/Button';
 
 interface FlightsPageProps {
   onNavigate?: (id: string) => void;
+  onSelectFlight?: (flight: any) => void;
 }
 
-const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate }) => {
+const flightData = [
+  { id: 1, code: 'QH', name: 'Bamboo Airways', flight: 'QH-202', aircraft: 'Boeing 787', dep: '11:00', arr: '13:05', from: 'HAN', to: 'SGN', dur: '2h 05m', stops: 0, price: 1950000, oldPrice: 2100000, carry: '7kg', checked: '20kg', seats: 12, badge: 'Bay nhanh nhất' },
+  { id: 2, code: 'VN', name: 'Vietnam Airlines', flight: 'VN-214', aircraft: 'Airbus A321', dep: '14:00', arr: '16:15', from: 'HAN', to: 'SGN', dur: '2h 15m', stops: 0, price: 2150000, carry: '10kg', checked: '23kg', seats: 45 },
+  { id: 3, code: 'VJ', name: 'VietJet Air', flight: 'VJ-123', aircraft: 'Airbus A320', dep: '06:30', arr: '08:40', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1250000, carry: '7kg', checked: '20kg', seats: 3, badge: 'Tiết kiệm nhất' },
+  { id: 4, code: 'VN', name: 'Vietnam Airlines', flight: 'VN-380', aircraft: 'Boeing 787', dep: '19:00', arr: '21:10', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1890000, carry: '10kg', checked: '23kg', seats: 28 },
+  { id: 5, code: 'QH', name: 'Bamboo Airways', flight: 'QH-204', aircraft: 'Airbus A320', dep: '08:15', arr: '10:25', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1750000, carry: '7kg', checked: '20kg', seats: 0 },
+];
+
+const airlineStyle: Record<string,{bg:string,color:string}> = {
+  VN: { bg:'#005a8c', color:'white' }, VJ: { bg:'#ed1b24', color:'white' }, QH: { bg:'#00a563', color:'white' }
+};
+
+const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight }) => {
   const [stops, setStops] = useState<string[]>(['0']);
   const [airlines, setAirlines] = useState<string[]>(['VN', 'VJ', 'QH']);
+  const [viewingFlight, setViewingFlight] = useState<any | null>(null);
+  const [sortBy, setSortBy] = useState<'price'|'dep'|'dur'>('price');
 
-  const toggleStop = (val: string) => {
-    setStops(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
+  const toggleStop = (val: string) => setStops(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
+  const toggleAirline = (val: string) => setAirlines(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
+
+  const handleSelectFlight = (f: typeof flightData[0]) => {
+    // Truyền dữ liệu chuyến bay qua hệ thống routing (state của page.tsx)
+    if (onSelectFlight) {
+      onSelectFlight({
+        id: f.flight,
+        airline: f.name,
+        logo: f.code,
+        bg: airlineStyle[f.code]?.bg || '#0e74be',
+        departure: f.dep,
+        arrival: f.arr,
+        from: f.from,
+        to: f.to,
+        duration: f.dur,
+        price: f.price,
+        cls: 'Phổ thông'
+      });
+    }
+
+    // Chuyển sang trang tạo booking
+    if (onNavigate) {
+      onNavigate('booking');
+    }
   };
 
-  const toggleAirline = (val: string) => {
-    setAirlines(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
-  };
+  // 1. Lọc và sắp xếp chuyến bay thực tế
+  const filteredFlights = flightData
+    .filter(f => airlines.includes(f.code))
+    .filter(f => stops.includes(String(f.stops)))
+    .sort((a, b) => {
+      if (sortBy === 'price') return a.price - b.price;
+      if (sortBy === 'dep') return a.dep.localeCompare(b.dep);
+      return a.dur.localeCompare(b.dur);
+    });
+
+  // 2. Tìm gợi ý tốt nhất từ danh sách đã lọc
+  const validFlights = [...filteredFlights].filter(f => f.seats > 0);
+  const cheapest = validFlights.length > 0 ? [...validFlights].sort((a,b) => a.price - b.price)[0] : null;
+  const fastest = validFlights.length > 0 ? [...validFlights].sort((a,b) => a.dur.localeCompare(b.dur))[0] : null;
 
   return (
     <div className="layout">
       <Sidebar activeItem="flights" onNavigate={onNavigate} />
       <div className="main-container">
-        <Header title="Tìm kiếm chuyến bay - Hệ thống Quản lý Đại lý" />
-        
+        <Header title="Tìm kiếm chuyến bay" />
         <main className="content">
-          {/* Stepper */}
-          <div className="stepper-container">
-            <div className="step active">
-              <div className="step-circle">1</div>
-              <p>Tìm kiếm</p>
-            </div>
-            <div className="step-line"></div>
-            <div className="step">
-              <div className="step-circle">2</div>
-              <p>Hành khách</p>
-            </div>
-            <div className="step-line"></div>
-            <div className="step">
-              <div className="step-circle">3</div>
-              <p>Thanh toán</p>
-            </div>
-            <div className="step-line"></div>
-            <div className="step">
-              <div className="step-circle">4</div>
-              <p>Hoàn tất</p>
-            </div>
-          </div>
-
-          {/* Search Box */}
           <Card className="search-box-card">
-            <div className="search-box-header">
+          <div className="search-box-header">
               <span className="material-icons-round text-primary">flight_takeoff</span>
               <h2>Tìm chuyến bay</h2>
             </div>
@@ -195,176 +219,253 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate }) => {
             {/* Main Results */}
             <div className="results-main">
               <div className="results-header">
-                <p>Hiển thị <strong>36</strong> chuyến bay</p>
+                <p>Hiển thị <strong>{filteredFlights.length}</strong> chuyến bay</p>
                 <div className="sort-box">
                   Sắp xếp theo: <strong>Giá thấp nhất</strong>
                   <span className="material-icons-round">expand_more</span>
                 </div>
               </div>
 
-              <div className="suggestions-section">
-                <h3><span className="material-icons-round text-warning">auto_awesome</span> Gợi ý tốt nhất cho bạn</h3>
-                <div className="suggestion-cards">
-                  <Card className="suggestion-card best-match">
-                    <div className="badge-top">PHÙ HỢP NHẤT</div>
-                    <div className="s-header">
-                      <span className="airline-logo vn">VN</span>
-                      <div>
-                        <p className="s-airline">Vietnam Airlines</p>
-                        <p className="s-plane">VN-280 • Airbus A321</p>
+              {(fastest || cheapest) && (
+                <div className="suggestions-section">
+                  <h3><span className="material-icons-round text-warning">auto_awesome</span> Gợi ý tốt nhất cho bạn</h3>
+                  <div className="suggestion-cards">
+                  {fastest && (
+                    <Card className="suggestion-card best-match">
+                      <div className="badge-top">PHÙ HỢP NHẤT</div>
+                      <div className="s-header">
+                        <span className="airline-logo" style={{ background: airlineStyle[fastest.code]?.bg, color: 'white' }}>{fastest.code}</span>
+                        <div>
+                          <p className="s-airline">{fastest.name}</p>
+                          <p className="s-plane">{fastest.flight} • {fastest.aircraft}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="s-route">
-                      <div className="time">
-                        <h4>08:00</h4>
-                        <p>HAN</p>
+                      <div className="s-route">
+                        <div className="time">
+                          <h4>{fastest.dep}</h4>
+                          <p>{fastest.from}</p>
+                        </div>
+                        <div className="duration">
+                          <p>{fastest.dur}</p>
+                          <div className="line-plane"><span className="material-icons-round">flight</span></div>
+                          <p className="text-success">{fastest.stops === 0 ? 'Bay thẳng' : '1 điểm dừng'}</p>
+                        </div>
+                        <div className="time text-right">
+                          <h4>{fastest.arr}</h4>
+                          <p>{fastest.to}</p>
+                        </div>
                       </div>
-                      <div className="duration">
-                        <p>2h 15m</p>
-                        <div className="line-plane"><span className="material-icons-round">flight</span></div>
-                        <p className="text-success">Bay thẳng</p>
+                      <div className="s-footer">
+                        <h3 className="price text-danger">{fastest.price.toLocaleString('vi')} đ</h3>
+                        <Button size="sm" onClick={() => handleSelectFlight(fastest)}>Chọn</Button>
                       </div>
-                      <div className="time text-right">
-                        <h4>10:15</h4>
-                        <p>SGN</p>
-                      </div>
-                    </div>
-                    <div className="s-footer">
-                      <h3 className="price text-danger">1,850,000 đ</h3>
-                      <Button size="sm">Chọn</Button>
-                    </div>
-                  </Card>
+                    </Card>
+                  )}
 
-                  <Card className="suggestion-card cheapest">
-                    <div className="badge-top bg-success">TIẾT KIỆM NHẤT</div>
-                    <div className="s-header">
-                      <span className="airline-logo vj">VJ</span>
-                      <div>
-                        <p className="s-airline">Vietjet Air</p>
-                        <p className="s-plane">VJ-123 • Airbus A320</p>
+                  {cheapest && cheapest.id !== fastest?.id && (
+                    <Card className="suggestion-card cheapest">
+                      <div className="badge-top bg-success">TIẾT KIỆM NHẤT</div>
+                      <div className="s-header">
+                        <span className="airline-logo" style={{ background: airlineStyle[cheapest.code]?.bg, color: 'white' }}>{cheapest.code}</span>
+                        <div>
+                          <p className="s-airline">{cheapest.name}</p>
+                          <p className="s-plane">{cheapest.flight} • {cheapest.aircraft}</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="s-route">
-                      <div className="time">
-                        <h4>06:30</h4>
-                        <p>HAN</p>
+                      <div className="s-route">
+                        <div className="time">
+                          <h4>{cheapest.dep}</h4>
+                          <p>{cheapest.from}</p>
+                        </div>
+                        <div className="duration">
+                          <p>{cheapest.dur}</p>
+                          <div className="line-plane"><span className="material-icons-round text-success">flight</span></div>
+                          <p className="text-success">{cheapest.stops === 0 ? 'Bay thẳng' : '1 điểm dừng'}</p>
+                        </div>
+                        <div className="time text-right">
+                          <h4>{cheapest.arr}</h4>
+                          <p>{cheapest.to}</p>
+                        </div>
                       </div>
-                      <div className="duration">
-                        <p>2h 10m</p>
-                        <div className="line-plane"><span className="material-icons-round text-success">flight</span></div>
-                        <p className="text-success">Bay thẳng</p>
+                      <div className="s-footer">
+                        <h3 className="price text-danger">{cheapest.price.toLocaleString('vi')} đ</h3>
+                        <Button size="sm" className="btn-success" onClick={() => handleSelectFlight(cheapest)}>Chọn</Button>
                       </div>
-                      <div className="time text-right">
-                        <h4>08:40</h4>
-                        <p>SGN</p>
-                      </div>
-                    </div>
-                    <div className="s-footer">
-                      <h3 className="price text-danger">1,250,000 đ</h3>
-                      <Button size="sm" className="btn-success">Chọn</Button>
-                    </div>
-                  </Card>
+                    </Card>
+                  )}
                 </div>
+              </div>
+              )}
+
+              {/* Sort pills */}
+              <div className="sort-pills">
+                <span className="sort-label">Sắp xếp:</span>
+                <button className={`sort-pill${sortBy==='price'?' active':''}`} onClick={()=>setSortBy('price')}>💰 Giá thấp nhất</button>
+                <button className={`sort-pill${sortBy==='dep'?' active':''}`} onClick={()=>setSortBy('dep')}>🕐 Khởi hành sớm</button>
+                <button className={`sort-pill${sortBy==='dur'?' active':''}`} onClick={()=>setSortBy('dur')}>⚡ Bay nhanh nhất</button>
               </div>
 
               <div className="flight-list-section">
-                {/* Flight Card 1 */}
-                <Card className="flight-list-card">
-                  <div className="badge-float">
-                    <span className="material-icons-round">flash_on</span> Bay nhanh nhất
+                {filteredFlights.length === 0 ? (
+                  <div className="no-results" style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-secondary)' }}>
+                    <span className="material-icons-round" style={{ fontSize: 48, color: 'var(--border)', marginBottom: 12 }}>flight_off</span>
+                    <p>Không tìm thấy chuyến bay phù hợp. Vui lòng thay đổi bộ lọc.</p>
                   </div>
-                  <div className="f-main">
-                    <div className="f-airline-col">
-                      <span className="airline-logo qh">QH</span>
-                      <div>
-                        <p className="f-airline-name">Bamboo Airways</p>
-                        <p className="f-plane-info">QH-202 • Boeing 787</p>
+                ) : filteredFlights.map(f => (
+                  <Card key={f.id} className="flight-list-card">
+                    {f.badge && <div className="badge-float"><span className="material-icons-round">flash_on</span>{f.badge}</div>}
+                    <div className="f-main">
+                      <div className="f-airline-col">
+                        <span className="f-logo" style={{ background: airlineStyle[f.code]?.bg, color: airlineStyle[f.code]?.color }}>{f.code}</span>
+                        <div>
+                          <p className="f-airline-name">{f.name}</p>
+                          <p className="f-plane-info">{f.flight} • {f.aircraft}</p>
+                        </div>
+                      </div>
+                      <div className="f-route-col">
+                        <div className="f-time"><h3>{f.dep}</h3><p>{f.from}</p></div>
+                        <div className="f-duration">
+                          <p>{f.dur}</p>
+                          <div className="f-line"><span className="material-icons-round">flight</span></div>
+                          <p className="text-success">Bay thẳng</p>
+                        </div>
+                        <div className="f-time text-right"><h3>{f.arr}</h3><p>{f.to}</p></div>
+                      </div>
+                      <div className="f-price-col">
+                        {f.oldPrice && <p className="f-old-price">{f.oldPrice.toLocaleString('vi')}</p>}
+                        <h2 className="f-price text-danger">{f.price.toLocaleString('vi')}</h2>
+                        <p className="f-unit">đ / khách</p>
+                        {f.seats === 0 ? (
+                          <span className="sold-out-tag">Hết chỗ</span>
+                        ) : f.seats <= 5 ? (
+                          <p className="seats-warn">⚠ Còn {f.seats} chỗ!</p>
+                        ) : null}
+                        <Button variant={f.seats===0?'outline':'primary'} className="select-flight-btn"
+                          onClick={()=>f.seats>0&&handleSelectFlight(f)}
+                          style={f.seats===0?{opacity:0.5,cursor:'not-allowed'}:{}}>
+                          {f.seats===0 ? 'Hết chỗ' : 'Chọn chuyến'}
+                        </Button>
                       </div>
                     </div>
-                    <div className="f-route-col">
-                      <div className="f-time">
-                        <h3>11:00</h3>
-                        <p>HAN</p>
+                    <div className="f-footer">
+                      <div className="f-baggage">
+                        <span><span className="material-icons-round">work_outline</span>{f.carry} xách tay</span>
+                        <span><span className="material-icons-round">luggage</span>{f.checked} ký gửi</span>
                       </div>
-                      <div className="f-duration">
-                        <p>2h 05m</p>
-                        <div className="f-line"><span className="material-icons-round">flight</span></div>
-                        <p className="text-success">Bay thẳng</p>
-                      </div>
-                      <div className="f-time text-right">
-                        <h3>13:05</h3>
-                        <p>SGN</p>
-                      </div>
+                      <button className="f-details-btn" onClick={() => setViewingFlight(f)} title="Xem chi tiết">
+                        Chi tiết <span className="material-icons-round">visibility</span>
+                      </button>
                     </div>
-                    <div className="f-price-col">
-                      <p className="f-old-price">2,100,000</p>
-                      <h2 className="f-price text-danger">1,950,000</h2>
-                      <p className="f-unit">/ khách</p>
-                      <Button variant="outline" className="select-flight-btn">Chọn chuyến</Button>
-                    </div>
-                  </div>
-                  <div className="f-footer">
-                    <div className="f-baggage">
-                      <span><span className="material-icons-round">work_outline</span> 7kg xách tay</span>
-                      <span><span className="material-icons-round">luggage</span> 20kg ký gửi</span>
-                    </div>
-                    <button className="f-details-btn">Chi tiết chuyến bay <span className="material-icons-round">expand_more</span></button>
-                  </div>
-                </Card>
-
-                {/* Flight Card 2 */}
-                <Card className="flight-list-card">
-                  <div className="f-main">
-                    <div className="f-airline-col">
-                      <span className="airline-logo vn">VN</span>
-                      <div>
-                        <p className="f-airline-name">Vietnam Airlines</p>
-                        <p className="f-plane-info">VN-214 • Airbus A321</p>
-                      </div>
-                    </div>
-                    <div className="f-route-col">
-                      <div className="f-time">
-                        <h3>14:00</h3>
-                        <p>HAN</p>
-                      </div>
-                      <div className="f-duration">
-                        <p>2h 15m</p>
-                        <div className="f-line"><span className="material-icons-round">flight</span></div>
-                        <p className="text-success">Bay thẳng</p>
-                      </div>
-                      <div className="f-time text-right">
-                        <h3>16:15</h3>
-                        <p>SGN</p>
-                      </div>
-                    </div>
-                    <div className="f-price-col">
-                      <h2 className="f-price text-danger">2,150,000</h2>
-                      <p className="f-unit">/ khách</p>
-                      <Button variant="outline" className="select-flight-btn">Chọn chuyến</Button>
-                    </div>
-                  </div>
-                  <div className="f-footer">
-                    <div className="f-baggage">
-                      <span><span className="material-icons-round">work_outline</span> 10kg xách tay</span>
-                      <span><span className="material-icons-round">luggage</span> 23kg ký gửi</span>
-                    </div>
-                    <button className="f-details-btn">Chi tiết chuyến bay <span className="material-icons-round">expand_more</span></button>
-                  </div>
-                </Card>
-
-                <div className="load-more">
-                  <button className="load-more-btn">Hiển thị thêm chuyến bay <span className="material-icons-round">expand_more</span></button>
-                </div>
+                  </Card>
+                ))}
               </div>
             </div>
           </div>
         </main>
       </div>
 
+      {/* Flight Detail Popup */}
+      {viewingFlight && (
+        <div className="popup-overlay" onClick={() => setViewingFlight(null)}>
+          <div className="popup-card" onClick={e => e.stopPropagation()}>
+            <div className="popup-header">
+              <div className="popup-title">
+                <div className="popup-icon" style={{ background: airlineStyle[viewingFlight.code]?.bg || '#0e74be', color: 'white' }}>
+                  <span className="material-icons-round">airplanemode_active</span>
+                </div>
+                <div>
+                  <h3>Chi tiết chuyến bay</h3>
+                  <p>Số hiệu: <strong>{viewingFlight.flight}</strong> ({viewingFlight.name})</p>
+                </div>
+              </div>
+              <button className="popup-close" onClick={() => setViewingFlight(null)}>
+                <span className="material-icons-round">close</span>
+              </button>
+            </div>
+            <div className="popup-body">
+              <div className="f-detail-grid">
+                <div className="f-detail-item">
+                  <span className="material-icons-round">flight_takeoff</span>
+                  <div>
+                    <p className="fd-label">Khởi hành</p>
+                    <p className="fd-val"><strong>{viewingFlight.dep}</strong> – {viewingFlight.from}</p>
+                    <p className="fd-sub">Sân bay Nội Bài</p>
+                  </div>
+                </div>
+                <div className="f-detail-line">
+                  <div className="line"></div>
+                  <span className="material-icons-round">schedule</span>
+                  <span>{viewingFlight.dur}</span>
+                </div>
+                <div className="f-detail-item">
+                  <span className="material-icons-round">flight_land</span>
+                  <div>
+                    <p className="fd-label">Hạ cánh</p>
+                    <p className="fd-val"><strong>{viewingFlight.arr}</strong> – {viewingFlight.to}</p>
+                    <p className="fd-sub">Sân bay Tân Sơn Nhất</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="f-amenities">
+                <div className="amenity">
+                  <span className="material-icons-round">work_outline</span>
+                  <span>{viewingFlight.carry} Xách tay</span>
+                </div>
+                <div className="amenity">
+                  <span className="material-icons-round">luggage</span>
+                  <span>{viewingFlight.checked} Ký gửi</span>
+                </div>
+                <div className="amenity">
+                  <span className="material-icons-round">event_seat</span>
+                  <span>{viewingFlight.seats} Ghế trống</span>
+                </div>
+                <div className="amenity">
+                  <span className="material-icons-round">airplane_ticket</span>
+                  <span>{viewingFlight.aircraft}</span>
+                </div>
+              </div>
+            </div>
+            <div className="popup-footer">
+              <Button variant="outline" onClick={() => setViewingFlight(null)}>Đóng</Button>
+              <Button onClick={() => handleSelectFlight(viewingFlight)}>Chọn chuyến này</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style>{`
         .layout { display: flex; min-height: 100vh; }
         .main-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-main); }
         .content { padding: var(--space-xl); max-width: 1200px; margin: 0 auto; width: 100%; }
+
+        @keyframes tdFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes tdSlideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .popup-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.45); backdrop-filter: blur(3px); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: tdFadeIn 0.2s ease; }
+        .popup-card { background: white; border-radius: 16px; width: 500px; max-width: 95vw; display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,0.18); animation: tdSlideUp 0.2s ease; overflow: hidden; }
+        .popup-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: white; }
+        .popup-title { display: flex; gap: 12px; align-items: center; }
+        .popup-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .popup-title h3 { font-size: 18px; margin: 0 0 2px; color: #1e293b; font-weight: 700; }
+        .popup-title p { font-size: 13px; color: #64748b; margin: 0; }
+        .popup-close { background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; color: #94a3b8; display: flex; transition: all 0.2s; }
+        .popup-close:hover { background: #f1f5f9; color: #1e293b; }
+        .popup-body { padding: 24px; }
+        .popup-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #f1f5f9; background: #f8fafc; }
+
+        .f-detail-grid { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; }
+        .f-detail-item { display: flex; gap: 16px; align-items: flex-start; }
+        .f-detail-item .material-icons-round { font-size: 24px; color: var(--primary); background: #eff6ff; padding: 10px; border-radius: 12px; }
+        .fd-label { font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .fd-val { font-size: 15px; color: #1e293b; margin: 0; }
+        .fd-sub { font-size: 12px; color: #64748b; margin: 2px 0 0; }
+        .f-detail-line { display: flex; align-items: center; gap: 12px; padding-left: 22px; color: #94a3b8; font-size: 12px; font-weight: 600; }
+        .f-detail-line .line { width: 2px; height: 30px; background: #e2e8f0; margin-left: 21px; position: absolute; margin-top: -45px; }
+
+        .f-amenities { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0; }
+        .amenity { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #475569; }
+        .amenity .material-icons-round { font-size: 18px; color: #64748b; }
 
         .text-primary { color: var(--primary); }
         .text-success { color: var(--success); }
@@ -373,15 +474,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate }) => {
         .text-right { text-align: right; }
         .bg-success { background: var(--success) !important; }
 
-        /* Stepper */
-        .stepper-container { display: flex; align-items: center; justify-content: center; margin-bottom: var(--space-xl); max-width: 600px; margin-left: auto; margin-right: auto; }
-        .step { display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
-        .step-circle { width: 32px; height: 32px; border-radius: 50%; background: white; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--text-muted); z-index: 2; }
-        .step p { font-size: 13px; font-weight: 500; color: var(--text-muted); }
-        .step.active .step-circle { background: var(--primary); border-color: var(--primary); color: white; }
-        .step.active p { color: var(--primary); }
-        .step-line { flex: 1; height: 2px; background: var(--border); margin: 0 10px; margin-bottom: 24px; }
-        .step.active + .step-line { background: var(--primary); }
+        .bg-success { background: var(--success) !important; }
 
         /* Search Box */
         .search-box-card { margin-bottom: var(--space-xl); padding: var(--space-lg); overflow: hidden; }
@@ -467,41 +560,49 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate }) => {
         .s-footer .price { font-size: 20px; }
         .btn-success { background: var(--success) !important; }
 
-        /* Flight List */
-        .flight-list-section { display: flex; flex-direction: column; gap: var(--space-md); }
-        .flight-list-card { position: relative; }
-        .badge-float { position: absolute; top: -12px; left: 24px; background: var(--bg-main); border: 1px solid var(--border); padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 4px; color: var(--text-secondary); }
-        .badge-float .material-icons-round { font-size: 14px; color: var(--text-main); }
-        
-        .f-main { display: flex; padding: var(--space-lg); gap: var(--space-xl); align-items: center; }
-        .f-airline-col { display: flex; align-items: center; gap: 12px; width: 220px; flex-shrink: 0; }
-        .f-airline-name { font-size: 14px; font-weight: 600; }
-        .f-plane-info { font-size: 12px; color: var(--text-muted); }
-        
-        .f-route-col { flex: 1; display: flex; align-items: center; justify-content: center; gap: var(--space-xl); }
-        .f-time h3 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
-        .f-time p { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
-        .f-duration { width: 140px; text-align: center; }
-        .f-duration p { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+        /* Sort pills */
+        .sort-pills { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+        .sort-label { font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        .sort-pill { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: white; font-size: 13px; cursor: pointer; color: var(--text-secondary); transition: all 0.2s; }
+        .sort-pill.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .sort-pill:hover:not(.active) { border-color: var(--primary); color: var(--primary); }
+
+        /* Flight card - fix overflow */
+        .f-logo { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; flex-shrink: 0; }
+        .f-logo.sm { width: 36px; height: 36px; border-radius: 8px; font-size: 11px; }
+        .f-main { display: flex; padding: 16px 20px; gap: 12px; align-items: center; min-width: 0; }
+        .f-airline-col { display: flex; align-items: center; gap: 10px; width: 180px; flex-shrink: 0; min-width: 0; }
+        .f-airline-name { font-size: 13px; font-weight: 700; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .f-plane-info { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+        .f-route-col { flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px; min-width: 0; }
+        .f-time h3 { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
+        .f-time p { font-size: 13px; color: var(--text-secondary); font-weight: 600; }
+        .f-duration { flex: 1; text-align: center; min-width: 80px; }
+        .f-duration p { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
         .f-line { display: flex; align-items: center; justify-content: center; position: relative; margin-bottom: 4px; }
         .f-line::before { content: ''; position: absolute; width: 100%; height: 2px; background: var(--border); z-index: 1; }
-        .f-line .material-icons-round { background: white; padding: 0 4px; z-index: 2; font-size: 20px; color: var(--text-muted); transform: rotate(90deg); }
-        
-        .f-price-col { width: 160px; text-align: right; flex-shrink: 0; }
-        .f-old-price { font-size: 12px; color: var(--text-muted); text-decoration: line-through; margin-bottom: 2px; }
-        .f-price { font-size: 22px; font-weight: 700; margin-bottom: 2px; }
-        .f-unit { font-size: 11px; color: var(--text-muted); margin-bottom: 12px; }
-        .select-flight-btn { width: 100%; }
+        .f-line .material-icons-round { background: white; padding: 0 4px; z-index: 2; font-size: 18px; color: var(--primary); transform: rotate(90deg); }
+        .f-price-col { width: 150px; text-align: right; flex-shrink: 0; }
+        .f-old-price { font-size: 11px; color: var(--text-muted); text-decoration: line-through; margin-bottom: 2px; }
+        .f-price { font-size: 18px; font-weight: 800; margin-bottom: 2px; color: #e53e3e; }
+        .f-unit { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+        .select-flight-btn { width: 100%; margin-top: 8px; font-size: 13px; padding: 8px 10px; }
+        .sold-out-tag { display: inline-block; background: #fee2e2; color: #dc2626; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
+        .seats-warn { font-size: 11px; color: #f59e0b; font-weight: 700; }
 
-        .f-footer { display: flex; justify-content: space-between; align-items: center; padding: 12px var(--space-lg); background: #fafafa; border-top: 1px solid var(--border); border-radius: 0 0 var(--radius-lg) var(--radius-lg); }
-        .f-baggage { display: flex; gap: var(--space-lg); font-size: 12px; color: var(--text-secondary); }
+        .f-footer { display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; background: #fafbfc; border-top: 1px solid var(--border); }
+        .f-baggage { display: flex; gap: 20px; font-size: 12px; color: var(--text-secondary); }
         .f-baggage span { display: flex; align-items: center; gap: 6px; }
         .f-baggage .material-icons-round { font-size: 16px; }
-        .f-details-btn { font-size: 13px; color: var(--primary); font-weight: 500; display: flex; align-items: center; gap: 4px; }
-        
-        .load-more { text-align: center; margin-top: var(--space-xl); }
-        .load-more-btn { font-size: 14px; color: var(--primary); font-weight: 500; display: inline-flex; align-items: center; gap: 4px; padding: 8px 16px; border-radius: 20px; transition: background 0.2s; }
-        .load-more-btn:hover { background: var(--primary-light); }
+        .f-details-btn { font-size: 13px; color: var(--primary); font-weight: 600; display: flex; align-items: center; gap: 4px; background: none; border: none; cursor: pointer; }
+
+        .f-detail-panel { padding: 16px 20px; background: #f8faff; border-top: 1px solid #e0e7ff; }
+        .f-detail-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .f-detail-item { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 160px; background: white; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); }
+        .f-detail-item .material-icons-round { font-size: 20px; color: var(--primary); }
+        .fd-label { font-size: 10px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; margin-bottom: 2px; }
+        .fd-val { font-size: 12px; font-weight: 600; color: var(--text-main); }
+
       `}</style>
     </div>
   );
