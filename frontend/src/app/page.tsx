@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Dashboard from './dashboard/Dashboard';
+import ChatBubble from '../components/ChatBubble';
 import FlightsPage from './flights/FlightsPage';
 import BookingPage from './booking/BookingPage';
 import TicketsPage from './tickets/TicketsPage';
@@ -137,6 +138,9 @@ export default function Home() {
           to { opacity: 1; }
         }
       `}</style>
+
+      {/* Chat Bubble - visible on all pages except login */}
+      <ChatBubble isVisible={currentPage !== 'login'} />
     </div>
   );
 }

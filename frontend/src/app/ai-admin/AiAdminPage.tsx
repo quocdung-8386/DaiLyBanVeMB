@@ -7,17 +7,12 @@ interface AiAdminPageProps {
 }
 
 const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<'recommendations' | 'chatbot' | 'config'>('recommendations');
+  const [activeTab, setActiveTab] = useState<'recommendations' | 'config'>('recommendations');
 
   const mockRecommendations = [
     { customer: 'Nguyễn Văn A', history: ['HAN→SGN', 'SGN→DAD'], suggested: 'VN123 - 01/07/2026', confidence: 92 },
     { customer: 'Trần Thị B', history: ['SGN→HAN'], suggested: 'VJ456 - 05/07/2026', confidence: 85 },
     { customer: 'Lê Văn C', history: ['HAN→SGN', 'HAN→DAD', 'HAN→PQC'], suggested: 'QH112 - 08/07/2026', confidence: 78 },
-  ];
-
-  const chatMessages = [
-    { role: 'user', content: 'Cho tôi xem các chuyến bay từ Hà Nội đi Phú Quốc vào tuần tới?' },
-    { role: 'bot', content: 'Hiện có 3 chuyến bay từ HAN → PQC tuần tới:\n• VN1234 - 02/07 08:00 - Economy từ 1.8tr VND\n• VJ5678 - 03/07 14:00 - Economy từ 1.2tr VND\n• QH9012 - 04/07 10:30 - Business từ 3.5tr VND\nBạn muốn đặt chuyến nào?' },
   ];
 
   return (
@@ -41,7 +36,6 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate }) => {
         <div className="tab-bar">
           {[
             { key: 'recommendations', label: 'Gợi ý chuyến bay', icon: 'recommend' },
-            { key: 'chatbot', label: 'Chatbot demo', icon: 'chat_bubble' },
             { key: 'config', label: 'Cấu hình AI', icon: 'tune' },
           ].map(tab => (
             <button
@@ -112,32 +106,6 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate }) => {
                   ))}
                 </tbody>
               </table>
-            </Card>
-          </div>
-        )}
-
-        {activeTab === 'chatbot' && (
-          <div className="chatbot-demo">
-            <Card className="chat-window">
-              <div className="chat-header">
-                <span className="material-icons-round">smart_toy</span>
-                <div>
-                  <h4>Skyward AI Assistant</h4>
-                  <p>Chatbot hỗ trợ đặt vé tự động</p>
-                </div>
-                <span className="online-dot"></span>
-              </div>
-              <div className="chat-messages">
-                {chatMessages.map((msg, i) => (
-                  <div key={i} className={`message ${msg.role}`}>
-                    <div className="bubble">{msg.content}</div>
-                  </div>
-                ))}
-              </div>
-              <div className="chat-input">
-                <input type="text" placeholder="Nhập câu hỏi để test chatbot..." />
-                <button><span className="material-icons-round">send</span></button>
-              </div>
             </Card>
           </div>
         )}
@@ -217,26 +185,6 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate }) => {
         .confidence-bar-wrap span { font-size: 13px; font-weight: 700; color: #1e293b; min-width: 35px; }
         .btn-send-rec { display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #eff6ff; color: #0e74be; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-family: inherit; }
         .btn-send-rec:hover { background: #dbeafe; }
-
-        /* Chatbot */
-        .chatbot-demo { max-width: 700px; }
-        .chat-window { padding: 0; overflow: hidden; }
-        .chat-header { display: flex; align-items: center; gap: 12px; padding: 20px 24px; background: linear-gradient(135deg, #1e40af, #0e74be); color: white; }
-        .chat-header .material-icons-round { font-size: 28px; }
-        .chat-header h4 { font-size: 16px; font-weight: 700; margin: 0 0 2px 0; }
-        .chat-header p { font-size: 12px; opacity: 0.8; margin: 0; }
-        .online-dot { width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-left: auto; box-shadow: 0 0 0 3px rgba(16,185,129,0.3); }
-        .chat-messages { padding: 20px 24px; min-height: 300px; display: flex; flex-direction: column; gap: 16px; background: #f8fafc; }
-        .message { display: flex; }
-        .message.user { justify-content: flex-end; }
-        .message.bot { justify-content: flex-start; }
-        .bubble { max-width: 80%; padding: 12px 16px; border-radius: 12px; font-size: 14px; line-height: 1.5; white-space: pre-line; }
-        .message.user .bubble { background: #0e74be; color: white; border-radius: 12px 12px 2px 12px; }
-        .message.bot .bubble { background: white; color: #1e293b; border: 1px solid #e2e8f0; border-radius: 12px 12px 12px 2px; }
-        .chat-input { display: flex; padding: 16px 24px; border-top: 1px solid #e2e8f0; gap: 12px; background: white; }
-        .chat-input input { flex: 1; padding: 10px 16px; border: 1px solid #e2e8f0; border-radius: 24px; outline: none; font-size: 14px; font-family: inherit; }
-        .chat-input input:focus { border-color: #0e74be; }
-        .chat-input button { width: 40px; height: 40px; border-radius: 50%; background: #0e74be; color: white; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; }
 
         /* Config */
         .config-card { padding: 28px; }
