@@ -7,7 +7,6 @@ import FlightsPage from './flights/FlightsPage';
 import BookingPage from './booking/BookingPage';
 import TicketsPage from './tickets/TicketsPage';
 import PaymentsPage from './payments/PaymentsPage';
-import CustomersPage from './customers/CustomersPage';
 import SettingsPage from './settings/SettingsPage';
 import IssueTicketPage from './tickets/issue/IssueTicketPage';
 import ExchangeTicketPage from './tickets/exchange/ExchangeTicketPage';
@@ -21,7 +20,6 @@ import ProfilePage from './profile/ProfilePage';
 import AuditLogPage from './audit-log/AuditLogPage';
 import PaymentHistoryPage from './payments/history/PaymentHistoryPage';
 import AiAdminPage from './ai-admin/AiAdminPage';
-import LoyaltyPage from './loyalty/LoyaltyPage';
 
 export interface TicketData {
   id: string;
@@ -70,10 +68,6 @@ export default function Home() {
         return <TicketsPage onNavigate={setCurrentPage} onCheckout={handleGoToCheckout} />;
       case 'payments':
         return <PaymentsPage onNavigate={setCurrentPage} view={paymentView} setView={setPaymentView} ticketData={selectedTicketData} />;
-      case 'customers':
-        return <CustomersPage onNavigate={setCurrentPage} />;
-      case 'loyalty':
-        return <LoyaltyPage onNavigate={setCurrentPage} />;
       case 'settings':
         return <SettingsPage onNavigate={setCurrentPage} />;
       case 'reports':
@@ -89,11 +83,11 @@ export default function Home() {
       case 'ai_admin':
         return <AiAdminPage onNavigate={setCurrentPage} />;
       case 'issue_ticket':
-        return <IssueTicketPage onNavigate={setCurrentPage} />;
+        return <IssueTicketPage onNavigate={setCurrentPage} ticketData={selectedTicketData} />;
       case 'exchange_ticket':
-        return <ExchangeTicketPage onNavigate={setCurrentPage} />;
+        return <ExchangeTicketPage onNavigate={setCurrentPage} ticketData={selectedTicketData} />;
       case 'cancel_ticket':
-        return <CancelTicketPage onNavigate={setCurrentPage} />;
+        return <CancelTicketPage onNavigate={setCurrentPage} ticketData={selectedTicketData} />;
       case 'refund-management':
         return <RefundManagementPage onNavigate={setCurrentPage} />;
       default:

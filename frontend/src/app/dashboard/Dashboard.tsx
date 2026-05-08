@@ -1,283 +1,277 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
-import Card from '../../components/Card';
-import Button from '../../components/Button';
 
-interface DashboardProps {
-  onNavigate?: (id: string) => void;
-}
+interface DashboardProps { onNavigate?: (id: string) => void; }
+
+const S = {
+  layout: { display:'flex', minHeight:'100vh', background:'#f0f4f8' } as React.CSSProperties,
+  main:   { flex:1, display:'flex', flexDirection:'column' as const, overflow:'hidden' },
+  body:   { flex:1, overflowY:'auto' as const, padding:'24px' },
+  grid3:  { display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:16, marginBottom:20 } as React.CSSProperties,
+  grid4:  { display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:20 } as React.CSSProperties,
+  grid2:  { display:'grid', gridTemplateColumns:'1.5fr 1fr', gap:16, marginBottom:20 } as React.CSSProperties,
+  card:   { background:'white', borderRadius:14, border:'1px solid #e2e8f0', padding:'20px', boxShadow:'0 1px 4px rgba(0,0,0,0.05)' } as React.CSSProperties,
+};
+
+const metricCards = [
+  { label:'Vé bán hôm nay', value:'147', sub:'+23 so với hôm qua', icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff' },
+  { label:'Chờ thanh toán', value:'32', sub:'Cần xử lý ngay', icon:'pending_actions', color:'#d97706', bg:'#fef3c7' },
+  { label:'Vé đã hủy hôm nay', value:'8', sub:'-3 so với hôm qua', icon:'cancel', color:'#dc2626', bg:'#fef2f2' },
+  { label:'Doanh thu vé (ngày)', value:'284M', sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
+];
+
+const departures = [
+  { flight:'VN123', route:'SGN → HAN', time:'08:30', seats:147, cap:180, status:'Đang lên máy bay', badge:'boarding' },
+  { flight:'VJ456', route:'HAN → DAD', time:'09:15', seats:189, cap:220, status:'Đã đóng cửa', badge:'closed' },
+  { flight:'QH321', route:'SGN → HPH', time:'10:00', seats:98,  cap:162, status:'Đang bán vé', badge:'open' },
+  { flight:'VN789', route:'HAN → PQC', time:'11:45', seats:165, cap:180, status:'Đang lên máy bay', badge:'boarding' },
+  { flight:'VJ101', route:'DAD → SGN', time:'13:20', seats:201, cap:220, status:'Đang bán vé', badge:'open' },
+];
+
+const topRoutes = [
+  { route:'SGN → HAN', tickets:1248, revenue:'3.2 tỷ', fill:85 },
+  { route:'HAN → SGN', tickets:1102, revenue:'2.9 tỷ', fill:78 },
+  { route:'SGN → DAD', tickets:876,  revenue:'1.8 tỷ', fill:62 },
+  { route:'HAN → PQC', tickets:654,  revenue:'2.1 tỷ', fill:71 },
+  { route:'SGN → HPH', tickets:432,  revenue:'1.1 tỷ', fill:55 },
+];
+
+const recentActivities = [
+  { type:'issued',    icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff', msg:'Vé VE-2847 được xuất thành công', detail:'PNR G7X9PQ · SGN→HAN · Nguyễn Văn An', time:'2 phút trước' },
+  { type:'payment',   icon:'payments',           color:'#16a34a', bg:'#dcfce7', msg:'Thanh toán hoàn tất vé VE-2846', detail:'3,250,000đ · VNPay · PNR A2B4C6',       time:'5 phút trước' },
+  { type:'cancelled', icon:'cancel',             color:'#dc2626', bg:'#fef2f2', msg:'Vé VE-2840 bị hủy',               detail:'PNR L9M1N2 · HAN→PQC · Lê Hữu Đạt',  time:'12 phút trước' },
+  { type:'boarding',  icon:'flight_takeoff',     color:'#7c3aed', bg:'#f5f3ff', msg:'VN123 bắt đầu lên máy bay',       detail:'Cổng B12 · Terminal 2 · 08:30',        time:'18 phút trước' },
+  { type:'issued',    icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff', msg:'Vé VE-2845 được xuất thành công', detail:'PNR X7Y8Z9 · SGN→HPH · Phạm Tuấn Khải','time':'25 phút trước' },
+  { type:'payment',   icon:'payments',           color:'#16a34a', bg:'#dcfce7', msg:'Thanh toán hoàn tất vé VE-2844', detail:'2,450,000đ · Tiền mặt · PNR R3S4T5',    time:'31 phút trước' },
+];
+
+const badgeStyle = (b: string) => {
+  if (b === 'boarding') return { bg:'#f5f3ff', color:'#7c3aed' };
+  if (b === 'closed')   return { bg:'#fef2f2', color:'#dc2626' };
+  return { bg:'#dcfce7', color:'#15803d' };
+};
 
 const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
-  const metrics = [
-    { title: 'Tổng doanh thu hôm nay', value: '1.250.000.000 VNĐ', change: '+12% so với hôm qua', icon: 'payments', trend: 'up' },
-    { title: 'Tổng số vé đã bán', value: '850 vé', change: '+5% so với hôm qua', icon: 'confirmation_number', trend: 'up' },
-    { title: 'Tổng số Booking', value: '1,240 booking', change: '+8% so với hôm qua', icon: 'event_seat', trend: 'up' },
-    { title: 'Khách hàng mới', value: '125 khách', change: '+15% so với hôm qua', icon: 'person_add', trend: 'up' },
-  ];
-
-  const recentBookings = [
-    { id: 'BK-9921', customer: 'Trần Văn B', status: 'Đã thanh toán', amount: '4.500.000 VNĐ', badge: 'success' },
-    { id: 'BK-9920', customer: 'Lê Thị C', status: 'Đang xử lý', amount: '2.100.000 VNĐ', badge: 'info' },
-    { id: 'BK-9919', customer: 'Phạm Văn D', status: 'Hủy', amount: '0 VNĐ', badge: 'danger' },
-  ];
-
-  const upcomingFlights = [
-    { id: 'VN-214', route: 'SGN → HAN', time: '14:30', status: 'Đúng giờ', badge: 'success' },
-    { id: 'VJ-881', route: 'HAN → PQC', time: '15:45', status: 'Delay', badge: 'warning' },
-    { id: 'QH-112', route: 'DAD → SGN', time: '16:15', status: 'Đúng giờ', badge: 'success' },
-  ];
+  const [activeTab, setActiveTab] = useState<'today'|'week'|'month'>('today');
 
   return (
-    <div className="layout">
+    <div style={S.layout}>
       <Sidebar activeItem="dashboard" onNavigate={onNavigate} />
-      <div className="main-container">
-        <Header />
-        <main className="content">
-          <div className="breadcrumb">
-            <span className="current">Dashboard</span>
-          </div>
+      <div style={S.main}>
+        <Header title="Airline Ticket Operations — Dashboard" />
+        <div style={S.body}>
 
-          <div className="page-header">
+          {/* Page header */}
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
             <div>
-              <h1>Tổng quan hệ thống</h1>
-              <p>Cập nhật nhanh tình hình kinh doanh hôm nay.</p>
+              <h1 style={{ margin:0, fontSize:22, fontWeight:800, color:'#0f172a' }}>Bảng điều hành vé</h1>
+              <p style={{ margin:'4px 0 0', fontSize:13, color:'#64748b' }}>Theo dõi hoạt động bán vé và vận hành chuyến bay theo thời gian thực</p>
+            </div>
+            <div style={{ display:'flex', gap:8, background:'white', border:'1px solid #e2e8f0', borderRadius:10, padding:4 }}>
+              {(['today','week','month'] as const).map(t => (
+                <button key={t} onClick={() => setActiveTab(t)}
+                  style={{ padding:'7px 16px', borderRadius:8, border:'none', fontWeight:700, fontSize:12, cursor:'pointer', background: activeTab===t ? '#1e40af' : 'transparent', color: activeTab===t ? 'white' : '#64748b', transition:'all 0.2s' }}>
+                  {t==='today'?'Hôm nay':t==='week'?'Tuần này':'Tháng này'}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="ai-insight">
-            <div className="ai-icon">
-              <span className="material-icons-round">smart_toy</span>
-            </div>
-            <div className="ai-content">
-              <h3>AI Insight</h3>
-              <p>"Tuyến bay Hà Nội - Phú Quốc đang có nhu cầu tăng cao 40% trong tuần tới. Đề xuất tăng cường quảng bá gói vé gia đình."</p>
-            </div>
-          </div>
-
-          <div className="metrics-grid">
-            {metrics.map((m, i) => (
-              <Card key={i} className="metric-card">
-                <div className="metric-header">
-                  <p className="metric-title">{m.title}</p>
-                  <div className="metric-icon-box">
-                    <span className="material-icons-round metric-icon">{m.icon}</span>
+          {/* Metric cards */}
+          <div style={S.grid4}>
+            {metricCards.map((m,i) => (
+              <div key={i} style={S.card}>
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:12 }}>
+                  <div style={{ width:44, height:44, borderRadius:12, background:m.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <span className="material-icons-round" style={{ fontSize:22, color:m.color }}>{m.icon}</span>
                   </div>
+                  <span className="material-icons-round" style={{ fontSize:16, color:'#94a3b8' }}>trending_up</span>
                 </div>
-                <h2 className="metric-value">{m.value}</h2>
-                <p className={`metric-change ${m.trend}`}>
-                  <span className="material-icons-round">{m.trend === 'up' ? 'trending_up' : 'trending_down'}</span>
-                  {m.change}
-                </p>
-              </Card>
+                <p style={{ margin:'0 0 2px', fontSize:12, color:'#64748b', fontWeight:600, textTransform:'uppercase' }}>{m.label}</p>
+                <p style={{ margin:'0 0 4px', fontSize:26, fontWeight:900, color:'#0f172a' }}>{m.value}</p>
+                <p style={{ margin:0, fontSize:11, color:'#94a3b8' }}>{m.sub}</p>
+              </div>
             ))}
           </div>
 
-          <div className="data-grid">
-            <div className="left-panel">
-              <Card title="Biểu đồ Doanh thu" headerAction={
-                <div className="btn-group">
-                  <Button variant="outline" size="sm">Tuần</Button>
-                  <Button variant="outline" size="sm">Tháng</Button>
+          {/* Charts Row */}
+          <div style={S.grid2}>
+            {/* Revenue Chart */}
+            <div style={S.card}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span className="material-icons-round" style={{ color:'#2563eb', fontSize:20 }}>insert_chart</span>
+                  <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Doanh thu tuần này (Triệu VNĐ)</h3>
                 </div>
-              }>
-                <div className="chart-placeholder">
-                  <div className="bar-chart">
-                    <div className="bar" style={{ height: '40%' }}></div>
-                    <div className="bar" style={{ height: '60%' }}></div>
-                    <div className="bar" style={{ height: '45%' }}></div>
-                    <div className="bar" style={{ height: '80%' }}></div>
-                    <div className="bar" style={{ height: '55%' }}></div>
+                <div style={{ display:'flex', gap:6, fontSize:11, color:'#64748b', fontWeight:700 }}>
+                  <span style={{ display:'flex', alignItems:'center', gap:4 }}><span style={{ width:8, height:8, borderRadius:2, background:'#2563eb' }} /> Quốc nội</span>
+                  <span style={{ display:'flex', alignItems:'center', gap:4 }}><span style={{ width:8, height:8, borderRadius:2, background:'#bae6fd' }} /> Quốc tế</span>
+                </div>
+              </div>
+              <div style={{ height:200, display:'flex', alignItems:'flex-end', justifyContent:'space-between', padding:'0 10px 20px', position:'relative', borderBottom:'1px solid #f1f5f9' }}>
+                {[
+                  { day: 'Th 2', val: 120, intl: 40 },
+                  { day: 'Th 3', val: 150, intl: 60 },
+                  { day: 'Th 4', val: 180, intl: 80 },
+                  { day: 'Th 5', val: 140, intl: 50 },
+                  { day: 'Th 6', val: 210, intl: 110 },
+                  { day: 'Th 7', val: 250, intl: 140 },
+                  { day: 'CN',  val: 190, intl: 90 },
+                ].map((d, i) => (
+                  <div key={i} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:8, width:'10%' }}>
+                    <div style={{ width:'100%', display:'flex', flexDirection:'column-reverse', gap:2, height:160 }}>
+                       <div style={{ width:'100%', height:`${d.val/3}%`, background:'#2563eb', borderRadius:'4px 4px 0 0', position:'relative' }} className="chart-bar">
+                         <div className="bar-tooltip">{d.val}M</div>
+                       </div>
+                       <div style={{ width:'100%', height:`${d.intl/3}%`, background:'#bae6fd', borderRadius:'2px 2px 0 0' }} />
+                    </div>
+                    <span style={{ fontSize:10, color:'#94a3b8', fontWeight:700 }}>{d.day}</span>
                   </div>
-                </div>
-              </Card>
-
-              <Card title="Danh sách Booking gần nhất" headerAction={<Button variant="secondary" size="sm">Xem tất cả</Button>}>
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Mã Booking</th>
-                      <th>Khách hàng</th>
-                      <th>Trạng thái</th>
-                      <th>Tổng tiền</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentBookings.map((b, i) => (
-                      <tr key={i}>
-                        <td><strong>{b.id}</strong></td>
-                        <td>{b.customer}</td>
-                        <td><span className={`badge badge-${b.badge}`}>{b.status}</span></td>
-                        <td>{b.amount}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </Card>
+                ))}
+              </div>
             </div>
 
-            <div className="right-panel">
-              <Card title="Phân loại khách hàng">
-                <div className="pie-chart-container">
-                  <div className="pie-chart-placeholder"></div>
-                  <ul className="legend">
-                    <li><span className="dot dot-primary"></span> Khách lẻ <span>45%</span></li>
-                    <li><span className="dot dot-info"></span> Đại lý <span>30%</span></li>
-                    <li><span className="dot dot-muted"></span> VIP <span>25%</span></li>
-                  </ul>
+            {/* Class Distribution Chart */}
+            <div style={S.card}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20 }}>
+                <span className="material-icons-round" style={{ color:'#7c3aed', fontSize:20 }}>pie_chart</span>
+                <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Phân bổ hạng vé</h3>
+              </div>
+              <div style={{ display:'flex', alignItems:'center', gap:30, height:200 }}>
+                <div style={{ position:'relative', width:140, height:140, borderRadius:'50%', background:'conic-gradient(#1e40af 0% 65%, #7c3aed 65% 85%, #f59e0b 85% 100%)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                  <div style={{ width:80, height:80, borderRadius:'50%', background:'white', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+                    <span style={{ fontSize:20, fontWeight:900, color:'#1e293b' }}>850</span>
+                    <span style={{ fontSize:9, color:'#94a3b8', fontWeight:700 }}>TỔNG VÉ</span>
+                  </div>
                 </div>
-              </Card>
-
-              <Card title="Chuyến bay sắp khởi hành" headerAction={<a href="#" className="link-text">Lịch trình bay</a>}>
-                <div className="flight-list">
-                  {upcomingFlights.map((f, i) => (
-                    <div key={i} className="flight-item">
-                      <div className="flight-info">
-                        <div className="flight-icon">
-                          <span className="material-icons-round">flight_takeoff</span>
+                <div style={{ flex:1, display:'flex', flexDirection:'column', gap:12 }}>
+                  {[
+                    { label:'Economy', pct:65, color:'#1e40af', val:552 },
+                    { label:'Business', pct:20, color:'#7c3aed', val:170 },
+                    { label:'First Class', pct:15, color:'#f59e0b', val:128 },
+                  ].map((c, i) => (
+                    <div key={i}>
+                      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                          <div style={{ width:10, height:10, borderRadius:3, background:c.color }} />
+                          <span style={{ fontSize:12, fontWeight:700, color:'#475569' }}>{c.label}</span>
                         </div>
-                        <div>
-                          <p className="flight-id">{f.id}</p>
-                          <p className="flight-route">{f.route}</p>
-                        </div>
+                        <span style={{ fontSize:12, fontWeight:800, color:'#1e293b' }}>{c.pct}%</span>
                       </div>
-                      <div className="flight-status-container">
-                        <p className="flight-time">{f.time}</p>
-                        <span className={`badge badge-${f.badge}`}>{f.status}</span>
+                      <div style={{ height:5, background:'#f1f5f9', borderRadius:10, overflow:'hidden' }}>
+                        <div style={{ width:`${c.pct}%`, height:'100%', background:c.color, borderRadius:10 }} />
                       </div>
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
             </div>
           </div>
-        </main>
+
+          <div style={S.grid2}>
+            {/* Departures */}
+            <div style={S.card}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                  <span className="material-icons-round" style={{ color:'#2563eb', fontSize:20 }}>flight_takeoff</span>
+                  <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Chuyến bay sắp khởi hành</h3>
+                </div>
+                <button onClick={() => onNavigate?.('flights')} style={{ background:'#eff6ff', border:'none', borderRadius:8, padding:'5px 12px', fontSize:12, fontWeight:700, color:'#2563eb', cursor:'pointer' }}>Xem tất cả</button>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                {departures.map((d,i) => {
+                  const bs = badgeStyle(d.badge);
+                  const pct = Math.round(d.seats/d.cap*100);
+                  return (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #f1f5f9', cursor:'pointer' }} onClick={() => onNavigate?.('flights')}>
+                      <div style={{ textAlign:'center', minWidth:48 }}>
+                        <p style={{ margin:0, fontSize:15, fontWeight:900, color:'#0f172a', fontFamily:'monospace' }}>{d.flight}</p>
+                        <p style={{ margin:0, fontSize:10, color:'#94a3b8', fontWeight:600 }}>{d.time}</p>
+                      </div>
+                      <div style={{ flex:1 }}>
+                        <p style={{ margin:'0 0 4px', fontSize:13, fontWeight:700, color:'#1e293b' }}>{d.route}</p>
+                        <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                          <div style={{ flex:1, height:4, background:'#e2e8f0', borderRadius:4, overflow:'hidden' }}>
+                            <div style={{ width:`${pct}%`, height:'100%', background: pct>90?'#dc2626':pct>70?'#d97706':'#2563eb', borderRadius:4 }} />
+                          </div>
+                          <span style={{ fontSize:10, color:'#64748b', fontWeight:700, whiteSpace:'nowrap' }}>{d.seats}/{d.cap}</span>
+                        </div>
+                      </div>
+                      <span style={{ background:bs.bg, color:bs.color, fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:8, whiteSpace:'nowrap' }}>{d.status}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Right column */}
+            <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+              {/* Top Routes */}
+              <div style={S.card}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+                  <span className="material-icons-round" style={{ color:'#7c3aed', fontSize:20 }}>bar_chart</span>
+                  <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Top tuyến bay</h3>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                  {topRoutes.map((r,i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                      <span style={{ fontSize:12, fontWeight:800, color:'#94a3b8', minWidth:16 }}>#{i+1}</span>
+                      <div style={{ flex:1 }}>
+                        <div style={{ display:'flex', justifyContent:'space-between', marginBottom:3 }}>
+                          <span style={{ fontSize:12, fontWeight:700, color:'#1e293b' }}>{r.route}</span>
+                          <span style={{ fontSize:11, color:'#2563eb', fontWeight:700 }}>{r.revenue}</span>
+                        </div>
+                        <div style={{ height:4, background:'#e2e8f0', borderRadius:4, overflow:'hidden' }}>
+                          <div style={{ width:`${r.fill}%`, height:'100%', background:'linear-gradient(90deg,#1e40af,#3b82f6)', borderRadius:4 }} />
+                        </div>
+                      </div>
+                      <span style={{ fontSize:11, color:'#64748b', minWidth:28, textAlign:'right' }}>{r.fill}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent Activities */}
+              <div style={{ ...S.card, flex:1 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
+                  <span className="material-icons-round" style={{ color:'#d97706', fontSize:20 }}>history</span>
+                  <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Hoạt động gần đây</h3>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {recentActivities.map((a,i) => (
+                    <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                      <div style={{ width:32, height:32, borderRadius:8, background:a.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                        <span className="material-icons-round" style={{ fontSize:16, color:a.color }}>{a.icon}</span>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <p style={{ margin:'0 0 2px', fontSize:13, fontWeight:700, color:'#1e293b' }}>{a.msg}</p>
+                        <p style={{ margin:0, fontSize:11, color:'#64748b' }}>{a.detail}</p>
+                      </div>
+                      <span style={{ fontSize:10, color:'#94a3b8', whiteSpace:'nowrap' }}>{a.time}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <style>{`
+          .chart-bar:hover { filter: brightness(1.1); cursor: pointer; }
+          .chart-bar:hover .bar-tooltip { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+          .bar-tooltip {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%) translateY(0);
+            background: #1e293b; color: white; padding: 4px 8px; borderRadius: 6px;
+            font-size: 10px; font-weight: 700; opacity: 0; pointer-events: none;
+            transition: all 0.2s; white-space: nowrap; z-index: 10;
+          }
+          .bar-tooltip::after {
+            content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+            border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid #1e293b;
+          }
+        `}</style>
       </div>
-
-      <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
-
-      <style>{`
-        .page-header h1 { margin-bottom: 4px; }
-        .page-header p { color: var(--text-secondary); font-size: 14px; }
-
-        .ai-insight {
-          background: linear-gradient(135deg, #1e40af 0%, #2563eb 100%);
-          color: white;
-          padding: 24px;
-          border-radius: var(--radius-lg);
-          display: flex;
-          align-items: center;
-          gap: 20px;
-          margin-bottom: var(--space-xl);
-          box-shadow: 0 10px 25px rgba(37, 99, 235, 0.2);
-          position: relative;
-          overflow: hidden;
-        }
-        .ai-insight::after {
-          content: '';
-          position: absolute;
-          top: -50%;
-          right: -10%;
-          width: 200px;
-          height: 200px;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: 50%;
-        }
-        .ai-icon {
-          width: 52px;
-          height: 52px;
-          background: rgba(255, 255, 255, 0.2);
-          backdrop-filter: blur(4px);
-          border-radius: 14px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
-        }
-        .ai-icon .material-icons-round { font-size: 28px; }
-        .ai-content h3 { color: white; font-size: 17px; font-weight: 700; margin-bottom: 4px; }
-        .ai-content p { font-size: 14px; opacity: 0.9; line-height: 1.5; font-weight: 500; }
-
-        .metrics-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-          gap: var(--space-lg);
-          margin-bottom: var(--space-xl);
-        }
-        .metric-card { padding: 24px; }
-        .metric-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-        .metric-icon-box {
-          width: 44px;
-          height: 44px;
-          background: var(--primary-light);
-          color: var(--primary);
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .metric-icon { font-size: 22px; }
-        .metric-title { font-size: 13px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .metric-value { font-size: 26px; font-weight: 800; color: var(--text-main); margin-bottom: 8px; letter-spacing: -0.02em; }
-        .metric-change { font-size: 13px; display: flex; align-items: center; gap: 4px; font-weight: 600; }
-        .metric-change.up { color: var(--success); }
-        .metric-change .material-icons-round { font-size: 16px; }
-
-        .data-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-xl); }
-        .left-panel, .right-panel { display: flex; flex-direction: column; gap: var(--space-xl); }
-
-        .chart-placeholder { height: 220px; display: flex; align-items: flex-end; padding: 20px 0 10px; }
-        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; height: 100%; gap: 12px; }
-        .bar { 
-          background: linear-gradient(to top, var(--primary-light), var(--primary)); 
-          width: 100%; 
-          border-radius: 6px 6px 2px 2px; 
-          transition: all 0.3s;
-          opacity: 0.8;
-        }
-        .bar:hover { opacity: 1; transform: scaleX(1.05); }
-
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
-        .data-table td { padding: 16px; font-size: 14px; border-bottom: 1px solid var(--border); color: var(--text-main); }
-        .data-table tr:last-child td { border-bottom: none; }
-
-        .pie-chart-container { display: flex; flex-direction: column; align-items: center; gap: 24px; padding: 10px 0; }
-        .pie-chart-placeholder {
-          width: 140px;
-          height: 140px;
-          border-radius: 50%;
-          background: conic-gradient(var(--primary) 0% 45%, #60a5fa 45% 75%, #e2e8f0 75% 100%);
-          box-shadow: inset 0 0 0 30px white;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          position: relative;
-        }
-        .pie-chart-placeholder::after {
-          content: '45%';
-          font-size: 20px;
-          font-weight: 800;
-          color: var(--text-main);
-        }
-        .legend { width: 100%; display: flex; flex-direction: column; gap: 10px; }
-        .legend li { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 500; color: var(--text-secondary); }
-        .legend li span:last-child { margin-left: auto; font-weight: 700; color: var(--text-main); }
-        .dot { width: 10px; height: 10px; border-radius: 50%; }
-        .dot-primary { background: var(--primary); }
-        .dot-info { background: #60a5fa; }
-        .dot-muted { background: #e2e8f0; }
-
-        .flight-list { display: flex; flex-direction: column; gap: 12px; }
-        .flight-item { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #f8fafc; border-radius: 12px; border: 1px solid #f1f5f9; transition: all 0.2s; }
-        .flight-item:hover { border-color: var(--primary-light); background: white; shadow: var(--shadow-sm); }
-        .flight-info { display: flex; align-items: center; gap: 16px; }
-        .flight-icon { width: 40px; height: 40px; border-radius: 10px; background: white; display: flex; align-items: center; justify-content: center; color: var(--primary); border: 1px solid #e2e8f0; }
-        .flight-id { font-size: 14px; font-weight: 700; color: var(--text-main); margin: 0; }
-        .flight-route { font-size: 12px; color: var(--text-secondary); margin: 2px 0 0; font-weight: 500; }
-        .flight-status-container { text-align: right; }
-        .flight-time { font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-      `}</style>
     </div>
   );
 };

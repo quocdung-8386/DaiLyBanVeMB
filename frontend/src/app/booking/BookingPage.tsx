@@ -15,6 +15,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
   const [flightData, setFlightData] = useState<any>(initialFlight || null);
   const [editingBooking, setEditingBooking] = useState<any>(null);
   const [viewingItem, setViewingItem] = useState<any>(null);
+  const [actionType, setActionType] = useState<'hold' | 'delete' | 'success' | null>(null);
 
   const [bookingsList, setBookingsList] = useState([
     { id: 'BKG-8A2F9', customer: 'Nguyễn Văn Trường', phone: '0901234567', routeFrom: 'SGN', routeTo: 'HAN', flightId: 'VN-214', flightClass: 'Phổ thông', date: '12 Thg 10, 2023', time: '08:30 AM', total: '3,250,000', status: 'Đã xác nhận', badge: 'success', initials: 'NT' },
@@ -42,9 +43,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
       initials: (customerName || 'KH').substring(0, 2).toUpperCase()
     };
     setBookingsList([newBooking, ...bookingsList]);
-    setView('list');
-    setCustomerName('');
-    setCustomerPhone('');
+    setActionType('hold');
+    setTimeout(() => {
+      setActionType(null);
+      setView('list');
+      setCustomerName('');
+      setCustomerPhone('');
+    }, 2000);
   };
 
   const handleConfirmBooking = () => {
@@ -194,7 +199,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                             <button className="action-btn view" title="Xem chi tiết" onClick={() => setViewingItem(b)}><span className="material-icons-round">visibility</span></button>
                             <button className="action-btn issue" title="Xuất vé" onClick={() => onNavigate && onNavigate('issue_ticket')}><span className="material-icons-round">receipt</span></button>
                             <button className="action-btn edit" title="Chỉnh sửa" onClick={() => setEditingBooking(b)}><span className="material-icons-round">edit</span></button>
-                            <button className="action-btn delete" title="Xóa"><span className="material-icons-round">delete</span></button>
+                            <button className="action-btn delete" title="Xóa" onClick={() => setActionType('delete')}><span className="material-icons-round">delete</span></button>
                           </div>
                         </td>
                       </tr>
@@ -527,6 +532,39 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
             </div>
             <div className="popup-footer">
               <button className="btn-save" onClick={() => setViewingItem(null)}>Đóng</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Feedback Modals */}
+      {actionType && (
+        <div className="popup-overlay" onClick={() => setActionType(null)}>
+          <div className="popup-card" style={{ width: 380 }} onClick={e => e.stopPropagation()}>
+            <div className="popup-body" style={{ textAlign: 'center', padding: '32px 24px' }}>
+              <div style={{ 
+                width: 64, height: 64, borderRadius: '50%', 
+                background: actionType === 'delete' ? '#fee2e2' : '#dcfce7', 
+                color: actionType === 'delete' ? '#dc2626' : '#16a34a',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 16px', fontSize: 32
+              }}>
+                <span className="material-icons-round">{actionType === 'delete' ? 'delete_forever' : 'check_circle'}</span>
+              </div>
+              <h3 style={{ margin: '0 0 8px', fontSize: 18 }}>{actionType === 'delete' ? 'Xác nhận xóa?' : 'Thành công!'}</h3>
+              <p style={{ margin: 0, fontSize: 14, color: '#64748b' }}>
+                {actionType === 'delete' ? 'Bạn có chắc chắn muốn xóa yêu cầu đặt chỗ này không?' : actionType === 'hold' ? 'Hệ thống đã ghi nhận giữ chỗ trong vòng 24h.' : 'Thao tác đã được thực hiện.'}
+              </p>
+            </div>
+            <div className="popup-footer" style={{ background: 'white', justifyContent: 'center', paddingBottom: 24 }}>
+              {actionType === 'delete' ? (
+                <>
+                  <button className="btn-cancel" onClick={() => setActionType(null)}>Hủy bỏ</button>
+                  <button className="btn-save" style={{ background: '#dc2626' }} onClick={() => setActionType(null)}>Xác nhận xóa</button>
+                </>
+              ) : (
+                <button className="btn-save" onClick={() => setActionType(null)}>Đã hiểu</button>
+              )}
             </div>
           </div>
         </div>

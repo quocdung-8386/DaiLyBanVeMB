@@ -31,8 +31,6 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
         { id: 'flights', label: 'Chuyến bay', icon: 'flight' },
         { id: 'booking', label: 'Đặt chỗ', icon: 'event_seat' },
         { id: 'tickets', label: 'Vé máy bay', icon: 'confirmation_number' },
-        { id: 'customers', label: 'Khách hàng', icon: 'people' },
-        { id: 'loyalty', label: 'Tích điểm', icon: 'card_membership' },
         { id: 'refund-management', label: 'Hoàn vé', icon: 'assignment_return' },
       ],
     },

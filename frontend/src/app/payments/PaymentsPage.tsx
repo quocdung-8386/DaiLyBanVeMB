@@ -19,7 +19,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
   const [localTicket, setLocalTicket] = useState<TicketData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState('');
-  
+
   const currentTicket = ticketData || localTicket;
   const [amountCollected, setAmountCollected] = useState<string>('');
 
@@ -40,7 +40,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
     if (!searchQuery) return;
     const query = searchQuery.trim().toUpperCase();
     const found = mockTickets.find(t => t.pnr.toUpperCase() === query || t.id === query);
-    
+
     if (found) {
       setLocalTicket(found);
       setSearchError('');
@@ -58,48 +58,48 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
           </button>
         )}
       </div>
-      
+
       <div className="pm-content">
         {view === 'checkout' && (
           <>
 
-              <div className="payment-mode-tabs mb-lg">
-                <button className={`pm-tab ${paymentMode === 'pos' ? 'active' : ''}`} onClick={() => setPaymentMode('pos')}>
-                  <span className="material-icons-round">point_of_sale</span>
-                  Thu tiền tại quầy
-                </button>
-                <button className={`pm-tab ${paymentMode === 'remote' ? 'active' : ''}`} onClick={() => setPaymentMode('remote')}>
-                  <span className="material-icons-round">qr_code_2</span>
-                  Gửi yêu cầu thanh toán
-                </button>
-              </div>
+            <div className="payment-mode-tabs mb-lg">
+              <button className={`pm-tab ${paymentMode === 'pos' ? 'active' : ''}`} onClick={() => setPaymentMode('pos')}>
+                <span className="material-icons-round">point_of_sale</span>
+                Thu tiền tại quầy
+              </button>
+              <button className={`pm-tab ${paymentMode === 'remote' ? 'active' : ''}`} onClick={() => setPaymentMode('remote')}>
+                <span className="material-icons-round">qr_code_2</span>
+                Gửi yêu cầu thanh toán
+              </button>
+            </div>
 
-              {!currentTicket ? (
-                <div className="search-booking-container">
-                  <Card className="search-card">
-                    <div className="search-icon-wrapper">
-                      <span className="material-icons-round">search</span>
-                    </div>
-                    <h2>Tìm kiếm thông tin thanh toán</h2>
-                    <p className="text-muted mb-lg">Nhập mã Booking (PNR) hoặc Mã vé để lấy dữ liệu thanh toán.</p>
-                    
-                    <div className="search-input-group">
-                      <input 
-                        type="text" 
-                        placeholder="VD: G7X9PQ hoặc 738-29481726" 
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                      />
-                      <Button className="btn-primary-alt" onClick={handleSearch}>Tìm kiếm</Button>
-                    </div>
-                    {searchError && <p className="text-danger mt-sm text-sm" style={{ textAlign: 'left' }}>{searchError}</p>}
-                  </Card>
-                </div>
-              ) : (
-                <div className="checkout-layout">
-                  <div className="checkout-main">
-                    <Card className="checkout-card mb-lg">
+            {!currentTicket ? (
+              <div className="search-booking-container">
+                <Card className="search-card">
+                  <div className="search-icon-wrapper">
+                    <span className="material-icons-round">search</span>
+                  </div>
+                  <h2>Tìm kiếm thông tin thanh toán</h2>
+                  <p className="text-muted mb-lg">Nhập mã Booking (PNR) hoặc Mã vé để lấy dữ liệu thanh toán.</p>
+
+                  <div className="search-input-group">
+                    <input
+                      type="text"
+                      placeholder="VD: G7X9PQ hoặc 738-29481726"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    />
+                    <Button className="btn-primary-alt" onClick={handleSearch}>Tìm kiếm</Button>
+                  </div>
+                  {searchError && <p className="text-danger mt-sm text-sm" style={{ textAlign: 'left' }}>{searchError}</p>}
+                </Card>
+              </div>
+            ) : (
+              <div className="checkout-layout">
+                <div className="checkout-main">
+                  <Card className="checkout-card mb-lg">
                     <div className="card-title">
                       <span className="material-icons-round text-primary">receipt</span>
                       <h3>Thông tin vé</h3>
@@ -171,8 +171,8 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         </label>
                         {posMethod === 'transfer' && (
                           <div className="sub-form transfer-details">
-                            <p className="mb-sm"><strong>STK:</strong> 19034567890011 - Techcombank</p>
-                            <p className="mb-sm"><strong>Chủ tài khoản:</strong> CTY TNHH AIRLINE SYSTEM</p>
+                            <p className="mb-sm"><strong>STK:</strong> 9603052056666 - MB BANK</p>
+                            <p className="mb-sm"><strong>Chủ tài khoản:</strong> NONG QUOC DUNG</p>
                             <Button variant="outline" size="sm" className="w-full mt-sm btn-upload"><span className="material-icons-round">upload_file</span> Tải lên biên lai / UNC</Button>
                           </div>
                         )}
@@ -245,7 +245,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         <span className="material-icons-round">done_all</span>
                         Xác nhận thu tiền
                       </Button>
-                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => { if(onClose) onClose(); else if(onNavigate) onNavigate('booking'); }}>
+                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => { if (onClose) onClose(); else if (onNavigate) onNavigate('booking'); }}>
                         Hủy giao dịch
                       </Button>
                       {paymentMode === 'remote' && <p className="secure-note"><span className="material-icons-round">info</span> Giao dịch sẽ tự động xác nhận khi nhận được tiền</p>}
@@ -253,100 +253,100 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                   </Card>
                 </div>
               </div>
-              )}
-            </>
-          )}
+            )}
+          </>
+        )}
 
-          {view === 'success' && (
-            <div className="success-view">
-              <div className="success-banner mb-xl">
-                <div className="success-icon">
-                  <span className="material-icons-round">check_circle</span>
-                </div>
-                <h2>Thanh toán thành công!</h2>
-                <p>Booking <strong>{currentTicket?.pnr ?? 'N/A'}</strong> đã được thanh toán và vé đã được xuất.</p>
-                <div className="flex-row gap-sm mt-md justify-center">
-                  <Button variant="outline" onClick={() => { if(onClose) onClose(); onNavigate && onNavigate('payment_history'); }}>Xem lịch sử giao dịch</Button>
-                  <Button className="btn-primary-alt" onClick={() => window.print()}>
-                    <span className="material-icons-round">print</span>
-                    In vé máy bay
-                  </Button>
-                </div>
+        {view === 'success' && (
+          <div className="success-view">
+            <div className="success-banner mb-xl">
+              <div className="success-icon">
+                <span className="material-icons-round">check_circle</span>
               </div>
-
-              <div className="tickets-display">
-                <h3>Boarding Pass — {currentTicket?.customer ?? 'Hành khách'}</h3>
-                <div className="tickets-grid mt-md">
-                  {/* Printed ticket with real data */}
-                  <Card className="issued-ticket-card">
-                    <div className="it-header bg-primary">
-                      <div className="flex-row justify-between">
-                        <span className="airline-logo bg-white text-primary font-bold">VN</span>
-                        <span className="text-white font-monospace">PNR: {currentTicket?.pnr ?? 'N/A'}</span>
-                      </div>
-                      <h2 className="text-white mt-md">BOARDING PASS</h2>
-                    </div>
-                    <div className="it-body">
-                      <div className="it-route mb-md">
-                        <div className="loc">
-                          <h2>{currentTicket?.routeFrom ?? '---'}</h2>
-                          <p>{currentTicket?.airportFrom ?? 'N/A'}</p>
-                        </div>
-                        <div className="dur">
-                          <span className="material-icons-round text-primary">flight_takeoff</span>
-                          <p>Bay thẳng</p>
-                        </div>
-                        <div className="loc text-right">
-                          <h2>{currentTicket?.routeTo ?? '---'}</h2>
-                          <p>{currentTicket?.airportTo ?? 'N/A'}</p>
-                        </div>
-                      </div>
-                      <div className="it-info-grid">
-                        <div>
-                          <p className="label">Hành khách</p>
-                          <p className="val">{currentTicket?.customer?.toUpperCase() ?? 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="label">Ngày bay</p>
-                          <p className="val">{currentTicket?.date?.split(' ')[0] ?? 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="label">Giờ khởi hành</p>
-                          <p className="val">{currentTicket?.date?.split(' ')[1] ?? 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="label">Ghế (Seat)</p>
-                          <p className="val font-bold">{currentTicket?.seat ?? 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="label">Cổng soát vé</p>
-                          <p className="val font-bold">{currentTicket?.gate ?? 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="label">Nhà ga</p>
-                          <p className="val">{currentTicket?.terminal ?? 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="label">Lên máy bay</p>
-                          <p className="val font-bold">{currentTicket?.boarding ?? 'N/A'}</p>
-                        </div>
-                        <div>
-                          <p className="label">Mã vé (Ticket No.)</p>
-                          <p className="val">{currentTicket?.id ?? 'N/A'}</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="it-footer">
-                      <Button variant="outline" size="sm" className="w-full" onClick={() => window.print()}>
-                        <span className="material-icons-round">print</span>
-                        In vé máy bay
-                      </Button>
-                    </div>
-                  </Card>
-                </div>
+              <h2>Thanh toán thành công!</h2>
+              <p>Booking <strong>{currentTicket?.pnr ?? 'N/A'}</strong> đã được thanh toán và vé đã được xuất.</p>
+              <div className="flex-row gap-sm mt-md justify-center">
+                <Button variant="outline" onClick={() => { if (onClose) onClose(); onNavigate && onNavigate('payment_history'); }}>Xem lịch sử giao dịch</Button>
+                <Button className="btn-primary-alt" onClick={() => window.print()}>
+                  <span className="material-icons-round">print</span>
+                  In vé máy bay
+                </Button>
               </div>
             </div>
-          )}
+
+            <div className="tickets-display">
+              <h3>Boarding Pass — {currentTicket?.customer ?? 'Hành khách'}</h3>
+              <div className="tickets-grid mt-md">
+                {/* Printed ticket with real data */}
+                <Card className="issued-ticket-card">
+                  <div className="it-header bg-primary">
+                    <div className="flex-row justify-between">
+                      <span className="airline-logo bg-white text-primary font-bold">VN</span>
+                      <span className="text-white font-monospace">PNR: {currentTicket?.pnr ?? 'N/A'}</span>
+                    </div>
+                    <h2 className="text-white mt-md">BOARDING PASS</h2>
+                  </div>
+                  <div className="it-body">
+                    <div className="it-route mb-md">
+                      <div className="loc">
+                        <h2>{currentTicket?.routeFrom ?? '---'}</h2>
+                        <p>{currentTicket?.airportFrom ?? 'N/A'}</p>
+                      </div>
+                      <div className="dur">
+                        <span className="material-icons-round text-primary">flight_takeoff</span>
+                        <p>Bay thẳng</p>
+                      </div>
+                      <div className="loc text-right">
+                        <h2>{currentTicket?.routeTo ?? '---'}</h2>
+                        <p>{currentTicket?.airportTo ?? 'N/A'}</p>
+                      </div>
+                    </div>
+                    <div className="it-info-grid">
+                      <div>
+                        <p className="label">Hành khách</p>
+                        <p className="val">{currentTicket?.customer?.toUpperCase() ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Ngày bay</p>
+                        <p className="val">{currentTicket?.date?.split(' ')[0] ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Giờ khởi hành</p>
+                        <p className="val">{currentTicket?.date?.split(' ')[1] ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Ghế (Seat)</p>
+                        <p className="val font-bold">{currentTicket?.seat ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Cổng soát vé</p>
+                        <p className="val font-bold">{currentTicket?.gate ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Nhà ga</p>
+                        <p className="val">{currentTicket?.terminal ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Lên máy bay</p>
+                        <p className="val font-bold">{currentTicket?.boarding ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">Mã vé (Ticket No.)</p>
+                        <p className="val">{currentTicket?.id ?? 'N/A'}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="it-footer">
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => window.print()}>
+                      <span className="material-icons-round">print</span>
+                      In vé máy bay
+                    </Button>
+                  </div>
+                </Card>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <style>{`

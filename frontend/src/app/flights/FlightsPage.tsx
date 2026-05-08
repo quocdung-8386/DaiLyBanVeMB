@@ -50,7 +50,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight })
 
     // Chuyển sang trang tạo booking
     if (onNavigate) {
-      onNavigate('booking');
+      onNavigate('create_booking');
     }
   };
 
@@ -472,8 +472,6 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight })
         .text-danger { color: var(--danger); }
         .text-warning { color: var(--warning); }
         .text-right { text-align: right; }
-        .bg-success { background: var(--success) !important; }
-
         .bg-success { background: var(--success) !important; }
 
         /* Search Box */

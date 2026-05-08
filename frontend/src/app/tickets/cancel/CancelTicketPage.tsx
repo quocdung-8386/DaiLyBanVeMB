@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Sidebar from '../../../components/Sidebar';
 import Header from '../../../components/Header';
 import Card from '../../../components/Card';
@@ -6,26 +6,47 @@ import Button from '../../../components/Button';
 
 interface CancelTicketPageProps {
   onNavigate?: (id: string) => void;
+  ticketData?: any;
 }
 
-const CancelTicketPage: React.FC<CancelTicketPageProps> = ({ onNavigate }) => {
+const CancelTicketPage: React.FC<CancelTicketPageProps> = ({ onNavigate, ticketData }) => {
+  const [reason, setReason] = useState('Khách hàng yêu cầu hủy');
+
+  const data = ticketData || {
+    id: 'VE-001',
+    pnr: 'G7X9PQ',
+    customer: 'Nguyễn Văn An',
+    routeFrom: 'SGN',
+    routeTo: 'HAN',
+    flight: 'VN123',
+    date: '24/10/2023',
+    time: '08:30',
+    total: '6,500,000'
+  };
+
+  // Calculate refund (mock)
+  const baseAmount = parseInt(data.total.replace(/,/g, ''));
+  const cancelFee = 500000;
+  const serviceFee = 100000;
+  const refundAmount = baseAmount - cancelFee - serviceFee;
+
   return (
     <div className="layout">
       <Sidebar activeItem="tickets" onNavigate={onNavigate} />
       <div className="main-container">
-        <Header />
+        <Header title="Hủy & Hoàn vé" />
         
         <main className="content">
           <div className="breadcrumb">
             <span className="link" onClick={() => onNavigate && onNavigate('tickets')}>Vé máy bay</span>
             <span className="material-icons-round separator">chevron_right</span>
-            <span className="current">Hủy / Hoàn vé</span>
+            <span className="current">Hủy vé</span>
           </div>
 
           <div className="page-header mb-lg">
             <div>
               <h1>Hủy & Hoàn Vé</h1>
-              <p>Xử lý yêu cầu hủy vé của khách hàng và tính toán hoàn tiền.</p>
+              <p>Thực hiện thao tác hoàn tiền cho vé PNR: <strong>{data.pnr}</strong></p>
             </div>
             <Button variant="outline" onClick={() => onNavigate && onNavigate('tickets')}>
               <span className="material-icons-round">arrow_back</span>
@@ -35,60 +56,43 @@ const CancelTicketPage: React.FC<CancelTicketPageProps> = ({ onNavigate }) => {
 
           <div className="flex-layout">
             <div className="main-col">
-              {/* Search Ticket */}
-              <Card className="form-card mb-md">
-                <div className="card-title">
-                  <span className="material-icons-round text-primary">search</span>
-                  <h3>Tìm Vé Cần Hủy</h3>
-                </div>
-                <div className="search-booking-row">
-                  <div className="input-with-icon flex-1">
-                    <span className="material-icons-round">confirmation_number</span>
-                    <input type="text" placeholder="Nhập số vé hoặc PNR..." defaultValue="112-55443322" />
-                  </div>
-                  <Button className="btn-primary-alt">Tìm vé</Button>
-                </div>
-              </Card>
-
-              {/* Current Ticket Info */}
               <Card className="form-card mb-md">
                 <div className="card-title">
                   <span className="material-icons-round text-danger">cancel</span>
-                  <h3>Vé Sắp Hủy</h3>
+                  <h3>Thông tin vé cần hủy</h3>
                 </div>
-                <div className="flight-details">
-                  <div className="fd-row">
-                    <div className="fd-item">
-                      <p className="fd-label">Khách hàng</p>
-                      <p className="fd-val">LE HUU DAT</p>
-                    </div>
-                    <div className="fd-item">
-                      <p className="fd-label">Hành trình</p>
-                      <p className="fd-val">HAN - PQC</p>
-                    </div>
-                    <div className="fd-item">
-                      <p className="fd-label">Ngày bay</p>
-                      <p className="fd-val">28/10/2023 09:40</p>
-                    </div>
+                <div className="current-ticket">
+                  <div className="t-row">
+                    <span>Số vé: <strong>{data.id}</strong></span>
+                    <span>Hành khách: <strong>{data.customer}</strong></span>
                   </div>
+                  <div className="t-route">
+                    <span>{data.routeFrom}</span>
+                    <span className="material-icons-round">east</span>
+                    <span>{data.routeTo}</span>
+                    <span className="t-date">{data.date} {data.time}</span>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="form-card">
+                <div className="card-title">
+                  <span className="material-icons-round text-primary">policy</span>
+                  <h3>Lý do và Chính sách</h3>
+                </div>
+                <div className="policy-note">
+                   <span className="material-icons-round">info</span>
+                   <p>Theo chính sách của hãng hàng không, vé này thuộc diện <strong>Được phép hoàn</strong>. Phí hoàn vé sẽ được trừ trực tiếp vào giá trị vé gốc.</p>
                 </div>
 
-                <div className="policy-box mt-md">
-                  <div className="policy-icon"><span className="material-icons-round">policy</span></div>
-                  <div>
-                    <h4>Chính sách Hoàn vé (Hạng Thương gia)</h4>
-                    <p>Được phép hoàn vé. Phí hoàn: <strong>500,000 đ</strong>. Tiền hoàn sẽ được chuyển về tài khoản ban đầu sau 3-5 ngày làm việc.</p>
-                  </div>
-                </div>
-                
-                <div className="form-group mt-lg">
-                  <label>Lý do hủy vé</label>
-                  <select className="reason-select">
-                    <option>Khách hàng yêu cầu hủy</option>
-                    <option>Hãng hàng không thay đổi lịch</option>
-                    <option>Lý do sức khỏe / Cá nhân</option>
-                    <option>Khác</option>
-                  </select>
+                <div className="reason-section mt-lg">
+                   <label>Lý do hoàn vé</label>
+                   <select className="reason-select" value={reason} onChange={e => setReason(e.target.value)}>
+                      <option>Khách hàng yêu cầu hủy</option>
+                      <option>Hãng hàng không thay đổi lịch bay</option>
+                      <option>Lý do sức khỏe (Cần minh chứng)</option>
+                      <option>Khác</option>
+                   </select>
                 </div>
               </Card>
             </div>
@@ -101,26 +105,27 @@ const CancelTicketPage: React.FC<CancelTicketPageProps> = ({ onNavigate }) => {
                 <div className="summary-body">
                   <div className="summary-row">
                     <span>Giá trị vé gốc</span>
-                    <span>4,100,000 đ</span>
+                    <span>{data.total} đ</span>
                   </div>
                   <div className="summary-row text-danger">
                     <span>Phí hủy vé</span>
-                    <span>- 500,000 đ</span>
+                    <span>- {cancelFee.toLocaleString()} đ</span>
                   </div>
                   <div className="summary-row text-danger">
                     <span>Phí dịch vụ đại lý</span>
-                    <span>- 100,000 đ</span>
+                    <span>- {serviceFee.toLocaleString()} đ</span>
                   </div>
                   <hr className="divider" />
-                  <div className="summary-row total-row">
-                    <span>Tổng tiền hoàn</span>
-                    <span className="text-primary font-bold">3,500,000 đ</span>
+                  <div className="summary-row total">
+                    <span>Tổng tiền hoàn lại</span>
+                    <span className="text-primary">{refundAmount.toLocaleString()} đ</span>
                   </div>
+                  <p className="refund-note">Tiền sẽ được hoàn về phương thức thanh toán ban đầu của khách hàng.</p>
                 </div>
                 <div className="summary-actions">
-                  <Button className="w-full btn-danger">
-                    <span className="material-icons-round">delete_forever</span>
-                    Xác nhận Hủy & Hoàn
+                  <Button className="w-full btn-danger" onClick={() => { alert('Yêu cầu hoàn vé đã được xử lý!'); onNavigate?.('tickets'); }}>
+                    <span className="material-icons-round">assignment_return</span>
+                    Xác nhận Hoàn vé
                   </Button>
                 </div>
               </Card>
@@ -130,63 +135,55 @@ const CancelTicketPage: React.FC<CancelTicketPageProps> = ({ onNavigate }) => {
       </div>
 
       <style>{`
-        .flex-layout { display: flex; gap: var(--space-xl); align-items: flex-start; }
-        .main-col { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-        .side-col { width: 340px; flex-shrink: 0; position: sticky; top: 20px; }
-
-        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
-        .breadcrumb .link { color: var(--primary); cursor: pointer; }
-        .breadcrumb .separator { font-size: 16px; }
-        .breadcrumb .current { color: var(--text-main); }
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl); }
-        .page-header h1 { font-size: 24px; margin-bottom: 4px; font-weight: 700; }
-        .page-header p { color: var(--text-secondary); font-size: 14px; }
-
-        .form-card { padding: var(--space-lg); }
-        .card-title { display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--border); padding-bottom: 12px; }
-        .card-title h3 { font-size: 16px; margin: 0; font-weight: 600; }
-
-        .search-booking-row { display: flex; gap: var(--space-md); }
-        .input-with-icon { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: var(--radius-md); padding: 10px 14px; background: white; }
-        .input-with-icon input { border: none; outline: none; flex: 1; font-size: 14px; }
-        .btn-primary-alt { background: linear-gradient(135deg, #005a8c, #003d5c); color: white; border: none; }
-
-        .flight-details { background: #f8fafc; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; }
-        .fd-row { display: flex; justify-content: space-between; }
-        .fd-item { flex: 1; }
-        .fd-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; font-weight: 600; }
-        .fd-val { font-size: 14px; font-weight: 600; color: var(--text-main); }
-
-        .policy-box { display: flex; gap: 12px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; padding: 16px; color: #92400e; }
-        .policy-icon .material-icons-round { color: #d97706; font-size: 24px; }
-        .policy-box h4 { font-size: 14px; margin: 0 0 4px; font-weight: 700; }
-        .policy-box p { font-size: 13px; margin: 0; line-height: 1.5; }
+        .layout { display: flex; min-height: 100vh; background: #f4f7fa; }
+        .main-container { flex: 1; display: flex; flexDirection: column; }
+        .content { padding: 32px; max-width: 1200px; margin: 0 auto; width: 100%; }
         
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        .form-group label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
-        .reason-select { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #64748b; margin-bottom: 16px; }
+        .breadcrumb .link { color: #2563eb; cursor: pointer; }
+        .breadcrumb .current { color: #1e293b; font-weight: 600; }
+        
+        .page-header { display: flex; justify-content: space-between; align-items: flex-start; }
+        .page-header h1 { margin: 0; font-size: 24px; font-weight: 800; }
+        .page-header p { margin: 4px 0 0; color: #64748b; }
+
+        .flex-layout { display: flex; gap: 24px; margin-top: 32px; }
+        .main-col { flex: 1; }
+        .side-col { width: 350px; }
+
+        .form-card { padding: 24px; }
+        .card-title { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px; }
+        .card-title h3 { margin: 0; font-size: 16px; font-weight: 700; }
+
+        .current-ticket { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px; }
+        .t-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; color: #991b1b; }
+        .t-route { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 800; color: #7f1d1d; }
+        .t-date { font-size: 13px; font-weight: 500; margin-left: 10px; color: #b91c1c; }
+
+        .policy-note { display: flex; gap: 12px; background: #eff6ff; padding: 16px; border-radius: 12px; border: 1px solid #bfdbfe; color: #1e40af; }
+        .policy-note p { margin: 0; font-size: 14px; line-height: 1.5; }
+        
+        .reason-section label { display: block; font-size: 13px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+        .reason-select { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px; outline: none; }
 
         .summary-card { padding: 0; overflow: hidden; }
-        .summary-header { padding: 20px; background: #fafbfc; border-bottom: 1px solid var(--border); }
-        .summary-header h3 { font-size: 16px; margin: 0; font-weight: 600; }
+        .summary-header { padding: 20px; background: #fafbfc; border-bottom: 1px solid #f1f5f9; }
+        .summary-header h3 { margin: 0; font-size: 16px; font-weight: 700; }
         .summary-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .summary-row { display: flex; justify-content: space-between; font-size: 14px; }
-        .total-row { font-size: 16px; margin-top: 8px; }
-        .divider { border: 0; border-top: 1px dashed var(--border); margin: 8px 0; }
-        .summary-actions { padding: 20px; border-top: 1px solid var(--border); background: white; }
+        .summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #475569; }
+        .summary-row.total { margin-top: 8px; font-size: 18px; font-weight: 800; color: #0f172a; }
+        .divider { border: 0; border-top: 1px dashed #e2e8f0; margin: 8px 0; }
+        .refund-note { font-size: 12px; color: #94a3b8; margin-top: 8px; line-height: 1.4; }
 
-        .btn-danger { background: var(--danger); color: white; border: none; }
-        .btn-danger:hover { background: #b91c1c; }
-
-        .w-full { width: 100%; }
-        .flex-1 { flex: 1; }
-        .mt-lg { margin-top: var(--space-lg); }
-        .mt-md { margin-top: var(--space-md); }
-        .mb-md { margin-bottom: var(--space-md); }
-        .mb-lg { margin-bottom: var(--space-lg); }
-        .text-primary { color: var(--primary); }
-        .text-danger { color: var(--danger); }
-        .font-bold { font-weight: 700; }
+        .summary-actions { padding: 20px; }
+        .w-full { width: 100%; padding: 12px; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .btn-danger { background: #dc2626; color: white; }
+        
+        .mb-md { margin-bottom: 16px; }
+        .mb-lg { margin-bottom: 24px; }
+        .mt-lg { margin-top: 24px; }
+        .text-primary { color: #2563eb; }
+        .text-danger { color: #dc2626; }
       `}</style>
     </div>
   );
