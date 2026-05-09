@@ -27,6 +27,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
       ],
     },
     {
+      group: 'Hành trình & Sân bay',
+      items: [
+        { id: 'checkin', label: 'Online Check-in', icon: 'how_to_reg', badge: 'Live' },
+        { id: 'gate-management', label: 'Gate & Boarding', icon: 'door_front' },
+      ],
+    },
+    {
       group: 'Tài chính',
       items: [
         { id: 'payments', label: 'Lịch sử giao dịch', icon: 'payments', badge: 'New' },

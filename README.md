@@ -1,4 +1,4 @@
-# ✈️ Hệ thống Quản lý Đại lý Bán Vé Máy Bay
+# ✈️ Skyward Portal - Hệ thống Quản lý Đại lý Bán Vé Máy Bay
 
 <div align="center">
 
@@ -8,8 +8,8 @@
 ![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
-**Hệ thống quản lý toàn diện cho đại lý bán vé máy bay**  
-Bao gồm quản lý chuyến bay, đặt chỗ, vé, khách hàng, thanh toán và báo cáo.
+**Nền tảng Quản lý Hàng không chuyên nghiệp (Ticket-Centric Airline Management)**  
+Giao diện UI/UX hiện đại (Dark-Navy Aesthetic), tập trung vào vòng đời vé, quy trình đặt chỗ và vận hành đại lý.
 
 </div>
 
@@ -33,58 +33,43 @@ Bao gồm quản lý chuyến bay, đặt chỗ, vé, khách hàng, thanh toán 
 
 ## 🌟 Tổng quan
 
-**QL Đại lý bán vé máy bay** là hệ thống phần mềm quản lý nghiệp vụ cho các đại lý bán vé máy bay. Hệ thống hỗ trợ toàn bộ quy trình từ tìm kiếm chuyến bay, đặt chỗ, xuất vé, thu tiền đến báo cáo doanh thu — tất cả trong một giao diện hiện đại, chuyên nghiệp.
+**Skyward Portal** là phiên bản nâng cấp toàn diện của Hệ thống Quản lý Đại lý Bán Vé Máy Bay, chuyển đổi từ mô hình CRM truyền thống sang kiến trúc **Ticket-Centric** (Lấy vé làm trung tâm). Hệ thống mang lại trải nghiệm chuyên nghiệp, mượt mà với giao diện Dark-Navy cao cấp, tối ưu hóa cho tốc độ và khả năng phản hồi.
+
+Hệ thống hỗ trợ toàn bộ quy trình: từ tìm kiếm chuyến bay, thao tác đặt chỗ đa bước (multi-step booking), xuất vé, quản lý hành khách cho đến thanh toán và báo cáo doanh thu.
 
 ---
 
 ## 🚀 Tính năng chính
 
-### 📊 Dashboard
-- Tổng quan doanh thu, số vé bán, chuyến bay hôm nay
-- Biểu đồ thống kê theo thời gian thực
-- Thông báo và cảnh báo hệ thống
+### 📊 Dashboard (Trung tâm Điều hành)
+- Tổng quan doanh thu, số vé bán, chuyến bay hôm nay.
+- Biểu đồ thống kê theo thời gian thực (Real-time Analytics).
+- Giao diện Card hiện đại mang phong cách chuyên nghiệp.
 
-### ✈️ Quản lý Chuyến bay
-- Tìm kiếm chuyến bay theo tuyến, ngày, hạng vé
-- Xem thông tin chi tiết: số hiệu, máy bay, sân bay, giờ bay
-- Quản lý trạng thái chuyến bay (Hoạt động / Tạm ngừng / Code-share)
-- Thêm / sửa / xóa chuyến bay với đầy đủ trường dữ liệu
+### ✈️ Quản lý Chuyến bay (Flights)
+- Tìm kiếm chuyến bay theo tuyến, ngày, hạng vé.
+- Xem thông tin chi tiết: số hiệu, máy bay, sân bay, giờ bay.
+- Quản lý trạng thái chuyến bay chuyên sâu (Hoạt động / Tạm ngừng / Code-share).
 
-### 🎟️ Đặt chỗ (Booking)
-- Tìm kiếm và chọn chuyến bay
-- Nhập thông tin hành khách
-- Chọn hạng vé (Economy / Business / First Class)
-- Lựa chọn hành lý và dịch vụ bổ sung
+### 🎟️ Quy trình Đặt chỗ (Booking)
+- Trải nghiệm đặt chỗ liền mạch với quy trình đa bước.
+- Lựa chọn sơ đồ ghế ngồi (Seat Map).
+- Nhập thông tin hành khách linh hoạt, hỗ trợ đặt cho nhiều người cùng lúc.
 
-### 🎫 Quản lý Vé máy bay
-- Danh sách vé đã xuất với trạng thái (Hiệu lực / Đã hủy / Đã hoàn tiền)
-- **Boarding Pass** đầy đủ: mã sân bay, cổng soát vé, nhà ga, số ghế, giờ lên máy bay
-- **Đổi vé** 2 bước: chọn chuyến mới → xác nhận phí đổi
-- Tính phí đổi vé tự động (chênh lệch giá + phí dịch vụ)
-- In boarding pass / xuất PDF
+### 🎫 Quản lý Vé (Tickets - Core Module)
+- **Ticket-Centric Workflow**: Mọi giao dịch, hành khách, dịch vụ đều xoay quanh vòng đời của Vé.
+- Quản lý Boarding Pass đầy đủ thông tin: mã sân bay, cổng soát vé, nhà ga, số ghế.
+- Đổi vé, tính phí tự động, xuất PDF & In vé trực tiếp từ hệ thống.
 
-### 👥 Quản lý Khách hàng
-- Hồ sơ khách hàng: thông tin cá nhân, liên hệ, CCCD/hộ chiếu
-- Phân hạng khách hàng (Thường / Silver / Gold / Platinum)
-- Lịch sử giao dịch và điểm tích lũy
-- Thêm / sửa thông tin khách hàng
+### 👥 Quản lý Hành khách & Khách hàng (Passengers & Customers)
+- Quản lý chi tiết Hành khách (Passengers) đi kèm vé.
+- Quản lý Khách hàng / Đại lý (Customers / Bookers) thực hiện thanh toán.
+- Hồ sơ chi tiết: thông tin cá nhân, CCCD/Hộ chiếu, hạng thành viên.
 
-### 💳 Thanh toán
-- Hỗ trợ nhiều phương thức: VNPay, MoMo, Visa/Mastercard, Tiền mặt
-- Lịch sử giao dịch với bộ lọc đa chiều
-- Màn hình xác nhận thanh toán thành công
-- Xuất & in vé sau thanh toán
-
-### 🏢 Quản lý Hệ thống (Admin)
-- **Hãng bay**: Thêm, sửa, xóa hãng hàng không
-- **Sân bay**: Quản lý danh sách sân bay theo mã IATA
-- **Tuyến bay**: Định nghĩa các tuyến bay hoạt động
-- **Chuyến bay**: Lập lịch bay chi tiết (máy bay, ghế, giá, trạng thái)
-
-### 📈 Báo cáo
-- Báo cáo doanh thu theo ngày/tuần/tháng
-- Thống kê theo tuyến bay, hãng bay, hạng vé
-- Xuất báo cáo Excel/PDF
+### 💳 Thanh toán (Payments)
+- Hỗ trợ đa phương thức: VNPay, MoMo, Visa/Mastercard, Tiền mặt.
+- Đồng bộ tự động trạng thái thanh toán và xuất vé ngay khi hoàn tất.
+- Lịch sử giao dịch chi tiết, cho phép lọc đa chiều và kiểm tra đối soát.
 
 ---
 
@@ -93,47 +78,47 @@ Bao gồm quản lý chuyến bay, đặt chỗ, vé, khách hàng, thanh toán 
 | Tầng | Công nghệ | Phiên bản |
 |------|-----------|-----------|
 | **Frontend** | Next.js (App Router) | 16.x |
-| **UI** | Vanilla CSS, Material Icons | — |
+| **UI/UX** | Vanilla CSS, Modern Dark-Navy Aesthetic | — |
 | **Backend** | FastAPI | Latest |
 | **Database** | PostgreSQL | 14+ |
 | **ORM** | SQLAlchemy + Alembic | Latest |
 | **Validation** | Pydantic | v2 |
 | **Runtime** | Python | 3.10+ |
-| **Package Manager** | npm | 9+ |
-| **Container** | Docker + Docker Compose | — |
 
 ---
 
 ## 📁 Cấu trúc dự án
 
-```
+Kiến trúc thư mục được quy hoạch chuẩn mực theo mô hình App Router của Next.js 16:
+
+```text
 DaiLyBanVeMB/
-├── frontend/                        # Next.js 16 App Router
+├── frontend/                        # Next.js 16 App Router (Skyward Portal UI)
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── layout.tsx           # Root layout (Global Design Tokens)
+│   │   │   ├── layout.tsx           # Root layout (Global Design Tokens - Dark Navy)
 │   │   │   ├── page.tsx             # Home Router & Module Switcher
+│   │   │   ├── login/               # Đăng nhập & Xác thực
 │   │   │   ├── dashboard/           # Trung tâm Điều hành (Dashboard)
 │   │   │   ├── flights/             # Tìm kiếm & Quản lý Chuyến bay
-│   │   │   ├── booking/             # Quy trình Đặt chỗ (Booking & Seat Map)
-│   │   │   ├── tickets/             # Kho vé (Boarding Pass & Issue)
-│   │   │   ├── customers/           # CRM Khách hàng
-│   │   │   ├── loyalty/             # Chương trình Thành viên
+│   │   │   ├── booking/             # Quy trình Đặt chỗ (Booking Workflow)
+│   │   │   ├── seat-map/            # Sơ đồ ghế ngồi tương tác
+│   │   │   ├── tickets/             # Quản lý Vé (Ticket-Centric Hub)
+│   │   │   ├── passengers/          # Quản lý Hành khách
+│   │   │   ├── customers/           # Quản lý Khách hàng / Đại lý
 │   │   │   ├── payments/            # Thanh toán & Lịch sử Giao dịch
+│   │   │   ├── loyalty/             # Chương trình Thành viên
 │   │   │   ├── reports/             # Báo cáo BI & Doanh thu
-│   │   │   ├── ai-admin/            # AI Command Center
-│   │   │   ├── audit-log/           # Nhật ký Hoạt động (Traceability)
 │   │   │   ├── settings/            # Cấu hình Hệ thống & Hãng bay
 │   │   │   ├── users/               # Quản lý Nhân sự & Phân quyền
-│   │   │   ├── profile/             # Thông tin Cá nhân
 │   │   │   └── refund-management/   # Xử lý Hoàn/Hủy vé
-│   │   ├── components/              # Premium Shared Components
+│   │   ├── components/              # Premium Shared Components (Dark-Navy System)
 │   │   │   ├── AppLayout.tsx        # Enterprise Layout Wrapper
 │   │   │   ├── Sidebar.tsx          # Professional Sidebar
 │   │   │   ├── Header.tsx           # Dashboard Header
 │   │   │   ├── Card.tsx             # Standardized Card Component
-│   │   │   └── Button.tsx           # Standardized Button Component
-│   │   └── index.css                # Core Design System Tokens
+│   │   │   └── ...                  # Reusable UI Elements
+│   │   └── index.css                # Core Design System Tokens (Navy/Blue)
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -149,7 +134,6 @@ DaiLyBanVeMB/
 ├── docker/                          # Containerization (Dev/Prod)
 └── README.md
 ```
-
 
 ---
 
@@ -277,11 +261,12 @@ docker compose -f docker/docker-compose.yml up -d
 | 🏠 Dashboard | Tổng quan KPI, biểu đồ doanh thu |
 | ✈️ Chuyến bay | Tìm kiếm, lọc, quản lý lịch bay |
 | 📋 Đặt chỗ | Quy trình đặt vé multi-step |
-| 🎫 Vé máy bay | Boarding pass, đổi vé, in vé |
-| 💳 Thanh toán | Checkout, lịch sử, hóa đơn |
-| 👤 Khách hàng | CRM khách hàng, phân hạng |
-| ⚙️ Quản lý hệ thống | Hãng bay, sân bay, tuyến bay, chuyến bay |
-| 📊 Báo cáo | Thống kê, xuất file |
+| 🎫 Vé máy bay | Quản lý vé, đổi vé, in Boarding Pass |
+| 💳 Thanh toán | Xử lý thanh toán vé, quản lý hóa đơn |
+| 👥 Hành khách | Quản lý thông tin hành khách theo từng vé |
+| 👤 Khách hàng | CRM đại lý/khách hàng, chương trình thành viên |
+| ⚙️ Hệ thống | Quản lý cấu hình, hãng bay, tuyến bay |
+| 📊 Báo cáo | Phân tích số liệu, xuất file |
 
 ---
 
@@ -349,6 +334,6 @@ Dự án được phát hành theo giấy phép [MIT](LICENSE).
 
 Được xây dựng với ❤️ cho môn học **Bài tập lớn Python**
 
-**[⬆ Về đầu trang](#️-hệ-thống-quản-lý-đại-lý-bán-vé-máy-bay)**
+**[⬆ Về đầu trang](#-skyward-portal---hệ-thống-quản-lý-đại-lý-bán-vé-máy-bay)**
 
 </div>

@@ -13,6 +13,10 @@ from app.core.config import settings
 
 # Import tất cả models để SQLAlchemy nhận diện metadata
 import app.models  # noqa: F401
+import app.domain.pnr.models
+import app.domain.ticketing.models
+import app.domain.inventory.models
+import app.domain.checkin.models
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

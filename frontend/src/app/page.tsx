@@ -22,6 +22,8 @@ import AiAdminPage from './ai-admin/AiAdminPage';
 import PassengersPage from './passengers/PassengersPage';
 import SeatMapPage from './seat-map/SeatMapPage';
 import LoyaltyPage from './loyalty/LoyaltyPage';
+import CheckinPage from './checkin/CheckinPage';
+import GateManagementPage from './gate-management/GateManagementPage';
 
 export interface TicketData {
   id: string;
@@ -97,6 +99,10 @@ export default function Home() {
         return <SeatMapPage onNavigate={setCurrentPage} />;
       case 'loyalty':
         return <LoyaltyPage onNavigate={setCurrentPage} />;
+      case 'checkin':
+        return <CheckinPage onNavigate={setCurrentPage} />;
+      case 'gate-management':
+        return <GateManagementPage onNavigate={setCurrentPage} />;
       default:
         return <Dashboard onNavigate={setCurrentPage} />;
     }
