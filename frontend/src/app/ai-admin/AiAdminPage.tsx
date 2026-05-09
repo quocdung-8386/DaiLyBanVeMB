@@ -12,7 +12,7 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate }) => {
 
   return (
     <AppLayout 
-      activeItem="ai-admin" 
+      activeItem="ai_admin" 
       onNavigate={onNavigate || (() => {})}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Quản trị AI & Tự động hóa' }]}
     >

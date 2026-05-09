@@ -20,7 +20,7 @@ const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate }) => {
 
   return (
     <AppLayout 
-      activeItem="audit-log" 
+      activeItem="audit_log" 
       onNavigate={onNavigate || (() => {})}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Nhật ký hoạt động' }]}
     >

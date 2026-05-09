@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface SidebarProps {
   activeItem?: string;
   onNavigate?: (id: string) => void;
 }
+
+// Persist scroll position across mounts
+let sidebarScrollPosition = 0;
 
 const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate }) => {
   const menuGroups = [
@@ -48,6 +51,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
     },
   ];
 
+  const navRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (navRef.current) {
+      navRef.current.scrollTop = sidebarScrollPosition;
+    }
+  }, []);
+
+  const handleScroll = (e: React.UIEvent<HTMLElement>) => {
+    sidebarScrollPosition = e.currentTarget.scrollTop;
+  };
+
   return (
     <aside className="sidebar">
       <div className="logo-section">
@@ -60,7 +75,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
         </div>
       </div>
 
-      <nav className="sidebar-nav">
+      <nav className="sidebar-nav" ref={navRef} onScroll={handleScroll}>
         {menuGroups.map((group, gIdx) => (
           <div key={gIdx} className="nav-group">
             <h5 className="nav-group-title">{group.group}</h5>
@@ -68,7 +83,11 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
               <button
                 key={item.id}
                 className={`nav-item ${activeItem === item.id ? 'active' : ''}`}
-                onClick={() => onNavigate?.(item.id)}
+                onClick={() => {
+                  if (activeItem !== item.id) {
+                    onNavigate?.(item.id);
+                  }
+                }}
               >
                 <span className="material-icons-round">{item.icon}</span>
                 <span className="nav-label">{item.label}</span>
@@ -158,7 +177,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
           text-align: left;
         }
         .nav-item:hover { background: #f8fafc; color: #2563eb; transform: translateX(4px); }
-        .nav-item.active { background: #eff6ff; color: #2563eb; }
+        .nav-item.active { background: #eff6ff; color: #2563eb; font-weight: 800; border-left: 4px solid #2563eb; padding-left: 8px; }
         .nav-item .material-icons-round { font-size: 20px; }
         .nav-label { flex: 1; }
         .nav-pill { background: #ef4444; color: white; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 10px; }
