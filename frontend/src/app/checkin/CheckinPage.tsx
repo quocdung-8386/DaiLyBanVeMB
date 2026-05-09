@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import SeatMap from '../../components/SeatMap';
 
 interface CheckinPageProps {
   onNavigate: (id: string) => void;
@@ -14,6 +15,12 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
   const [step, setStep] = useState<'search' | 'passengers' | 'baggage' | 'boarding_pass'>('search');
 
   const [selectedPassengers, setSelectedPassengers] = useState<string[]>(['p1']);
+  const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
+  const [passengerSeats, setPassengerSeats] = useState<Record<string, string>>({
+    'p1': '12A',
+    'p2': '12B'
+  });
+  const [editingPassengerSeat, setEditingPassengerSeat] = useState<string | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -128,7 +135,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
                     <strong>NGUYEN VAN A</strong>
                     <span>Số vé: 738-1234567890</span>
                   </div>
-                  <div className="p-seat">Ghế 12A</div>
+                  <div className="p-seat">Ghế {passengerSeats['p1']}</div>
                 </label>
                 <label className={`passenger-item ${selectedPassengers.includes('p2') ? 'selected' : ''}`}>
                   <input 
@@ -140,7 +147,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
                     <strong>TRAN THI B</strong>
                     <span>Số vé: 738-1234567891</span>
                   </div>
-                  <div className="p-seat">Ghế 12B</div>
+                  <div className="p-seat">Ghế {passengerSeats['p2']}</div>
                 </label>
               </div>
 
@@ -166,7 +173,10 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
                   <span className="material-icons-round icon">event_seat</span>
                   <h4>Thay đổi chỗ ngồi</h4>
                   <p>Bạn muốn ngồi gần cửa sổ hoặc có thêm chỗ để chân? Chọn ghế ngay bây giờ.</p>
-                  <Button variant="outline" size="sm" className="mt-4" onClick={() => alert('Đang mở Sơ đồ ghế...')}>Đổi Ghế</Button>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={() => {
+                    setEditingPassengerSeat('p1'); // Default editing first selected passenger for demo
+                    setIsSeatMapOpen(true);
+                  }}>Đổi Ghế</Button>
                 </div>
                 <div className="extra-card">
                   <span className="material-icons-round icon">restaurant</span>
@@ -244,7 +254,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
                         </div>
                         <div className="h-item">
                           <span>Ghế</span>
-                          <strong>{p === 'p1' ? '12A' : '12B'}</strong>
+                          <strong>{passengerSeats[p]}</strong>
                         </div>
                         <div className="h-item">
                           <span>Nhóm (Zone)</span>
@@ -272,6 +282,24 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
           )}
         </div>
       </div>
+
+      {isSeatMapOpen && (
+        <SeatMap 
+          flightNumber="VN234"
+          initialSelectedSeat={editingPassengerSeat ? passengerSeats[editingPassengerSeat] : undefined}
+          onConfirm={(seat) => {
+            if (editingPassengerSeat) {
+              setPassengerSeats(prev => ({ ...prev, [editingPassengerSeat]: seat }));
+            }
+            setIsSeatMapOpen(false);
+            setEditingPassengerSeat(null);
+          }}
+          onCancel={() => {
+            setIsSeatMapOpen(false);
+            setEditingPassengerSeat(null);
+          }}
+        />
+      )}
 
       <style>{`
         .checkin-wrapper { position: relative; min-height: calc(100vh - 80px); }

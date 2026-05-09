@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import AppLayout from '../../components/AppLayout';
+import SeatMap from '../../components/SeatMap';
 
 interface BookingPageProps {
   onNavigate?: (id: string) => void;
@@ -27,6 +28,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
   const [bookingStep, setBookingStep] = useState(1);
   const [selectedFare, setSelectedFare] = useState('Economy');
   const [selectedSeat, setSelectedSeat] = useState('12C');
+  const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
 
   const handleHoldBooking = () => {
     const newBooking = {
@@ -100,28 +102,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
         return (
           <div className="step-content">
             <h3>Bước 2: Chọn chỗ ngồi</h3>
-            <div className="seat-map-wrapper">
-               <div className="seat-legend">
-                  <span className="leg"><i className="sq empty"></i> Trống</span>
-                  <span className="leg"><i className="sq occupied"></i> Đã đặt</span>
-                  <span className="leg"><i className="sq selected"></i> Đang chọn</span>
-               </div>
-               <div className="seat-grid">
-                  <div className="row-labels">{[1,2,3,4,5].map(r => <span key={r}>{r}</span>)}</div>
-                  <div className="seats">
-                     {[1,2,3,4,5].map(r => (
-                        <div key={r} className="seat-row">
-                           {['A','B','C','gap','D','E','F'].map((c, i) => {
-                              if (c === 'gap') return <div key={i} className="aisle"></div>;
-                              const sId = `${r}${c}`;
-                              const isOcc = (r === 2 && c === 'A');
-                              const isSel = selectedSeat === sId;
-                              return <div key={c} className={`seat-box ${isOcc ? 'occupied' : isSel ? 'selected' : ''}`} onClick={() => !isOcc && setSelectedSeat(sId)}>{c}</div>;
-                           })}
-                        </div>
-                     ))}
-                  </div>
-               </div>
+            <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
+              <div style={{ width: '64px', height: '64px', background: '#eff6ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#2563eb' }}>
+                <span className="material-icons-round" style={{ fontSize: '32px' }}>airline_seat_recline_normal</span>
+              </div>
+              <h4 style={{ margin: '0 0 8px', fontSize: '18px', color: '#0f172a' }}>Ghế hiện tại: {selectedSeat}</h4>
+              <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#64748b' }}>Bạn có thể thay đổi chỗ ngồi để có trải nghiệm thoải mái hơn.</p>
+              <Button onClick={() => setIsSeatMapOpen(true)}>Mở Sơ đồ Ghế</Button>
             </div>
           </div>
         );
@@ -332,6 +319,18 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                </div>
             </div>
           </div>
+        )}
+
+        {isSeatMapOpen && (
+          <SeatMap 
+            flightNumber={flightData?.id || 'VN-214'}
+            initialSelectedSeat={selectedSeat}
+            onConfirm={(seat) => {
+              setSelectedSeat(seat);
+              setIsSeatMapOpen(false);
+            }}
+            onCancel={() => setIsSeatMapOpen(false)}
+          />
         )}
 
       </div>
