@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
+import AppLayout from '../../components/AppLayout';
 
 interface DashboardProps { onNavigate?: (id: string) => void; }
 
@@ -17,8 +18,12 @@ const S = {
 const metricCards = [
   { label:'Vé bán hôm nay', value:'147', sub:'+23 so với hôm qua', icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff' },
   { label:'Chờ thanh toán', value:'32', sub:'Cần xử lý ngay', icon:'pending_actions', color:'#d97706', bg:'#fef3c7' },
-  { label:'Vé đã hủy hôm nay', value:'8', sub:'-3 so với hôm qua', icon:'cancel', color:'#dc2626', bg:'#fef2f2' },
+  { label:'Vé đã hủy', value:'12', sub:'-5% so với tuần trước', icon:'cancel', color:'#dc2626', bg:'#fef2f2' },
   { label:'Doanh thu vé (ngày)', value:'284M', sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
+  { label:'Số lượng khách', value:'1,248', sub:'Hành khách đã bay', icon:'groups', color:'#7c3aed', bg:'#f5f3ff' },
+  { label:'Ghế còn trống', value:'428', sub:'Trong 24h tới', icon:'event_seat', color:'#0891b2', bg:'#ecfeff' },
+  { label:'Tỷ lệ lấp đầy', value:'82.5%', sub:'+2.1% mục tiêu', icon:'leaderboard', color:'#4f46e5', bg:'#eef2ff' },
+  { label:'Tổng vé đã bán', value:'12.4K', sub:'Tháng này', icon:'analytics', color:'#db2777', bg:'#fdf2f8' },
 ];
 
 const departures = [
@@ -56,26 +61,84 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<'today'|'week'|'month'>('today');
 
   return (
-    <div style={S.layout}>
-      <Sidebar activeItem="dashboard" onNavigate={onNavigate} />
-      <div style={S.main}>
-        <Header title="Airline Ticket Operations — Dashboard" />
-        <div style={S.body}>
+    <AppLayout activeItem="dashboard" onNavigate={onNavigate || (() => {})}>
+      <div className="dashboard-content">
 
           {/* Page header */}
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
             <div>
-              <h1 style={{ margin:0, fontSize:22, fontWeight:800, color:'#0f172a' }}>Bảng điều hành vé</h1>
-              <p style={{ margin:'4px 0 0', fontSize:13, color:'#64748b' }}>Theo dõi hoạt động bán vé và vận hành chuyến bay theo thời gian thực</p>
+              <h1 style={{ margin:0, fontSize:24, fontWeight:900, color:'#0f172a', letterSpacing:'-0.5px' }}>Trung tâm Điều hành</h1>
+              <p style={{ margin:'4px 0 0', fontSize:14, color:'#64748b' }}>Hệ thống đang theo dõi <strong>128</strong> luồng vận hành trong hôm nay</p>
             </div>
-            <div style={{ display:'flex', gap:8, background:'white', border:'1px solid #e2e8f0', borderRadius:10, padding:4 }}>
-              {(['today','week','month'] as const).map(t => (
-                <button key={t} onClick={() => setActiveTab(t)}
-                  style={{ padding:'7px 16px', borderRadius:8, border:'none', fontWeight:700, fontSize:12, cursor:'pointer', background: activeTab===t ? '#1e40af' : 'transparent', color: activeTab===t ? 'white' : '#64748b', transition:'all 0.2s' }}>
-                  {t==='today'?'Hôm nay':t==='week'?'Tuần này':'Tháng này'}
-                </button>
-              ))}
+            <div style={{ display:'flex', gap:12 }}>
+               <div style={{ display:'flex', gap:8, background:'white', border:'1px solid #e2e8f0', borderRadius:12, padding:4, boxShadow:'0 1px 2px rgba(0,0,0,0.05)' }}>
+                {(['today','week','month'] as const).map(t => (
+                  <button key={t} onClick={() => setActiveTab(t)}
+                    style={{ padding:'8px 16px', borderRadius:10, border:'none', fontWeight:700, fontSize:12, cursor:'pointer', background: activeTab===t ? '#1e40af' : 'transparent', color: activeTab===t ? 'white' : '#64748b', transition:'all 0.2s' }}>
+                    {t==='today'?'Hôm nay':t==='week'?'Tuần này':'Tháng này'}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => onNavigate?.('flights')} style={{ display:'flex', alignItems:'center', gap:8, padding:'0 20px', background:'#1e40af', color:'white', border:'none', borderRadius:12, fontWeight:700, fontSize:13, cursor:'pointer', boxShadow:'0 4px 12px rgba(30,64,175,0.2)' }}>
+                <span className="material-icons-round">add</span> Đặt vé mới
+              </button>
             </div>
+          </div>
+
+          {/* Quick Actions & Alerts Row */}
+          <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20, marginBottom:24 }}>
+             <div style={{ ...S.card, display:'flex', alignItems:'center', gap:32, padding:'24px' }}>
+                <div style={{ flex:1 }}>
+                   <h3 style={{ margin:'0 0 16px', fontSize:14, fontWeight:800, color:'#64748b', textTransform:'uppercase', letterSpacing:'0.5px' }}>Thao tác nhanh</h3>
+                   <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:16 }}>
+                      {[
+                        { label: 'Xuất vé nhanh', icon: 'bolt', color: '#10b981', target: 'tickets' },
+                        { label: 'Hoàn/Hủy vé', icon: 'assignment_return', color: '#ef4444', target: 'refund-management' },
+                        { label: 'Đối soát tiền', icon: 'account_balance', color: '#6366f1', target: 'payment_history' },
+                        { label: 'AI Insights', icon: 'auto_awesome', color: '#f59e0b', target: 'ai_admin' },
+                      ].map((a, i) => (
+                        <button key={i} onClick={() => onNavigate?.(a.target)} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:10, background:'transparent', border:'none', cursor:'pointer', transition:'transform 0.2s' }} className="quick-action-btn">
+                           <div style={{ width:52, height:52, borderRadius:16, background:'#f8fafc', border:'1px solid #f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', color:a.color }}>
+                              <span className="material-icons-round" style={{ fontSize:24 }}>{a.icon}</span>
+                           </div>
+                           <span style={{ fontSize:12, fontWeight:700, color:'#1e293b' }}>{a.label}</span>
+                        </button>
+                      ))}
+                   </div>
+                </div>
+                <div style={{ width:1, height:80, background:'#f1f5f9' }} />
+                <div style={{ width:200 }}>
+                   <p style={{ margin:'0 0 4px', fontSize:12, color:'#64748b', fontWeight:600 }}>CÔNG NỢ ĐẠI LÝ</p>
+                   <h2 style={{ margin:'0 0 8px', fontSize:22, fontWeight:900, color:'#0f172a' }}>428.5M ₫</h2>
+                   <div style={{ height:6, background:'#f1f5f9', borderRadius:3, overflow:'hidden', marginBottom:8 }}>
+                      <div style={{ width:'65%', height:'100%', background:'#10b981' }} />
+                   </div>
+                   <p style={{ margin:0, fontSize:11, color:'#10b981', fontWeight:700 }}>Dư nợ an toàn (65%)</p>
+                </div>
+             </div>
+
+             <div style={{ ...S.card, background:'linear-gradient(135deg, #fef2f2 0%, #fff 100%)', border:'1px solid #fee2e2', padding:'20px' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+                   <span className="material-icons-round" style={{ color:'#ef4444', fontSize:20 }}>notification_important</span>
+                   <h3 style={{ margin:0, fontSize:14, fontWeight:800, color:'#991b1b' }}>CẢNH BÁO ƯU TIÊN</h3>
+                </div>
+                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                   <div style={{ display:'flex', gap:10, padding:'10px', background:'white', borderRadius:10, border:'1px solid #fee2e2', boxShadow:'0 2px 4px rgba(239,68,68,0.05)' }}>
+                      <div style={{ width:8, height:8, borderRadius:'50%', background:'#ef4444', marginTop:4 }} />
+                      <div>
+                         <p style={{ margin:'0 0 2px', fontSize:12, fontWeight:800, color:'#1e293b' }}>PNR HOLD01 hết hạn sau 28p</p>
+                         <p style={{ margin:0, fontSize:11, color:'#64748b' }}>Chặng HAN→DAD · 2.15M ₫</p>
+                      </div>
+                   </div>
+                   <div style={{ display:'flex', gap:10, padding:'10px', background:'white', borderRadius:10, border:'1px solid #fee2e2', opacity:0.8 }}>
+                      <div style={{ width:8, height:8, borderRadius:'50%', background:'#f59e0b', marginTop:4 }} />
+                      <div>
+                         <p style={{ margin:'0 0 2px', fontSize:12, fontWeight:800, color:'#1e293b' }}>Yêu cầu hoàn vé VE-2840</p>
+                         <p style={{ margin:0, fontSize:11, color:'#64748b' }}>Đang chờ Admin phê duyệt</p>
+                      </div>
+                   </div>
+                </div>
+             </div>
           </div>
 
           {/* Metric cards */}
@@ -136,20 +199,20 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
             <div style={S.card}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20 }}>
                 <span className="material-icons-round" style={{ color:'#7c3aed', fontSize:20 }}>pie_chart</span>
-                <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Phân bổ hạng vé</h3>
+                <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Thị phần theo Hãng</h3>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:30, height:200 }}>
-                <div style={{ position:'relative', width:140, height:140, borderRadius:'50%', background:'conic-gradient(#1e40af 0% 65%, #7c3aed 65% 85%, #f59e0b 85% 100%)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                <div style={{ position:'relative', width:140, height:140, borderRadius:'50%', background:'conic-gradient(#005a8c 0% 45%, #ed1b24 45% 80%, #00a563 80% 100%)', display:'flex', alignItems:'center', justifyContent:'center' }}>
                   <div style={{ width:80, height:80, borderRadius:'50%', background:'white', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-                    <span style={{ fontSize:20, fontWeight:900, color:'#1e293b' }}>850</span>
+                    <span style={{ fontSize:20, fontWeight:900, color:'#1e293b' }}>1,248</span>
                     <span style={{ fontSize:9, color:'#94a3b8', fontWeight:700 }}>TỔNG VÉ</span>
                   </div>
                 </div>
                 <div style={{ flex:1, display:'flex', flexDirection:'column', gap:12 }}>
                   {[
-                    { label:'Economy', pct:65, color:'#1e40af', val:552 },
-                    { label:'Business', pct:20, color:'#7c3aed', val:170 },
-                    { label:'First Class', pct:15, color:'#f59e0b', val:128 },
+                    { label:'Vietnam Airlines', pct:45, color:'#005a8c', val:552 },
+                    { label:'Vietjet Air', pct:35, color:'#ed1b24', val:170 },
+                    { label:'Bamboo Airways', pct:20, color:'#00a563', val:128 },
                   ].map((c, i) => (
                     <div key={i}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
@@ -257,22 +320,24 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
           </div>
 
         </div>
-        <style>{`
-          .chart-bar:hover { filter: brightness(1.1); cursor: pointer; }
-          .chart-bar:hover .bar-tooltip { opacity: 1; transform: translateX(-50%) translateY(-10px); }
-          .bar-tooltip {
-            position: absolute; top: -30px; left: 50%; transform: translateX(-50%) translateY(0);
-            background: #1e293b; color: white; padding: 4px 8px; borderRadius: 6px;
-            font-size: 10px; font-weight: 700; opacity: 0; pointer-events: none;
-            transition: all 0.2s; white-space: nowrap; z-index: 10;
-          }
-          .bar-tooltip::after {
-            content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
-            border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid #1e293b;
-          }
-        `}</style>
-      </div>
-    </div>
+      <style>{`
+        .dashboard-content { animation: fadeIn 0.4s ease-out; }
+        .quick-action-btn:hover { transform: translateY(-3px); }
+        .chart-bar:hover { filter: brightness(1.1); cursor: pointer; }
+        .chart-bar:hover .bar-tooltip { opacity: 1; transform: translateX(-50%) translateY(-10px); }
+        .bar-tooltip {
+          position: absolute; top: -30px; left: 50%; transform: translateX(-50%) translateY(0);
+          background: #1e293b; color: white; padding: 4px 8px; border-radius: 6px;
+          font-size: 10px; font-weight: 700; opacity: 0; pointer-events: none;
+          transition: all 0.2s; white-space: nowrap; z-index: 10;
+        }
+        .bar-tooltip::after {
+          content: ''; position: absolute; bottom: -4px; left: 50%; transform: translateX(-50%);
+          border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 4px solid #1e293b;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
+    </AppLayout>
   );
 };
 

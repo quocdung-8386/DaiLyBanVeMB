@@ -13,13 +13,15 @@ import ExchangeTicketPage from './tickets/exchange/ExchangeTicketPage';
 import CancelTicketPage from './tickets/cancel/CancelTicketPage';
 import RefundManagementPage from './refund-management/RefundManagementPage';
 import LoginPage from './login/LoginPage';
-import CreateBookingPage from './booking/create/CreateBookingPage';
 import ReportsPage from './reports/ReportsPage';
 import UsersPage from './users/UsersPage';
 import ProfilePage from './profile/ProfilePage';
 import AuditLogPage from './audit-log/AuditLogPage';
 import PaymentHistoryPage from './payments/history/PaymentHistoryPage';
 import AiAdminPage from './ai-admin/AiAdminPage';
+import PassengersPage from './passengers/PassengersPage';
+import SeatMapPage from './seat-map/SeatMapPage';
+import LoyaltyPage from './loyalty/LoyaltyPage';
 
 export interface TicketData {
   id: string;
@@ -61,9 +63,8 @@ export default function Home() {
       case 'flights':
         return <FlightsPage onNavigate={setCurrentPage} onSelectFlight={setSelectedFlightData} />;
       case 'booking':
-        return <BookingPage onNavigate={setCurrentPage} initialFlight={selectedFlightData} onCheckout={handleGoToCheckout} />;
       case 'create_booking':
-        return <CreateBookingPage onNavigate={setCurrentPage} initialFlight={selectedFlightData} />;
+        return <BookingPage onNavigate={setCurrentPage} initialFlight={selectedFlightData} onCheckout={handleGoToCheckout} />;
       case 'tickets':
         return <TicketsPage onNavigate={setCurrentPage} onCheckout={handleGoToCheckout} />;
       case 'payments':
@@ -90,6 +91,12 @@ export default function Home() {
         return <CancelTicketPage onNavigate={setCurrentPage} ticketData={selectedTicketData} />;
       case 'refund-management':
         return <RefundManagementPage onNavigate={setCurrentPage} />;
+      case 'passengers':
+        return <PassengersPage onNavigate={setCurrentPage} />;
+      case 'seat-map':
+        return <SeatMapPage onNavigate={setCurrentPage} />;
+      case 'loyalty':
+        return <LoyaltyPage onNavigate={setCurrentPage} />;
       default:
         return <Dashboard onNavigate={setCurrentPage} />;
     }

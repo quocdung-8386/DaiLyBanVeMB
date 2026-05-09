@@ -7,13 +7,19 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   const [showNotif, setShowNotif] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   // Close popup when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setShowNotif(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSearch(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -29,9 +35,48 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
   return (
     <header className="header">
       {/* Search */}
-      <div className="header-search">
-        <span className="material-icons-round search-icon">search</span>
-        <input type="text" placeholder="Tìm kiếm mã vé, khách hàng, chuyến bay..." />
+      <div className="header-search-container" ref={searchRef}>
+        <div className="header-search">
+          <span className="material-icons-round search-icon">search</span>
+          <input 
+            type="text" 
+            placeholder="Tìm kiếm mã vé, khách hàng, chuyến bay..." 
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowSearch(e.target.value.length > 0);
+            }}
+            onFocus={() => {
+              if (searchQuery.length > 0) setShowSearch(true);
+            }}
+          />
+        </div>
+
+        {/* Search Results Dropdown */}
+        {showSearch && (
+          <div className="search-dropdown">
+            <div className="search-section">
+              <h4>GỢI Ý KẾT QUẢ CHO "{searchQuery}"</h4>
+              <div className="search-result-item" onClick={() => { alert('Mở chi tiết mã vé VN123'); setShowSearch(false); }}>
+                <span className="material-icons-round text-primary">confirmation_number</span>
+                <div className="s-res-info">
+                  <p className="s-res-title">Vé máy bay VN123</p>
+                  <p className="s-res-desc">Hà Nội - TP. Hồ Chí Minh (24/10/2023)</p>
+                </div>
+              </div>
+              <div className="search-result-item" onClick={() => { alert('Mở thông tin khách hàng'); setShowSearch(false); }}>
+                <span className="material-icons-round text-success">person</span>
+                <div className="s-res-info">
+                  <p className="s-res-title">Khách hàng: Nguyễn Văn {searchQuery}</p>
+                  <p className="s-res-desc">0912345678 • Hạng thẻ: Gold</p>
+                </div>
+              </div>
+            </div>
+            <div className="search-footer" onClick={() => alert('Đang tìm tất cả...')}>
+              Xem tất cả kết quả
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="header-right">
@@ -76,10 +121,9 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         </div>
 
         {/* Help */}
-        <button className="header-icon-btn" title="Trợ giúp">
+        <button className="header-icon-btn" title="Trợ giúp" onClick={() => alert('Trung tâm trợ giúp Skyward Portal đang được cập nhật.')}>
           <span className="material-icons-round">help_outline</span>
         </button>
-
       </div>
 
       <style>{`
@@ -99,9 +143,12 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         }
 
         /* Search bar */
-        .header-search {
+        .header-search-container {
           flex: 1;
           max-width: 480px;
+          position: relative;
+        }
+        .header-search {
           display: flex;
           align-items: center;
           background: #f8fafc;
@@ -113,6 +160,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         }
         .header-search:focus-within {
           border-color: #0e74be;
+          background: white;
           box-shadow: 0 0 0 3px rgba(14, 116, 190, 0.1);
         }
         .search-icon {
@@ -131,6 +179,32 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           font-family: inherit;
         }
         .header-search input::placeholder { color: #94a3b8; }
+
+        .search-dropdown {
+          position: absolute;
+          top: 50px;
+          left: 0;
+          right: 0;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+          border: 1px solid #f1f5f9;
+          overflow: hidden;
+          z-index: 100;
+          animation: slideDown 0.2s ease-out;
+        }
+        .search-section { padding: 16px 0; }
+        .search-section h4 { font-size: 11px; font-weight: 800; color: #94a3b8; margin: 0 16px 12px; letter-spacing: 0.5px; }
+        .search-result-item { display: flex; gap: 12px; padding: 10px 16px; cursor: pointer; transition: background 0.2s; align-items: center; }
+        .search-result-item:hover { background: #f8fafc; }
+        .search-result-item .material-icons-round { padding: 8px; border-radius: 10px; background: #f1f5f9; font-size: 20px; }
+        .text-primary { color: #0e74be; }
+        .text-success { color: #10b981; }
+        .s-res-title { font-size: 14px; font-weight: 600; color: #1e293b; margin: 0 0 4px; }
+        .s-res-desc { font-size: 12px; color: #64748b; margin: 0; }
+        
+        .search-footer { padding: 12px; text-align: center; border-top: 1px solid #f1f5f9; background: #f8fafc; font-size: 13px; font-weight: 600; color: #0e74be; cursor: pointer; }
+        .search-footer:hover { text-decoration: underline; }
 
         /* Right section */
         .header-right {

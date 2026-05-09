@@ -1,35 +1,41 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
+import AppLayout from '../../components/AppLayout';
+import Button from '../../components/Button';
 
 interface TicketsPageProps {
   onNavigate?: (id: string) => void;
   onCheckout?: (ticket: any) => void;
 }
 
-const passengers: Record<string, { name: string; seat: string; dob: string; passport: string; tier: string }[]> = {
-  'VE-001': [
-    { name: 'Nguyễn Văn An', seat: '14A', dob: '15/03/1990', passport: 'B1234567', tier: 'Gold' },
-    { name: 'Nguyễn Thị Lan', seat: '14B', dob: '22/07/1992', passport: 'B1234568', tier: 'Silver' },
+const passengers: Record<string, { name: string; seat: string; dob: string; passport: string; tier: string; eTicket: string }[]> = {
+  'BK-001': [
+    { name: 'Nguyễn Văn An', seat: '14A', dob: '15/03/1990', passport: 'B1234567', tier: 'Gold', eTicket: '738-1234567890' },
+    { name: 'Nguyễn Thị Lan', seat: '14B', dob: '22/07/1992', passport: 'B1234568', tier: 'Silver', eTicket: '738-1234567891' },
   ],
-  'VE-002': [
-    { name: 'Trần Thị Bé', seat: '22C', dob: '01/01/1985', passport: 'C9876543', tier: 'Platinum' },
+  'BK-002': [
+    { name: 'Trần Thị Bé', seat: '22C', dob: '01/01/1985', passport: 'C9876543', tier: 'Platinum', eTicket: '975-9876543210' },
   ],
-  'VE-003': [
-    { name: 'Lê Hữu Đạt', seat: '8B', dob: '10/11/1995', passport: 'D1112223', tier: 'Member' },
-    { name: 'Lê Thị Hoa', seat: '8C', dob: '05/06/1997', passport: 'D1112224', tier: 'Member' },
-    { name: 'Lê Văn Bình', seat: '8D', dob: '30/09/1988', passport: 'D1112225', tier: 'Silver' },
+  'BK-003': [
+    { name: 'Lê Hữu Đạt', seat: '8B', dob: '10/11/1995', passport: 'D1112223', tier: 'Member', eTicket: '738-5555666670' },
+    { name: 'Lê Thị Hoa', seat: '8C', dob: '05/06/1997', passport: 'D1112224', tier: 'Member', eTicket: '738-5555666671' },
+    { name: 'Lê Văn Bình', seat: '8D', dob: '30/09/1988', passport: 'D1112225', tier: 'Silver', eTicket: '738-5555666672' },
   ],
-  'VE-004': [
-    { name: 'Phạm Tuấn Khải', seat: '31F', dob: '20/02/1980', passport: 'E5556667', tier: 'Gold' },
+  'BK-004': [
+    { name: 'Phạm Tuấn Khải', seat: '31F', dob: '20/02/1980', passport: 'E5556667', tier: 'Gold', eTicket: '976-1111222233' },
+  ],
+  'BK-005': [
+    { name: 'Nguyễn Quốc Dũng', seat: '12A', dob: '08/05/1990', passport: 'B83868386', tier: 'Platinum', eTicket: 'Chưa xuất' },
   ],
 };
 
-const tickets = [
-  { id: 'VE-001', pnr: 'G7X9PQ', flight: 'VN123', from: 'SGN', to: 'HAN', date: '24/10/2023', time: '08:30', total: '6,500,000', status: 'Đang hiệu lực', badge: 'success', pax: 2, airline: 'Vietnam Airlines' },
-  { id: 'VE-002', pnr: 'A2B4C6', flight: 'VJ456', from: 'DAD', to: 'SGN', date: '25/10/2023', time: '14:15', total: '1,890,000', status: 'Đã hủy', badge: 'danger', pax: 1, airline: 'Vietjet Air' },
-  { id: 'VE-003', pnr: 'L9M1N2', flight: 'VN789', from: 'HAN', to: 'PQC', date: '28/10/2023', time: '09:40', total: '12,300,000', status: 'Đã hoàn tiền', badge: 'warning', pax: 3, airline: 'Vietnam Airlines' },
-  { id: 'VE-004', pnr: 'X7Y8Z9', flight: 'QH321', from: 'SGN', to: 'HPH', date: '02/11/2023', time: '18:00', total: '2,450,000', status: 'Đã Void', badge: 'default', pax: 1, airline: 'Bamboo Airways' },
+const bookings = [
+  { id: 'BK-001', pnr: 'G7X9PQ', flight: 'VN123', from: 'SGN', to: 'HAN', date: '24/10/2023', time: '08:30', total: '6,500,000', status: 'Đã xuất vé', badge: 'success', pax: 2, airline: 'Vietnam Airlines', timeLimit: null, type: 'Khứ hồi' },
+  { id: 'BK-002', pnr: 'A2B4C6', flight: 'VJ456', from: 'DAD', to: 'SGN', date: '25/10/2023', time: '14:15', total: '1,890,000', status: 'Đã hủy', badge: 'danger', pax: 1, airline: 'Vietjet Air', timeLimit: null, type: 'Một chiều' },
+  { id: 'BK-005', pnr: 'HOLD01', flight: 'QH321', from: 'HAN', to: 'DAD', date: '10/05/2026', time: '10:00', total: '2,150,000', status: 'Chờ thanh toán', badge: 'hold', pax: 1, airline: 'Bamboo Airways', timeLimit: '2026-05-09T18:00:00', type: 'Một chiều' },
+  { id: 'BK-003', pnr: 'L9M1N2', flight: 'VN789', from: 'HAN', to: 'PQC', date: '28/10/2023', time: '09:40', total: '12,300,000', status: 'Đã hoàn tiền', badge: 'warning', pax: 3, airline: 'Vietnam Airlines', timeLimit: null, type: 'Khứ hồi' },
+  { id: 'BK-004', pnr: 'X7Y8Z9', flight: 'QH321', from: 'SGN', to: 'HPH', date: '02/11/2023', time: '18:00', total: '2,450,000', status: 'Đã Void', badge: 'default', pax: 1, airline: 'Bamboo Airways', timeLimit: null, type: 'Một chiều' },
 ];
 
 const tierColors: Record<string, { bg: string; color: string }> = {
@@ -39,32 +45,64 @@ const tierColors: Record<string, { bg: string; color: string }> = {
   Member:   { bg: '#eff6ff', color: '#1d4ed8' },
 };
 
+const CountdownTimer: React.FC<{ limit: string | null }> = ({ limit }) => {
+  const [timeLeft, setTimeLeft] = React.useState('');
+
+  React.useEffect(() => {
+    if (!limit) return;
+    const timer = setInterval(() => {
+      const now = new Date().getTime();
+      const distance = new Date(limit).getTime() - now;
+      if (distance < 0) {
+        setTimeLeft('HẾT HẠN');
+        clearInterval(timer);
+      } else {
+        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        setTimeLeft(`${hours}h ${minutes}m ${seconds}s`);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [limit]);
+
+  if (!limit) return null;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: '#fff7ed', color: '#c2410c', padding: '2px 8px', borderRadius: 6, fontSize: 11, fontWeight: 800, border: '1px solid #ffedd5' }}>
+      <span className="material-icons-round" style={{ fontSize: 14 }}>timer</span>
+      {timeLeft}
+    </div>
+  );
+};
+
 const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => {
+  const [bookingsData, setBookingsData] = useState(bookings);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAirline, setFilterAirline] = useState('all');
   const [search, setSearch] = useState('');
-  const [actionType, setActionType] = useState<'issue' | 'exchange' | 'refund' | null>(null);
+  const [actionType, setActionType] = useState<'issue' | 'void' | 'refund' | null>(null);
   const [isAddPaxModalOpen, setIsAddPaxModalOpen] = useState(false);
   const [newPax, setNewPax] = useState({ name: '', seat: '', type: 'Người lớn' });
   const [passengersData, setPassengersData] = useState(passengers);
   const [viewingTicket, setViewingTicket] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'passengers' | 'history'>('passengers');
+  const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
 
-  const selected = tickets.find(t => t.id === selectedId) ?? null;
-  const paxList = selectedId ? (passengersData[selectedId] ?? []) : [];
+
 
   const handleAddPax = () => {
     if (!selectedId || !newPax.name) return;
     const currentPax = passengersData[selectedId] || [];
     setPassengersData({
       ...passengersData,
-      [selectedId]: [...currentPax, { name: newPax.name.toUpperCase(), seat: newPax.seat || '--', dob: '--', passport: '--', tier: 'Member' }]
+      [selectedId]: [...currentPax, { name: newPax.name.toUpperCase(), seat: newPax.seat || '--', dob: '--', passport: '--', tier: 'Member', eTicket: 'Chưa xuất' }]
     });
     setIsAddPaxModalOpen(false);
     setNewPax({ name: '', seat: '', type: 'Người lớn' });
   };
 
-  const filtered = tickets.filter(t => {
+  const filtered = bookingsData.filter(t => {
     if (filterStatus !== 'all' && t.badge !== filterStatus) return false;
     if (filterAirline !== 'all' && t.airline !== filterAirline) return false;
     
@@ -76,41 +114,65 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
     return searchMatch;
   });
 
+  const selected = filtered.find(t => t.id === selectedId) ?? null;
+  const paxList = selectedId ? (passengersData[selectedId] ?? []) : [];
+
+  const toggleTicketSelection = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTickets(prev => 
+      prev.includes(id) ? prev.filter(tId => tId !== id) : [...prev, id]
+    );
+  };
+
+  const handleBulkAction = (action: 'void' | 'refund') => {
+    if (selectedTickets.length === 0) return;
+    const statusText = action === 'void' ? 'Đã Void' : 'Đã hoàn tiền';
+    const badgeType = action === 'void' ? 'default' : 'warning';
+    
+    setBookingsData(prev => prev.map(t => 
+      selectedTickets.includes(t.id) ? { ...t, status: statusText, badge: badgeType as any } : t
+    ));
+    setSelectedTickets([]);
+    alert(`Đã xử lý hàng loạt ${selectedTickets.length} vé.`);
+  };
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#f0f4f8' }}>
-      <Sidebar activeItem="tickets" onNavigate={onNavigate} />
-
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-        <Header title="Vé máy bay — Ticket Management" />
-
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+    <AppLayout activeItem="tickets" onNavigate={onNavigate || (() => {})}>
+      <div className="tickets-page-content" style={{ display: 'flex', alignItems: 'flex-start' }}>
 
           {/* ── LEFT PANEL: Ticket List ── */}
-          <div style={{ flex: selectedId ? '0 0 54%' : '1', display: 'flex', flexDirection: 'column', overflow: 'hidden', transition: 'flex 0.3s ease' }}>
+          <div style={{ flex: selectedId ? '0 0 54%' : '1', display: 'flex', flexDirection: 'column', transition: 'flex 0.3s ease', minWidth: 0 }}>
             <div style={{ padding: '24px 24px 0' }}>
-              {/* Breadcrumb */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: '#64748b', marginBottom: 16 }}>
-                <span style={{ color: '#2563eb', cursor: 'pointer' }} onClick={() => onNavigate?.('flights')}>Chuyến bay</span>
-                <span className="material-icons-round" style={{ fontSize: 16 }}>chevron_right</span>
-                <span style={{ color: '#1e293b' }}>Vé máy bay</span>
-              </div>
 
               {/* Page Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
                 <div>
-                  <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0 }}>Danh sách Vé</h1>
-                  <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Click vào vé để xem danh sách hành khách</p>
+                  <h1 style={{ fontSize: 22, fontWeight: 800, color: '#0f172a', margin: 0 }}>Danh sách Booking</h1>
+                  <p style={{ fontSize: 13, color: '#64748b', margin: '4px 0 0' }}>Click vào đơn để xem danh sách hành khách và vé</p>
                 </div>
-                <button onClick={() => onNavigate?.('flights')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'linear-gradient(135deg,#1e40af,#3b82f6)', border: 'none', borderRadius: 10, color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
-                  <span className="material-icons-round" style={{ fontSize: 18 }}>add</span>
-                  Tạo vé mới
-                </button>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {selectedTickets.length > 0 && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0 12px', background: '#f1f5f9', borderRadius: 10, border: '1px solid #e2e8f0' }}>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: '#475569' }}>{selectedTickets.length} đã chọn</span>
+                      <div style={{ width: 1, height: 20, background: '#cbd5e1' }} />
+                      <button onClick={() => handleBulkAction('void')} style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '8px 4px' }}>VOID LOẠT</button>
+                      <button onClick={() => handleBulkAction('refund')} style={{ background: 'none', border: 'none', color: '#d97706', fontSize: 12, fontWeight: 700, cursor: 'pointer', padding: '8px 4px' }}>HOÀN LOẠT</button>
+                      <button onClick={() => setSelectedTickets([])} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: 18, cursor: 'pointer' }}>
+                        <span className="material-icons-round" style={{ fontSize: 18 }}>close</span>
+                      </button>
+                    </div>
+                  )}
+                  <button onClick={() => onNavigate?.('flights')} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 18px', background: 'linear-gradient(135deg,#1e40af,#3b82f6)', border: 'none', borderRadius: 10, color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>
+                    <span className="material-icons-round" style={{ fontSize: 18 }}>add</span>
+                    Tạo Booking mới
+                  </button>
+                </div>
               </div>
 
               {/* Stats bar */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: selectedId ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
                 {[
-                  { label: 'Tổng vé', value: '128', icon: 'confirmation_number', color: '#2563eb', bg: '#eff6ff' },
+                  { label: 'Tổng Booking', value: '128', icon: 'receipt_long', color: '#2563eb', bg: '#eff6ff' },
                   { label: 'Đang hiệu lực', value: '84', icon: 'check_circle', color: '#16a34a', bg: '#dcfce7' },
                   { label: 'Đã hủy', value: '23', icon: 'cancel', color: '#dc2626', bg: '#fef2f2' },
                   { label: 'Tổng hành khách', value: '312', icon: 'groups', color: '#7c3aed', bg: '#f5f3ff' },
@@ -128,14 +190,15 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
               </div>
 
               {/* Filters */}
-              <div style={{ background: 'white', borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, border: '1px solid #e2e8f0' }}>
+              <div style={{ background: 'white', borderRadius: 12, padding: '12px 16px', display: 'flex', gap: 10, alignItems: 'center', marginBottom: 16, border: '1px solid #e2e8f0', flexWrap: 'wrap' }}>
                 <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8, border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', background: '#f8fafc' }}>
                   <span className="material-icons-round" style={{ fontSize: 18, color: '#94a3b8' }}>search</span>
                   <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tìm PNR, mã chuyến bay..." style={{ border: 'none', background: 'transparent', outline: 'none', fontSize: 13, width: '100%', color: '#1e293b' }} />
                 </div>
                 <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#475569', background: '#f8fafc', outline: 'none', cursor: 'pointer' }}>
                   <option value="all">Tất cả trạng thái</option>
-                  <option value="success">Đang hiệu lực</option>
+                  <option value="hold">Chờ thanh toán (Hold)</option>
+                  <option value="success">Đã xuất vé</option>
                   <option value="danger">Đã hủy</option>
                   <option value="warning">Đã hoàn tiền</option>
                   <option value="default">Đã Void</option>
@@ -150,11 +213,12 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
             </div>
 
             {/* Ticket Cards */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '0 24px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ padding: '0 24px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               {filtered.map(t => {
                 const isActive = selectedId === t.id;
                 const badgeStyles: Record<string, { bg: string; color: string; dot: string }> = {
                   success: { bg: '#dcfce7', color: '#15803d', dot: '#16a34a' },
+                  hold:    { bg: '#fff7ed', color: '#c2410c', dot: '#f97316' },
                   danger:  { bg: '#fee2e2', color: '#b91c1c', dot: '#dc2626' },
                   warning: { bg: '#fef9c3', color: '#92400e', dot: '#d97706' },
                   default: { bg: '#f1f5f9', color: '#475569', dot: '#94a3b8' },
@@ -176,11 +240,23 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div 
+                          onClick={(e) => toggleTicketSelection(t.id, e)}
+                          style={{ 
+                            width: 20, height: 20, border: '2px solid #cbd5e1', borderRadius: 6, 
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            background: selectedTickets.includes(t.id) ? '#2563eb' : 'white',
+                            borderColor: selectedTickets.includes(t.id) ? '#2563eb' : '#cbd5e1',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {selectedTickets.includes(t.id) && <span className="material-icons-round" style={{ fontSize: 14, color: 'white' }}>check</span>}
+                        </div>
                         <div style={{ background: isActive ? '#1e40af' : '#f8fafc', borderRadius: 8, padding: '6px 10px', border: '1px solid #e2e8f0' }}>
                           <span className="material-icons-round" style={{ fontSize: 20, color: isActive ? 'white' : '#64748b' }}>confirmation_number</span>
                         </div>
                         <div>
-                          <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>MÃ VÉ</p>
+                          <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>MÃ BOOKING</p>
                           <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>{t.id}</p>
                         </div>
                         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '3px 10px' }}>
@@ -196,8 +272,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                       </div>
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {/* Route */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
                         <span style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>{t.from}</span>
                         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -207,11 +282,13 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                         </div>
                         <span style={{ fontSize: 22, fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>{t.to}</span>
                       </div>
-
+                      
+                      {t.badge === 'hold' && <CountdownTimer limit={t.timeLimit} />}
+                      
                       <div style={{ width: 1, height: 36, background: '#e2e8f0', margin: '0 12px' }} />
 
                       {/* Meta */}
-                      <div style={{ display: 'flex', gap: 20 }}>
+                      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                         <div>
                           <p style={{ margin: 0, fontSize: 10, color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>Chuyến bay</p>
                           <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{t.flight}</p>
@@ -234,19 +311,19 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                     </div>
                   </div>
                 );
-              })}
+                })}
+              </div>
             </div>
-          </div>
 
           {/* ── RIGHT PANEL: Passenger List ── */}
           {selected && (
-            <div style={{ flex: '0 0 46%', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', background: 'white', animation: 'slideInRight 0.25s cubic-bezier(.34,1.56,.64,1)' }}>
+            <div style={{ flex: '0 0 46%', borderLeft: '1px solid #e2e8f0', display: 'flex', flexDirection: 'column', background: 'white', animation: 'slideInRight 0.25s cubic-bezier(.34,1.56,.64,1)', minWidth: 0, position: 'sticky', top: 0, maxHeight: 'calc(100vh - 112px)' }}>
               {/* Panel Header */}
               <div style={{ padding: '24px 24px 16px', borderBottom: '1px solid #e2e8f0', background: 'linear-gradient(135deg, #0f2460 0%, #1e40af 60%, #3b82f6 100%)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
                   <div>
                     <p style={{ margin: 0, fontSize: 11, color: 'rgba(255,255,255,0.6)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Danh sách hành khách</p>
-                    <h2 style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 900, color: 'white' }}>Vé {selected.id}</h2>
+                    <h2 style={{ margin: '4px 0 0', fontSize: 18, fontWeight: 900, color: 'white' }}>Booking {selected.id}</h2>
                   </div>
                   <button onClick={() => setSelectedId(null)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
                     <span className="material-icons-round" style={{ fontSize: 18 }}>close</span>
@@ -279,20 +356,36 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                 </div>
               </div>
 
-              {/* Passenger count */}
-              <div style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
-                  <span className="material-icons-round" style={{ fontSize: 16, verticalAlign: 'middle', color: '#7c3aed', marginRight: 4 }}>group</span>
-                  {paxList.length} hành khách trên vé này
-                </p>
+              <div style={{ display: 'flex', borderBottom: '1px solid #f1f5f9' }}>
                 <button 
-                  onClick={() => setIsAddPaxModalOpen(true)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1d4ed8', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+                  onClick={() => setViewMode('passengers')}
+                  style={{ flex: 1, padding: '14px', background: 'none', border: 'none', borderBottom: viewMode === 'passengers' ? '3px solid #2563eb' : '3px solid transparent', color: viewMode === 'passengers' ? '#2563eb' : '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
                 >
-                  <span className="material-icons-round" style={{ fontSize: 15 }}>person_add</span>
-                  Thêm khách
+                  HÀNH KHÁCH
+                </button>
+                <button 
+                  onClick={() => setViewMode('history')}
+                  style={{ flex: 1, padding: '14px', background: 'none', border: 'none', borderBottom: viewMode === 'history' ? '3px solid #2563eb' : '3px solid transparent', color: viewMode === 'history' ? '#2563eb' : '#64748b', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                >
+                  LỊCH SỬ THAO TÁC
                 </button>
               </div>
+
+              {viewMode === 'passengers' ? (
+                <>
+                  <div style={{ padding: '14px 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #f1f5f9' }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: '#1e293b' }}>
+                      <span className="material-icons-round" style={{ fontSize: 16, verticalAlign: 'middle', color: '#7c3aed', marginRight: 4 }}>group</span>
+                      {paxList.length} hành khách trong booking này
+                    </p>
+                    <button 
+                      onClick={() => setIsAddPaxModalOpen(true)}
+                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1d4ed8', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+                    >
+                      <span className="material-icons-round" style={{ fontSize: 15 }}>person_add</span>
+                      Thêm khách
+                    </button>
+                  </div>
 
               {/* Passenger List */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -300,7 +393,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                   const tc = tierColors[p.tier] ?? tierColors.Member;
                   const initials = p.name.split(' ').map((w: string) => w[0]).slice(-2).join('').toUpperCase();
                   return (
-                    <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14, transition: 'all 0.2s' }}>
+                    <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'all 0.2s' }}>
                       {/* Avatar */}
                       <div style={{ width: 44, height: 44, borderRadius: 12, background: 'linear-gradient(135deg,#1e40af,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 15, flexShrink: 0 }}>
                         {initials}
@@ -310,7 +403,10 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                           <p style={{ margin: 0, fontWeight: 700, fontSize: 14, color: '#0f172a' }}>{p.name}</p>
                           <span style={{ background: tc.bg, color: tc.color, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 10 }}>{p.tier}</span>
                         </div>
-                        <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#64748b' }}>
+                        <div style={{ display: 'flex', gap: 14, fontSize: 12, color: '#64748b', flexWrap: 'wrap' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span className="material-icons-round" style={{ fontSize: 13 }}>confirmation_number</span> <b>{p.eTicket}</b>
+                          </span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span className="material-icons-round" style={{ fontSize: 13 }}>airline_seat_recline_normal</span> Ghế {p.seat}
                           </span>
@@ -336,7 +432,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                             if (window.confirm(`Xóa hành khách ${p.name}?`)) {
                               setPassengersData({
                                 ...passengersData,
-                                [selected.id]: (passengersData[selected.id] || []).filter((_, idx) => idx !== i)
+                                [selected.id]: (passengersData[selected.id] || []).filter((_: any, idx: number) => idx !== i)
                               });
                             }
                           }}
@@ -349,84 +445,120 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                   );
                 })}
               </div>
+                </>
+              ) : (
+                <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {[
+                    { time: '08/05/2026 14:30', user: 'Admin', action: 'Tạo booking (Hold)', detail: 'PNR: HOLD01 · Giá: 2,150,000đ' },
+                    { time: '08/05/2026 14:35', user: 'Admin', action: 'Thêm hành khách', detail: 'NGUYEN VAN A · Ghế: 12A' },
+                    { time: '08/05/2026 15:00', user: 'System', action: 'Gửi thông báo Email', detail: 'Đã gửi xác nhận đặt chỗ cho khách hàng' },
+                  ].map((h, i) => (
+                    <div key={i} style={{ position: 'relative', paddingLeft: 24, borderLeft: '2px solid #e2e8f0' }}>
+                      <div style={{ position: 'absolute', left: -7, top: 0, width: 12, height: 12, borderRadius: '50%', background: '#2563eb', border: '2px solid white' }} />
+                      <p style={{ margin: '0 0 4px', fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>{h.time} · {h.user}</p>
+                      <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{h.action}</p>
+                      <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>{h.detail}</p>
+                    </div>
+                  ))}
+                  <div style={{ padding: '20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1', textAlign: 'center' }}>
+                    <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>Cuộn xuống để xem thêm lịch sử</p>
+                  </div>
+                </div>
+              )}
 
-              {/* Panel Footer */}
               <div style={{ padding: '14px 24px', borderTop: '1px solid #e2e8f0', background: '#f8fafc', display: 'flex', gap: 10 }}>
-                <button 
-                  onClick={() => setActionType('issue')}
-                  style={{ flex: 1, padding: '10px', background: 'linear-gradient(135deg,#1e40af,#3b82f6)', border: 'none', borderRadius: 10, color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                >
-                  <span className="material-icons-round" style={{ fontSize: 17 }}>receipt_long</span> Xuất vé
-                </button>
-                <button 
-                  onClick={() => setActionType('exchange')}
-                  style={{ flex: 1, padding: '10px', background: 'white', border: '1px solid #e2e8f0', borderRadius: 10, color: '#475569', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                >
-                  <span className="material-icons-round" style={{ fontSize: 17 }}>swap_horiz</span> Đổi vé
-                </button>
-                <button 
-                  onClick={() => setActionType('refund')}
-                  style={{ flex: 1, padding: '10px', background: '#fef2f2', border: '1px solid #fee2e2', borderRadius: 10, color: '#dc2626', fontWeight: 700, fontSize: 13, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                >
-                  <span className="material-icons-round" style={{ fontSize: 17 }}>assignment_return</span> Hoàn vé
-                </button>
+                {selected?.badge === 'hold' && (
+                  <button 
+                    onClick={() => onCheckout && onCheckout(selected)}
+                    style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: '#16a34a', border: 'none', borderRadius: 8, color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                  >
+                    <span className="material-icons-round" style={{ fontSize: 18 }}>payments</span>
+                    XUẤT VÉ (ISSUE)
+                  </button>
+                )}
+                {selected?.badge === 'success' && (
+                  <>
+                    <button 
+                      onClick={() => setActionType('refund')}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: 'white', border: '1px solid #ef4444', borderRadius: 8, color: '#ef4444', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                    >
+                      <span className="material-icons-round" style={{ fontSize: 18 }}>replay</span>
+                      HOÀN VÉ
+                    </button>
+                    <button 
+                      onClick={() => setActionType('void')}
+                      style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px', background: '#0f172a', border: 'none', borderRadius: 8, color: 'white', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                    >
+                      <span className="material-icons-round" style={{ fontSize: 18 }}>history_edu</span>
+                      VOID VÉ
+                    </button>
+                  </>
+                )}
+                {(selected?.badge === 'danger' || selected?.badge === 'default' || selected?.badge === 'warning') && (
+                  <button 
+                    style={{ flex: 1, padding: '10px', background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: 8, color: '#64748b', fontWeight: 700, fontSize: 13, cursor: 'not-allowed' }}
+                    disabled
+                  >
+                    VÉ ĐÃ {selected?.status?.toUpperCase()}
+                  </button>
+                )}
               </div>
             </div>
           )}
         </div>
-      </div>
 
       {/* Action Modals */}
       {actionType && (
         <div className="modal-overlay" onClick={() => setActionType(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{actionType === 'issue' ? 'Xuất vé máy bay' : actionType === 'exchange' ? 'Yêu cầu đổi vé' : 'Thủ tục hoàn vé'}</h3>
+              <h3>{actionType === 'issue' ? 'Xuất vé máy bay' : actionType === 'void' ? 'Hủy vé ngay lập tức (Void)' : 'Thủ tục hoàn vé (Refund)'}</h3>
               <button className="close-btn" onClick={() => setActionType(null)}>
                 <span className="material-icons-round">close</span>
               </button>
             </div>
             <div className="modal-body">
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: actionType === 'refund' ? '#fef2f2' : '#eff6ff', color: actionType === 'refund' ? '#dc2626' : '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>
-                  <span className="material-icons-round">{actionType === 'issue' ? 'receipt_long' : actionType === 'exchange' ? 'swap_horiz' : 'assignment_return'}</span>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: actionType === 'refund' || actionType === 'void' ? '#fef2f2' : '#eff6ff', color: actionType === 'refund' || actionType === 'void' ? '#dc2626' : '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>
+                  <span className="material-icons-round">{actionType === 'issue' ? 'receipt_long' : actionType === 'void' ? 'dangerous' : 'assignment_return'}</span>
                 </div>
                 <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Xác nhận thực hiện thao tác?</p>
-                <p style={{ fontSize: 14, color: '#64748b' }}>Hệ thống sẽ ghi nhận yêu cầu {actionType === 'issue' ? 'xuất vé' : actionType === 'exchange' ? 'đổi vé' : 'hoàn vé'} cho mã booking <strong>{selected?.pnr}</strong>.</p>
+                <p style={{ fontSize: 14, color: '#64748b' }}>Hệ thống sẽ ghi nhận yêu cầu {actionType === 'issue' ? 'xuất vé' : actionType === 'void' ? 'Void vé' : 'hoàn vé'} cho mã booking <strong>{selected?.pnr}</strong>.</p>
               </div>
             </div>
-            <div className="modal-footer" style={{ gap: 10 }}>
-              <button onClick={() => setActionType(null)} style={{ padding: '10px 20px', border: '1px solid #e2e8f0', background: 'white', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Hủy bỏ</button>
-              <button 
+            <div className="modal-footer" style={{ gap: 12 }}>
+              <Button variant="outline" onClick={() => setActionType(null)}>Hủy bỏ</Button>
+              <Button 
+                variant={actionType === 'refund' ? 'danger' : 'primary'}
                 onClick={() => { 
                   if (actionType === 'issue') {
-                    if (onCheckout && selected) {
-                      onCheckout({
-                        ...selected,
-                        customer: passengersData[selected.id]?.[0]?.name || 'Nhiều khách hàng',
-                        routeFrom: selected.from,
-                        routeTo: selected.to,
-                        airportFrom: selected.from === 'SGN' ? 'Tân Sơn Nhất' : 'Nội Bài',
-                        airportTo: selected.to === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
-                        gate: 'B12',
-                        terminal: 'T2',
-                        seat: passengersData[selected.id]?.[0]?.seat || '14A',
-                        boarding: selected.time,
-                      });
-                    } else {
-                      onNavigate?.('issue_ticket');
+                    if (selected) {
+                      setBookingsData(bookingsData.map(t => t.id === selectedId ? { ...t, status: 'Đã xuất vé', badge: 'success', timeLimit: null } : t));
+                      if (onCheckout) {
+                        onCheckout({
+                          ...selected,
+                          customer: passengersData[selected.id]?.[0]?.name || 'Nhiều khách hàng',
+                          routeFrom: selected.from,
+                          routeTo: selected.to,
+                          airportFrom: selected.from === 'SGN' ? 'Tân Sơn Nhất' : 'Nội Bài',
+                          airportTo: selected.to === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
+                          gate: 'B12',
+                          terminal: 'T2',
+                          seat: passengersData[selected.id]?.[0]?.seat || '14A',
+                          boarding: selected.time,
+                        });
+                      }
                     }
-                  } else if (actionType === 'exchange') {
-                    onNavigate?.('exchange_ticket');
+                  } else if (actionType === 'void') {
+                    setBookingsData(bookingsData.map(t => t.id === selectedId ? { ...t, status: 'Đã Void', badge: 'default' } : t));
                   } else if (actionType === 'refund') {
-                    onNavigate?.('cancel_ticket');
+                    setBookingsData(bookingsData.map(t => t.id === selectedId ? { ...t, status: 'Đã hoàn tiền', badge: 'warning' } : t));
                   }
                   setActionType(null); 
                 }} 
-                style={{ padding: '10px 20px', border: 'none', background: actionType === 'refund' ? '#dc2626' : '#2563eb', color: 'white', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}
               >
                 Đồng ý
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -435,46 +567,69 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
       {/* Viewing Ticket Modal */}
       {viewingTicket && (
         <div className="modal-overlay" onClick={() => setViewingTicket(null)}>
-          <div className="modal-card" onClick={e => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>Hồ sơ hành khách</h3>
-              <button className="close-btn" onClick={() => setViewingTicket(null)}>
-                <span className="material-icons-round">close</span>
-              </button>
+          <div className="modal-card boarding-pass-modal" onClick={e => e.stopPropagation()}>
+            <div className="modal-header pass-header">
+              <div className="pass-logo">
+                 <span className="material-icons-round">airplanemode_active</span>
+                 <b>SKYWARD AIRLINES</b>
+              </div>
+              <div className="pass-type">BOARDING PASS</div>
             </div>
-            <div className="modal-body">
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-                   <div style={{ width: 60, height: 60, borderRadius: 16, background: 'linear-gradient(135deg,#1e40af,#3b82f6)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 800, fontSize: 24 }}>
-                     {viewingTicket.name.split(' ').map((w: string) => w[0]).slice(-2).join('').toUpperCase()}
-                   </div>
-                   <div>
-                     <h2 style={{ margin: 0, fontSize: 20 }}>{viewingTicket.name}</h2>
-                     <p style={{ margin: 0, color: '#64748b' }}>Hành khách: {viewingTicket.tier}</p>
-                   </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, background: '#f8fafc', padding: 16, borderRadius: 12 }}>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>HỘ CHIẾU</p>
-                    <p style={{ margin: 0, fontWeight: 600 }}>{viewingTicket.passport}</p>
-                  </div>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>NGÀY SINH</p>
-                    <p style={{ margin: 0, fontWeight: 600 }}>{viewingTicket.dob}</p>
-                  </div>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>MÃ VÉ</p>
-                    <p style={{ margin: 0, fontWeight: 600 }}>{viewingTicket.ticket.id}</p>
-                  </div>
-                  <div>
-                    <p style={{ margin: 0, fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>SỐ GHẾ</p>
-                    <p style={{ margin: 0, fontWeight: 600 }}>{viewingTicket.seat}</p>
-                  </div>
-                </div>
+            <div className="pass-body">
+              <div className="pass-main-info">
+                 <div className="pass-row">
+                    <div className="pass-col">
+                       <label>PASSENGER NAME</label>
+                       <b>{viewingTicket.name}</b>
+                    </div>
+                    <div className="pass-col" style={{textAlign:'right'}}>
+                       <label>FLIGHT</label>
+                       <b>{viewingTicket.ticket.flight}</b>
+                    </div>
+                 </div>
+                 <div className="pass-row mt-md">
+                    <div className="pass-col">
+                       <label>FROM</label>
+                       <h2 className="city-code">{viewingTicket.ticket.from}</h2>
+                    </div>
+                    <div className="pass-airplane">
+                       <span className="material-icons-round">flight_takeoff</span>
+                    </div>
+                    <div className="pass-col" style={{textAlign:'right'}}>
+                       <label>TO</label>
+                       <h2 className="city-code">{viewingTicket.ticket.to}</h2>
+                    </div>
+                 </div>
+                 <div className="pass-grid-4 mt-lg">
+                    <div className="pass-col"><label>DATE</label><b>{viewingTicket.ticket.date}</b></div>
+                    <div className="pass-col"><label>BOARDING</label><b>{viewingTicket.ticket.time}</b></div>
+                    <div className="pass-col"><label>GATE</label><b>B12</b></div>
+                    <div className="pass-col"><label>SEAT</label><b className="seat-highlight">{viewingTicket.seat}</b></div>
+                 </div>
+              </div>
+              <div className="pass-barcode-section">
+                 <div className="qr-placeholder">
+                    <span className="material-icons-round">qr_code_2</span>
+                 </div>
+                 <p className="pnr-text">PNR: {viewingTicket.ticket.pnr}</p>
               </div>
             </div>
-            <div className="modal-footer">
-              <button onClick={() => setViewingTicket(null)} style={{ padding: '10px 20px', border: 'none', background: '#1e40af', color: 'white', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Đóng</button>
+            <div className="pass-details-footer">
+               <div className="detail-sec">
+                  <h4><span className="material-icons-round">history</span> Lịch sử giao dịch</h4>
+                  <div className="history-list">
+                     <p><span>08/05/2026</span> <b>Thanh toán thành công</b> <span>+3,250,000đ</span></p>
+                     <p><span>08/05/2026</span> <b>Phí đổi hành trình</b> <span>+500,000đ</span></p>
+                  </div>
+               </div>
+               <div className="detail-sec">
+                  <h4><span className="material-icons-round">luggage</span> Thông tin hành lý</h4>
+                  <p>Hành lý xách tay: 7kg | Hành lý ký gửi: 20kg</p>
+               </div>
+            </div>
+            <div className="modal-footer" style={{ gap: 12 }}>
+               <Button variant="outline" onClick={() => setViewingTicket(null)}>Đóng</Button>
+               <Button onClick={() => window.print()}><span className="material-icons-round">print</span> In Boarding Pass</Button>
             </div>
           </div>
         </div>
@@ -521,8 +676,8 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
               </div>
             </div>
             <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-              <button onClick={() => setIsAddPaxModalOpen(false)} style={{ flex: 1, padding: '10px', border: '1px solid #e2e8f0', background: 'white', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Hủy bỏ</button>
-              <button onClick={handleAddPax} style={{ flex: 1, padding: '10px', border: 'none', background: '#2563eb', color: 'white', borderRadius: 10, fontWeight: 700, cursor: 'pointer' }}>Xác nhận</button>
+              <Button variant="outline" fullWidth onClick={() => setIsAddPaxModalOpen(false)}>Hủy bỏ</Button>
+              <Button fullWidth onClick={handleAddPax}>Xác nhận</Button>
             </div>
           </div>
         </div>
@@ -541,8 +696,36 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
         .close-btn { background: transparent; border: none; cursor: pointer; color: #94a3b8; }
         .modal-body { padding: 24px; }
         .modal-footer { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #f1f5f9; display: flex; justify-content: flex-end; }
+        .boarding-pass-modal { width: 700px; padding: 0; }
+        .pass-header { background: #0f172a; color: white; padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .pass-logo { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+        .pass-type { font-size: 11px; font-weight: 800; letter-spacing: 2px; opacity: 0.7; }
+        .pass-body { display: flex; padding: 32px; gap: 40px; border-bottom: 1px dashed #e2e8f0; }
+        .pass-main-info { flex: 1; }
+        .pass-row { display: flex; justify-content: space-between; align-items: flex-end; }
+        .pass-col label { display: block; font-size: 10px; color: #94a3b8; font-weight: 700; margin-bottom: 4px; }
+        .pass-col b { font-size: 16px; color: #1e293b; }
+        .city-code { font-size: 42px; font-weight: 900; color: #0f172a; margin: 0; line-height: 1; }
+        .pass-airplane { color: #2563eb; }
+        .pass-airplane .material-icons-round { font-size: 32px; }
+        .pass-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+        .seat-highlight { color: #2563eb !important; font-size: 24px !important; }
+        .pass-barcode-section { width: 120px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid #f1f5f9; padding-left: 40px; }
+        .qr-placeholder { width: 100px; height: 100px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .qr-placeholder .material-icons-round { font-size: 64px; color: #0f172a; }
+        .pnr-text { margin: 12px 0 0; font-size: 12px; font-weight: 800; color: #64748b; font-family: monospace; }
+        .pass-details-footer { padding: 24px 32px; display: flex; gap: 40px; background: #f8fafc; }
+        .detail-sec { flex: 1; }
+        .detail-sec h4 { margin: 0 0 12px; font-size: 13px; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+        .detail-sec h4 .material-icons-round { font-size: 18px; color: #2563eb; }
+        .history-list p { margin: 0 0 8px; font-size: 12px; color: #475569; display: flex; justify-content: space-between; }
+        .detail-sec p { margin: 0; font-size: 12px; color: #64748b; }
+        .mt-md { margin-top: 16px; }
+        .mt-lg { margin-top: 24px; }
+        .tickets-page-content { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
-    </div>
+    </AppLayout>
   );
 };
 

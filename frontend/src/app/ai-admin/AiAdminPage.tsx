@@ -1,204 +1,196 @@
 import React, { useState } from 'react';
-import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
+import Button from '../../components/Button';
+import AppLayout from '../../components/AppLayout';
 
 interface AiAdminPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (id: string) => void;
 }
 
 const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate }) => {
-  const [activeTab, setActiveTab] = useState<'recommendations' | 'config'>('recommendations');
-
-  const mockRecommendations = [
-    { customer: 'Nguyễn Văn A', history: ['HAN→SGN', 'SGN→DAD'], suggested: 'VN123 - 01/07/2026', confidence: 92 },
-    { customer: 'Trần Thị B', history: ['SGN→HAN'], suggested: 'VJ456 - 05/07/2026', confidence: 85 },
-    { customer: 'Lê Văn C', history: ['HAN→SGN', 'HAN→DAD', 'HAN→PQC'], suggested: 'QH112 - 08/07/2026', confidence: 78 },
-  ];
+  const [activeTab, setActiveTab] = useState<'assistant' | 'prediction' | 'settings'>('assistant');
 
   return (
-    <AppLayout activeItem="ai-admin" onNavigate={onNavigate} breadcrumb={[{ label: 'Quản Trị AI' }]}>
-      <div className="ai-admin-page">
-        <div className="page-header">
-          <div className="header-titles">
-            <div className="ai-badge">
-              <span className="material-icons-round">smart_toy</span>
-              <span>AI Admin</span>
+    <AppLayout 
+      activeItem="ai-admin" 
+      onNavigate={onNavigate || (() => {})}
+      breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Quản trị AI & Tự động hóa' }]}
+    >
+      <div className="ai-admin-page-content">
+        
+        {/* ── HERO HEADER ── */}
+        <div className="ai-hero-banner">
+          <div className="ai-hero-content">
+            <div className="ai-status-pill">
+              <span className="pulse-dot"></span>
+              CORE AI ENGINE: ONLINE
             </div>
-            <h1>Quản Trị Hệ Thống AI</h1>
-            <p>Cấu hình và theo dõi AI gợi ý, chatbot hỗ trợ khách hàng</p>
+            <h1>Intelligence Command Center</h1>
+            <p>Sử dụng trí tuệ nhân tạo để tối ưu hóa giá vé, dự báo nhu cầu và tự động hóa quy trình nghiệp vụ.</p>
           </div>
-          <div className="ai-status-card">
-            <div className="status-dot active"></div>
-            <span>AI Engine đang hoạt động</span>
+          <div className="ai-hero-visual">
+            <div className="neural-network-mock">
+              <div className="node n1"></div>
+              <div className="node n2"></div>
+              <div className="node n3"></div>
+              <div className="line l1"></div>
+              <div className="line l2"></div>
+            </div>
           </div>
         </div>
 
-        <div className="tab-bar">
-          {[
-            { key: 'recommendations', label: 'Gợi ý chuyến bay', icon: 'recommend' },
-            { key: 'config', label: 'Cấu hình AI', icon: 'tune' },
-          ].map(tab => (
-            <button
-              key={tab.key}
-              className={`tab-btn ${activeTab === tab.key ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.key as any)}
-            >
-              <span className="material-icons-round">{tab.icon}</span>
-              {tab.label}
-            </button>
-          ))}
+        {/* ── TABS ── */}
+        <div className="ai-tabs">
+          <button className={`ai-tab ${activeTab === 'assistant' ? 'active' : ''}`} onClick={() => setActiveTab('assistant')}>
+            <span className="material-icons-round">psychology</span>
+            <span>Trợ lý AI Chiến lược</span>
+          </button>
+          <button className={`ai-tab ${activeTab === 'prediction' ? 'active' : ''}`} onClick={() => setActiveTab('prediction')}>
+            <span className="material-icons-round">query_stats</span>
+            <span>Dự báo Nhu cầu & Giá</span>
+          </button>
+          <button className={`ai-tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>
+            <span className="material-icons-round">settings_suggest</span>
+            <span>Cấu hình Model</span>
+          </button>
         </div>
 
-        {activeTab === 'recommendations' && (
-          <div className="tab-content">
-            <div className="metrics-row">
-              {[
-                { label: 'Khách có lịch sử tìm kiếm', value: '3,281', icon: 'people' },
-                { label: 'Gợi ý đã gửi hôm nay', value: '428', icon: 'send' },
-                { label: 'Tỷ lệ chuyển đổi', value: '18.4%', icon: 'trending_up' },
-              ].map((m, i) => (
-                <Card key={i} className="mini-stat">
-                  <span className="material-icons-round" style={{ color: '#0e74be' }}>{m.icon}</span>
-                  <div>
-                    <p className="stat-label">{m.label}</p>
-                    <h3 className="stat-value">{m.value}</h3>
+        {activeTab === 'assistant' && (
+          <div className="ai-assistant-view">
+            <div className="chat-interface">
+              <Card className="chat-container">
+                <div className="chat-messages">
+                  <div className="msg bot">
+                    <div className="bot-avatar"><span className="material-icons-round">smart_toy</span></div>
+                    <div className="msg-content">
+                      <p>Chào Admin! Dựa trên phân tích 24h qua, tôi nhận thấy nhu cầu bay <strong>Hà Nội - Phú Quốc</strong> đang tăng đột biến 15% cho tuần tới.</p>
+                      <div className="ai-suggestion-box">
+                        <p>💡 Gợi ý: Tăng Markup thêm <b>25,000đ</b> cho các booking thực hiện từ 20h - 23h.</p>
+                        <Button size="sm">Áp dụng ngay</Button>
+                      </div>
+                    </div>
                   </div>
-                </Card>
-              ))}
+                  <div className="msg user">
+                    <div className="msg-content">
+                      <p>Cho tôi báo cáo hiệu quả của đợt khuyến mãi Vietnam Airlines vừa qua.</p>
+                    </div>
+                  </div>
+                  <div className="msg bot">
+                    <div className="bot-avatar"><span className="material-icons-round">smart_toy</span></div>
+                    <div className="msg-content">
+                      <p>Đang trích xuất dữ liệu...</p>
+                      <div className="mini-report">
+                        <div className="report-stat"><span>Vé phát hành:</span> <b>+142 vé</b></div>
+                        <div className="report-stat"><span>Doanh thu:</span> <b>+215.4M</b></div>
+                        <div className="report-stat"><span>Tỷ lệ lấp đầy:</span> <b>88%</b></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="chat-input-wrapper">
+                  <input type="text" placeholder="Hỏi AI về chiến lược kinh doanh hoặc cấu hình tự động..." />
+                  <button className="send-btn"><span className="material-icons-round">send</span></button>
+                </div>
+              </Card>
             </div>
-
-            <Card className="rec-table-card">
-              <h3>Danh sách gợi ý cá nhân hóa</h3>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Khách hàng</th>
-                    <th>Lịch sử tìm kiếm</th>
-                    <th>AI gợi ý</th>
-                    <th>Độ tin cậy</th>
-                    <th>Thao tác</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockRecommendations.map((r, i) => (
-                    <tr key={i}>
-                      <td className="font-semibold">{r.customer}</td>
-                      <td>
-                        <div className="tag-list">
-                          {r.history.map((h, j) => (
-                            <span key={j} className="route-tag">{h}</span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="suggested-flight">{r.suggested}</td>
-                      <td>
-                        <div className="confidence-bar-wrap">
-                          <div className="confidence-bar" style={{ width: `${r.confidence}%` }}></div>
-                          <span>{r.confidence}%</span>
-                        </div>
-                      </td>
-                      <td>
-                        <button className="btn-send-rec">
-                          <span className="material-icons-round">send</span> Gửi gợi ý
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
+            
+            <aside className="ai-side-panel">
+              <Card className="ai-stat-card">
+                <h3>Độ chính xác Model</h3>
+                <div className="gauge-wrap">
+                  <svg viewBox="0 0 100 50">
+                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f1f5f9" strokeWidth="8"></path>
+                    <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#2563eb" strokeWidth="8" strokeDasharray="125 125" strokeDashoffset="25"></path>
+                  </svg>
+                  <div className="gauge-val">94.2%</div>
+                </div>
+                <p>Mô hình <b>Dynamic Pricing v2.4</b> đang hoạt động ổn định.</p>
+              </Card>
+              
+              <Card className="ai-automation-list">
+                <h3>Tự động hóa đang bật</h3>
+                <div className="auto-item">
+                  <div className="info">
+                    <p>Cân bằng Markup</p>
+                    <span>Tự điều chỉnh theo giá sàn</span>
+                  </div>
+                  <div className="toggle active"></div>
+                </div>
+                <div className="auto-item">
+                  <div className="info">
+                    <p>Thông báo PNR sắp hết hạn</p>
+                    <span>Gửi SMS nhắc khách tự động</span>
+                  </div>
+                  <div className="toggle active"></div>
+                </div>
+                <div className="auto-item">
+                  <div className="info">
+                    <p>Quét giá cạnh tranh</p>
+                    <span>Cập nhật mỗi 15 phút</span>
+                  </div>
+                  <div className="toggle"></div>
+                </div>
+              </Card>
+            </aside>
           </div>
-        )}
-
-        {activeTab === 'config' && (
-          <Card className="config-card">
-            <h3>Cấu hình tham số AI</h3>
-            <div className="config-grid">
-              <div className="config-item">
-                <label>Ngưỡng độ tin cậy gợi ý (%)</label>
-                <input type="number" defaultValue={75} min={0} max={100} />
-                <small>Gợi ý chỉ được gửi khi AI đạt ngưỡng này</small>
-              </div>
-              <div className="config-item">
-                <label>Số lịch sử tìm kiếm lưu tối đa</label>
-                <input type="number" defaultValue={50} />
-                <small>Số lần tìm kiếm cuối cùng để AI phân tích</small>
-              </div>
-              <div className="config-item">
-                <label>Kênh gửi gợi ý</label>
-                <select defaultValue="email">
-                  <option value="email">Email</option>
-                  <option value="sms">SMS</option>
-                  <option value="both">Cả hai</option>
-                </select>
-              </div>
-              <div className="config-item">
-                <label>Trạng thái Chatbot</label>
-                <select defaultValue="on">
-                  <option value="on">Đang bật</option>
-                  <option value="off">Tắt</option>
-                  <option value="test">Chế độ test</option>
-                </select>
-              </div>
-            </div>
-            <button className="btn-save-config">
-              <span className="material-icons-round">save</span>
-              Lưu cấu hình
-            </button>
-          </Card>
         )}
       </div>
 
       <style>{`
-        .ai-admin-page { padding: 24px 32px; animation: fadeIn 0.4s ease-out; }
-        .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 28px; }
-        .ai-badge { display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #0e74be, #3b82f6); color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; margin-bottom: 8px; }
-        .ai-badge .material-icons-round { font-size: 16px; }
-        .header-titles h1 { font-size: 24px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0; }
-        .header-titles p { font-size: 14px; color: #64748b; margin: 0; }
-        .ai-status-card { display: flex; align-items: center; gap: 8px; padding: 12px 20px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 10px; font-size: 14px; font-weight: 600; color: #166534; }
-        .status-dot.active { width: 10px; height: 10px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 3px #d1fae5; }
-
-        .tab-bar { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 16px; }
-        .tab-btn { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: transparent; border: none; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-radius: 8px; transition: all 0.2s; font-family: inherit; }
-        .tab-btn:hover { background: #f1f5f9; color: #1e293b; }
-        .tab-btn.active { background: #eff6ff; color: #0e74be; }
-
-        .metrics-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
-        .mini-stat { display: flex; align-items: center; gap: 16px; padding: 20px 24px; }
-        .mini-stat .material-icons-round { font-size: 32px; }
-        .stat-label { font-size: 12px; font-weight: 600; color: #64748b; margin: 0 0 4px 0; text-transform: uppercase; }
-        .stat-value { font-size: 22px; font-weight: 800; color: #1e293b; margin: 0; }
-
-        .rec-table-card { padding: 24px; }
-        .rec-table-card h3 { font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 20px 0; }
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { text-align: left; padding: 12px 16px; font-size: 12px; font-weight: 700; color: #64748b; border-bottom: 1px solid #e2e8f0; background: #f8fafc; text-transform: uppercase; }
-        .data-table td { padding: 16px; font-size: 14px; color: #1e293b; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .data-table tr:last-child td { border-bottom: none; }
-        .font-semibold { font-weight: 600; }
-        .tag-list { display: flex; gap: 6px; flex-wrap: wrap; }
-        .route-tag { background: #eff6ff; color: #0e74be; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 700; font-family: monospace; }
-        .suggested-flight { color: #10b981; font-weight: 600; }
-        .confidence-bar-wrap { display: flex; align-items: center; gap: 8px; }
-        .confidence-bar { height: 6px; background: linear-gradient(90deg, #0e74be, #10b981); border-radius: 3px; transition: width 1s; }
-        .confidence-bar-wrap span { font-size: 13px; font-weight: 700; color: #1e293b; min-width: 35px; }
-        .btn-send-rec { display: flex; align-items: center; gap: 4px; padding: 6px 12px; background: #eff6ff; color: #0e74be; border: none; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.2s; font-family: inherit; }
-        .btn-send-rec:hover { background: #dbeafe; }
-
-        /* Config */
-        .config-card { padding: 28px; }
-        .config-card h3 { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0 0 24px 0; }
-        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 28px; }
-        .config-item { display: flex; flex-direction: column; gap: 8px; }
-        .config-item label { font-size: 13px; font-weight: 600; color: #475569; }
-        .config-item input, .config-item select { padding: 10px 14px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; width: 100%; box-sizing: border-box; }
-        .config-item input:focus, .config-item select:focus { border-color: #0e74be; }
-        .config-item small { font-size: 12px; color: #94a3b8; }
-        .btn-save-config { display: flex; align-items: center; gap: 8px; padding: 12px 28px; background: #0e74be; color: white; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .btn-save-config:hover { background: #0b5a94; }
-
+        .ai-admin-page-content { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .ai-hero-banner { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); padding: 40px; border-radius: 20px; margin-bottom: 24px; color: white; border: 1px solid rgba(255,255,255,0.1); position: relative; overflow: hidden; }
+        .ai-status-pill { display: inline-flex; align-items: center; gap: 8px; background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 800; border: 1px solid rgba(16, 185, 129, 0.2); margin-bottom: 20px; }
+        .pulse-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.5); opacity: 0.5; } 100% { transform: scale(1); opacity: 1; } }
+        .ai-hero-content h1 { font-size: 32px; margin-bottom: 12px; }
+        .ai-hero-content p { font-size: 15px; color: #94a3b8; max-width: 500px; line-height: 1.6; }
+        
+        .ai-tabs { display: flex; gap: 12px; margin-bottom: 24px; }
+        .ai-tab { flex: 1; display: flex; align-items: center; justify-content: center; gap: 12px; padding: 16px; border: none; border-radius: 12px; background: white; color: #64748b; font-size: 14px; font-weight: 700; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .ai-tab.active { background: #2563eb; color: white; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(37, 99, 235, 0.2); }
+        .ai-tab .material-icons-round { font-size: 24px; }
+
+        .ai-assistant-view { display: grid; grid-template-columns: 1fr 340px; gap: 24px; height: 600px; }
+        .chat-interface { height: 100%; }
+        .chat-container { height: 100%; padding: 0; display: flex; flex-direction: column; overflow: hidden; border: none; }
+        .chat-messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; background: #fdfdfd; }
+        .msg { display: flex; gap: 14px; max-width: 80%; }
+        .msg.bot { align-self: flex-start; }
+        .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+        .bot-avatar { width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; }
+        .msg-content { padding: 14px 18px; border-radius: 16px; font-size: 14px; line-height: 1.6; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .msg.bot .msg-content { background: white; color: #1e293b; border-top-left-radius: 4px; }
+        .msg.user .msg-content { background: #1e293b; color: white; border-top-right-radius: 4px; }
+        
+        .ai-suggestion-box { margin-top: 12px; background: #f0f7ff; border: 1px solid #dbeafe; padding: 12px; border-radius: 12px; }
+        .ai-suggestion-box p { font-size: 13px; color: #1e40af; margin-bottom: 10px; }
+        
+        .mini-report { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .report-stat { background: #f8fafc; padding: 8px 12px; border-radius: 8px; font-size: 12px; display: flex; flex-direction: column; }
+        .report-stat b { font-size: 14px; color: #1e293b; }
+
+        .chat-input-wrapper { padding: 20px 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 12px; background: white; }
+        .chat-input-wrapper input { flex: 1; border: 1px solid #e2e8f0; border-radius: 30px; padding: 12px 20px; font-size: 14px; outline: none; }
+        .send-btn { width: 44px; height: 44px; border-radius: 50%; background: #2563eb; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+
+        .ai-stat-card { padding: 24px; text-align: center; border: none; }
+        .gauge-wrap { position: relative; width: 160px; margin: 20px auto; }
+        .gauge-val { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: 800; color: #1e293b; }
+        .ai-stat-card h3 { font-size: 15px; color: #64748b; margin-bottom: 10px; }
+        .ai-stat-card p { font-size: 13px; color: #64748b; margin-top: 12px; line-height: 1.5; }
+
+        .ai-automation-list { padding: 20px; border: none; }
+        .ai-automation-list h3 { font-size: 15px; color: #1e293b; margin-bottom: 16px; }
+        .auto-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
+        .auto-item:last-child { border-bottom: none; }
+        .auto-item .info p { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
+        .auto-item .info span { font-size: 11px; color: #94a3b8; }
+        .toggle { width: 40px; height: 20px; background: #e2e8f0; border-radius: 10px; position: relative; cursor: pointer; transition: all 0.2s; }
+        .toggle::after { content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: all 0.2s; }
+        .toggle.active { background: #10b981; }
+        .toggle.active::after { left: 22px; }
       `}</style>
     </AppLayout>
   );

@@ -1,199 +1,222 @@
 import React, { useState } from 'react';
-import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
+import Button from '../../components/Button';
+import AppLayout from '../../components/AppLayout';
 
 interface ReportsPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (id: string) => void;
 }
 
 const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
   const [dateRange, setDateRange] = useState('Tháng này');
 
+  const stats = [
+    { label: 'Tổng doanh thu (Gross)', value: '1,250,000,000 đ', change: '+12.5%', icon: 'payments', color: '#2563eb' },
+    { label: 'Lợi nhuận ròng (Net)', value: '185,000,000 đ', change: '+18.2%', icon: 'account_balance_wallet', color: '#10b981' },
+    { label: 'Số vé đã phát hành', value: '856', change: '+5.4%', icon: 'confirmation_number', color: '#f59e0b' },
+    { label: 'Tỷ lệ hoàn/hủy', value: '1.2%', change: '-0.5%', icon: 'assignment_return', color: '#ef4444' },
+  ];
+
   return (
-    <AppLayout activeItem="reports" onNavigate={onNavigate} breadcrumb={[{ label: 'Báo Cáo Thống Kê' }]}>
-      <div className="reports-page">
-      <div className="page-header">
-        <div className="header-titles">
-          <h1>Báo Cáo Thống Kê</h1>
-          <p>Phân tích doanh thu và hiệu suất bán hàng của đại lý</p>
-        </div>
-        <div className="header-actions">
-          <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="date-select">
-            <option>Hôm nay</option>
-            <option>Tuần này</option>
-            <option>Tháng này</option>
-            <option>Năm nay</option>
-          </select>
-          <button className="btn-export">
-            <span className="material-icons-round">download</span>
-            Xuất Excel
-          </button>
-        </div>
-      </div>
-
-      <div className="kpi-grid">
-        <Card className="kpi-card highlight">
-          <div className="kpi-icon"><span className="material-icons-round">payments</span></div>
-          <div className="kpi-info">
-            <p className="kpi-label">Tổng Doanh Thu</p>
-            <h3 className="kpi-value">1,250,000,000 đ</h3>
-            <p className="kpi-trend positive"><span className="material-icons-round">trending_up</span> +15.3% so với kỳ trước</p>
+    <AppLayout 
+      activeItem="reports" 
+      onNavigate={onNavigate || (() => {})}
+      breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Báo cáo & Thống kê' }]}
+    >
+      <div className="reports-page-content">
+        
+        {/* ── HEADER ── */}
+        <div className="page-header-flex">
+          <div>
+            <h1>Trung tâm Phân tích Dữ liệu</h1>
+            <p>Theo dõi hiệu suất kinh doanh và dòng tiền theo thời gian thực.</p>
           </div>
-        </Card>
-        <Card className="kpi-card">
-          <div className="kpi-icon blue"><span className="material-icons-round">confirmation_number</span></div>
-          <div className="kpi-info">
-            <p className="kpi-label">Vé Đã Bán</p>
-            <h3 className="kpi-value">856</h3>
-            <p className="kpi-trend positive"><span className="material-icons-round">trending_up</span> +5.2% so với kỳ trước</p>
-          </div>
-        </Card>
-        <Card className="kpi-card">
-          <div className="kpi-icon orange"><span className="material-icons-round">cancel</span></div>
-          <div className="kpi-info">
-            <p className="kpi-label">Vé Đã Hủy / Hoàn</p>
-            <h3 className="kpi-value">24</h3>
-            <p className="kpi-trend negative"><span className="material-icons-round">trending_down</span> -2.1% so với kỳ trước</p>
-          </div>
-        </Card>
-        <Card className="kpi-card">
-          <div className="kpi-icon green"><span className="material-icons-round">account_balance_wallet</span></div>
-          <div className="kpi-info">
-            <p className="kpi-label">Hoa Hồng Đại Lý</p>
-            <h3 className="kpi-value">125,000,000 đ</h3>
-            <p className="kpi-trend positive"><span className="material-icons-round">trending_up</span> +12.4% so với kỳ trước</p>
-          </div>
-        </Card>
-      </div>
-
-      <div className="charts-container">
-        <Card className="chart-card main-chart">
-          <h3>Biểu đồ Doanh Thu Theo Ngày</h3>
-          <div className="chart-placeholder">
-            {/* Giả lập biểu đồ cột/đường */}
-            <div className="bar" style={{height: '40%'}}><span>01/06</span></div>
-            <div className="bar" style={{height: '60%'}}><span>02/06</span></div>
-            <div className="bar" style={{height: '30%'}}><span>03/06</span></div>
-            <div className="bar" style={{height: '80%'}}><span>04/06</span></div>
-            <div className="bar" style={{height: '90%'}}><span>05/06</span></div>
-            <div className="bar" style={{height: '50%'}}><span>06/06</span></div>
-            <div className="bar" style={{height: '75%'}}><span>07/06</span></div>
-          </div>
-        </Card>
-
-        <Card className="chart-card sub-chart">
-          <h3>Tỷ Trọng Hãng Bay</h3>
-          <div className="donut-placeholder">
-            <div className="donut-circle"></div>
-            <div className="legend">
-              <div className="legend-item"><span className="dot vna"></span> Vietnam Airlines (55%)</div>
-              <div className="legend-item"><span className="dot vj"></span> VietJet Air (30%)</div>
-              <div className="legend-item"><span className="dot qh"></span> Bamboo Airways (15%)</div>
+          <div className="action-buttons">
+            <div className="date-picker-mini">
+              <span className="material-icons-round">calendar_today</span>
+              <select value={dateRange} onChange={e => setDateRange(e.target.value)}>
+                <option>Hôm nay</option>
+                <option>Tuần này</option>
+                <option>Tháng này</option>
+                <option>Năm nay</option>
+              </select>
             </div>
+            <Button variant="outline"><span className="material-icons-round">file_download</span> Xuất PDF</Button>
+            <Button><span className="material-icons-round">share</span> Chia sẻ báo cáo</Button>
           </div>
+        </div>
+
+        {/* ── KPI GRID ── */}
+        <div className="kpi-grid">
+          {stats.map((s, i) => (
+            <Card key={i} className="kpi-card">
+              <div className="kpi-header">
+                <div className="kpi-icon" style={{ background: `${s.color}15`, color: s.color }}>
+                  <span className="material-icons-round">{s.icon}</span>
+                </div>
+                <span className={`kpi-trend ${s.change.startsWith('+') ? 'up' : 'down'}`}>
+                  {s.change}
+                </span>
+              </div>
+              <div className="kpi-body">
+                <h3>{s.value}</h3>
+                <p>{s.label}</p>
+              </div>
+              <div className="kpi-chart-mini">
+                <div className="mini-bar" style={{ height: '40%' }}></div>
+                <div className="mini-bar" style={{ height: '60%' }}></div>
+                <div className="mini-bar" style={{ height: '30%' }}></div>
+                <div className="mini-bar" style={{ height: '80%' }}></div>
+                <div className="mini-bar" style={{ height: '50%' }}></div>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+        {/* ── CHARTS SECTION ── */}
+        <div className="charts-main-grid">
+          <Card className="chart-large">
+            <div className="card-header-flex">
+              <h3>Biểu đồ Doanh thu & Lợi nhuận</h3>
+              <div className="chart-legend">
+                <span><i className="dot rev"></i> Doanh thu</span>
+                <span><i className="dot prof"></i> Lợi nhuận</span>
+              </div>
+            </div>
+            <div className="visual-chart-area">
+              <div className="y-axis">
+                <span>1.5B</span><span>1B</span><span>500M</span><span>0</span>
+              </div>
+              <div className="chart-bars">
+                {[40, 65, 45, 90, 75, 55, 85].map((h, i) => (
+                  <div key={i} className="bar-group">
+                    <div className="bar rev" style={{ height: `${h}%` }}></div>
+                    <div className="bar prof" style={{ height: `${h * 0.3}%` }}></div>
+                    <span className="label">Th {i+1}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Card>
+
+          <Card className="chart-side">
+            <h3>Cơ cấu Hãng hàng không</h3>
+            <div className="donut-container">
+              <svg viewBox="0 0 100 100" className="donut-svg">
+                <circle className="donut-ring" cx="50" cy="50" r="40" fill="transparent" stroke="#f1f5f9" strokeWidth="12"></circle>
+                <circle className="donut-segment vna" cx="50" cy="50" r="40" fill="transparent" stroke="#005a8c" strokeWidth="12" strokeDasharray="60 40" strokeDashoffset="25"></circle>
+                <circle className="donut-segment vj" cx="50" cy="50" r="40" fill="transparent" stroke="#ef4444" strokeWidth="12" strokeDasharray="25 75" strokeDashoffset="-35"></circle>
+                <circle className="donut-segment qh" cx="50" cy="50" r="40" fill="transparent" stroke="#10b981" strokeWidth="12" strokeDasharray="15 85" strokeDashoffset="-60"></circle>
+                <text x="50" y="55" textAnchor="middle" className="donut-text">Tickets</text>
+              </svg>
+            </div>
+            <div className="donut-legend">
+              <div className="legend-row"><span>Vietnam Airlines</span><b>60%</b></div>
+              <div className="legend-row"><span>VietJet Air</span><b>25%</b></div>
+              <div className="legend-row"><span>Bamboo Airways</span><b>15%</b></div>
+            </div>
+          </Card>
+        </div>
+
+        {/* ── TOP ROUTES TABLE ── */}
+        <Card className="routes-table-card">
+          <div className="card-header-flex">
+            <h3>Top 5 Tuyến bay Hiệu quả nhất</h3>
+            <Button size="sm" variant="outline">Xem chi tiết</Button>
+          </div>
+          <table className="premium-table">
+            <thead>
+              <tr>
+                <th>TUYẾN BAY</th>
+                <th>SỐ LƯỢNG VÉ</th>
+                <th>DOANH THU</th>
+                <th>LỢI NHUẬN</th>
+                <th>TĂNG TRƯỞNG</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                { route: 'HAN - SGN', count: 425, rev: '650.4M', prof: '42.5M', trend: '+12%' },
+                { route: 'SGN - DAD', count: 210, rev: '280.2M', prof: '18.4M', trend: '+8%' },
+                { route: 'HAN - PQC', count: 185, rev: '310.5M', prof: '22.1M', trend: '+15%' },
+                { route: 'SGN - VII', count: 120, rev: '145.8M', prof: '9.2M', trend: '-2%' },
+                { route: 'DAD - HAN', count: 95, rev: '112.4M', prof: '7.8M', trend: '+5%' },
+              ].map((r, i) => (
+                <tr key={i}>
+                  <td><div className="route-cell"><span className="material-icons-round">flight_takeoff</span> {r.route}</div></td>
+                  <td><b>{r.count}</b></td>
+                  <td>{r.rev} đ</td>
+                  <td><b className="text-success">{r.prof} đ</b></td>
+                  <td><span className={`trend-pill ${r.trend.startsWith('+') ? 'up' : 'down'}`}>{r.trend}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </Card>
       </div>
-
-      <Card className="table-card">
-        <h3>Top Tuyến Bay Bán Chạy</h3>
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Mã Tuyến</th>
-              <th>Hành Trình</th>
-              <th>Số Vé Đã Bán</th>
-              <th>Doanh Thu</th>
-              <th>Tăng Trưởng</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span className="mono-code">HAN-SGN</span></td>
-              <td>Hà Nội - TP.Hồ Chí Minh</td>
-              <td>450</td>
-              <td>650,000,000 đ</td>
-              <td className="trend-up">+12%</td>
-            </tr>
-            <tr>
-              <td><span className="mono-code">SGN-DAD</span></td>
-              <td>TP.Hồ Chí Minh - Đà Nẵng</td>
-              <td>210</td>
-              <td>250,000,000 đ</td>
-              <td className="trend-up">+5%</td>
-            </tr>
-            <tr>
-              <td><span className="mono-code">HAN-DAD</span></td>
-              <td>Hà Nội - Đà Nẵng</td>
-              <td>150</td>
-              <td>180,000,000 đ</td>
-              <td className="trend-down">-2%</td>
-            </tr>
-          </tbody>
-        </table>
-      </Card>
 
       <style>{`
-        .reports-page { padding: 24px 32px; max-width: 1400px; margin: 0 auto; animation: fadeIn 0.4s ease-out; }
-        
-        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 32px; }
-        .header-titles h1 { font-size: 26px; font-weight: 700; color: #1e293b; margin: 0 0 8px 0; }
-        .header-titles p { font-size: 15px; color: #64748b; margin: 0; }
-        
-        .header-actions { display: flex; gap: 16px; }
-        .date-select { padding: 10px 16px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1e293b; outline: none; background: white; cursor: pointer; }
-        .btn-export { display: flex; align-items: center; gap: 8px; padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-export:hover { background: #059669; }
-
-        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-bottom: 32px; }
-        .kpi-card { display: flex; align-items: center; gap: 20px; padding: 24px; }
-        .kpi-card.highlight { background: linear-gradient(135deg, #0e74be, #0284c7); color: white; }
-        .kpi-card.highlight .kpi-label { color: rgba(255,255,255,0.8); }
-        .kpi-card.highlight .kpi-value { color: white; }
-        .kpi-card.highlight .kpi-icon { background: rgba(255,255,255,0.2); color: white; }
-        
-        .kpi-icon { width: 56px; height: 56px; border-radius: 16px; background: #f1f5f9; color: #64748b; display: flex; align-items: center; justify-content: center; font-size: 28px; }
-        .kpi-icon.blue { background: #eff6ff; color: #0e74be; }
-        .kpi-icon.orange { background: #fff7ed; color: #f97316; }
-        .kpi-icon.green { background: #ecfdf5; color: #10b981; }
-        
-        .kpi-info { flex: 1; }
-        .kpi-label { font-size: 13px; font-weight: 600; color: #64748b; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.5px; }
-        .kpi-value { font-size: 24px; font-weight: 800; color: #1e293b; margin: 0 0 8px 0; }
-        .kpi-trend { font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; margin: 0; }
-        .kpi-trend.positive { color: #10b981; }
-        .kpi-trend.negative { color: #ef4444; }
-        .kpi-card.highlight .kpi-trend.positive { color: #6ee7b7; }
-
-        .charts-container { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; margin-bottom: 32px; }
-        .chart-card { padding: 24px; }
-        .chart-card h3 { font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 24px 0; }
-        
-        .chart-placeholder { height: 250px; display: flex; align-items: flex-end; gap: 12%; padding-top: 20px; border-bottom: 2px solid #f1f5f9; position: relative; }
-        .bar { width: 40px; background: #0e74be; border-radius: 6px 6px 0 0; position: relative; transition: height 1s ease-out; }
-        .bar:hover { background: #3b82f6; }
-        .bar span { position: absolute; bottom: -24px; left: 50%; transform: translateX(-50%); font-size: 12px; color: #64748b; font-weight: 500; }
-
-        .donut-placeholder { height: 250px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; }
-        .donut-circle { width: 140px; height: 140px; border-radius: 50%; border: 24px solid #f1f5f9; border-top-color: #0e74be; border-right-color: #f97316; border-bottom-color: #10b981; transform: rotate(45deg); }
-        .legend { width: 100%; display: flex; flex-direction: column; gap: 12px; }
-        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #475569; }
-        .dot { width: 12px; height: 12px; border-radius: 4px; }
-        .dot.vna { background: #0e74be; }
-        .dot.vj { background: #f97316; }
-        .dot.qh { background: #10b981; }
-
-        .table-card { padding: 24px; }
-        .table-card h3 { font-size: 16px; font-weight: 700; color: #1e293b; margin: 0 0 20px 0; }
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { text-align: left; padding: 12px 16px; font-size: 13px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
-        .data-table td { padding: 16px; font-size: 14px; color: #1e293b; border-bottom: 1px solid #f1f5f9; font-weight: 500; }
-        .mono-code { font-family: monospace; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; color: #0e74be; font-weight: 600; }
-        .trend-up { color: #10b981; font-weight: 600; }
-        .trend-down { color: #ef4444; font-weight: 600; }
-
+        .reports-page-content { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .page-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-header-flex h1 { font-size: 24px; color: #1e293b; }
+        .page-header-flex p { font-size: 14px; color: #64748b; }
+        .action-buttons { display: flex; gap: 12px; align-items: center; }
+
+        .date-picker-mini { display: flex; align-items: center; gap: 8px; background: white; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 10px; }
+        .date-picker-mini .material-icons-round { font-size: 18px; color: #94a3b8; }
+        .date-picker-mini select { border: none; outline: none; font-size: 13px; font-weight: 600; color: #1e293b; background: transparent; cursor: pointer; }
+
+        .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
+        .kpi-card { padding: 20px; border: none; position: relative; overflow: hidden; }
+        .kpi-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .kpi-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .kpi-trend { font-size: 11px; font-weight: 800; padding: 4px 8px; border-radius: 20px; }
+        .kpi-trend.up { background: #dcfce7; color: #15803d; }
+        .kpi-trend.down { background: #fee2e2; color: #b91c1c; }
+        .kpi-body h3 { font-size: 20px; color: #1e293b; margin-bottom: 4px; }
+        .kpi-body p { font-size: 12px; color: #64748b; font-weight: 600; }
+        .kpi-chart-mini { display: flex; align-items: flex-end; gap: 4px; height: 30px; position: absolute; bottom: 0; left: 0; right: 0; padding: 0 20px; opacity: 0.3; }
+        .mini-bar { flex: 1; background: #cbd5e1; border-radius: 2px 2px 0 0; }
+
+        .charts-main-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 24px; }
+        .chart-large, .chart-side { padding: 24px; border: none; }
+        .card-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .chart-legend { display: flex; gap: 16px; }
+        .chart-legend span { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #64748b; font-weight: 600; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.rev { background: #2563eb; }
+        .dot.prof { background: #10b981; }
+
+        .visual-chart-area { display: flex; height: 260px; padding-top: 10px; }
+        .y-axis { display: flex; flex-direction: column; justify-content: space-between; padding-right: 16px; border-right: 1px solid #f1f5f9; font-size: 10px; color: #94a3b8; font-weight: 700; }
+        .chart-bars { flex: 1; display: flex; align-items: flex-end; justify-content: space-around; padding: 0 20px; }
+        .bar-group { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; height: 100%; justify-content: flex-end; }
+        .bar { width: 12px; border-radius: 4px 4px 0 0; transition: height 0.6s ease; }
+        .bar.rev { background: #2563eb; }
+        .bar.prof { background: #10b981; }
+        .bar-group .label { margin-top: 12px; font-size: 10px; color: #94a3b8; font-weight: 700; }
+
+        .donut-container { height: 180px; display: flex; justify-content: center; align-items: center; margin: 20px 0; }
+        .donut-svg { height: 100%; transform: rotate(-90deg); }
+        .donut-text { transform: rotate(90deg); font-size: 10px; font-weight: 800; fill: #64748b; }
+        .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+        .legend-row { display: flex; justify-content: space-between; font-size: 12px; color: #475569; }
+        .legend-row b { color: #1e293b; }
+
+        .routes-table-card { padding: 0; overflow: hidden; border: none; }
+        .routes-table-card .card-header-flex { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; margin-bottom: 0; }
+        .premium-table { width: 100%; border-collapse: collapse; }
+        .premium-table th { padding: 14px 24px; text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+        .premium-table td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        .route-cell { display: flex; align-items: center; gap: 10px; font-weight: 700; color: #1e293b; }
+        .route-cell .material-icons-round { color: #3b82f6; font-size: 18px; }
+        .trend-pill { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; }
+        .trend-pill.up { background: #dcfce7; color: #15803d; }
+        .trend-pill.down { background: #fee2e2; color: #b91c1c; }
+        .text-success { color: #10b981 !important; }
       `}</style>
-      </div>
     </AppLayout>
   );
 };

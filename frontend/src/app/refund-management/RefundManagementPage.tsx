@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import Sidebar from '../../components/Sidebar';
-import Header from '../../components/Header';
+import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 
@@ -10,20 +9,51 @@ interface RefundManagementPageProps {
 
 const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate }) => {
   const [selectedRefund, setSelectedRefund] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [refunds, setRefunds] = useState([
+    { id: 'REF-83921', ticket: '112-55443322', customer: 'Lê Hữu Đạt', amount: 3500000, date: '2023-10-29 10:15', method: 'Chuyển khoản NH', status: 'pending' },
+    { id: 'REF-83918', ticket: '738-99283741', customer: 'Trần Thị Bé', amount: 1890000, date: '2023-10-28 14:30', method: 'Thẻ tín dụng', status: 'completed' },
+    { id: 'REF-83905', ticket: '112-11223344', customer: 'Nguyễn Văn Nam', amount: 2100000, date: '2023-10-25 09:00', method: 'Chuyển khoản NH', status: 'rejected' },
+    { id: 'REF-83925', ticket: '738-12345678', customer: 'Phạm Thu Hương', amount: 4200000, date: '2023-10-29 15:45', method: 'Ví Momo', status: 'pending' },
+    { id: 'REF-83910', ticket: '738-87654321', customer: 'Hoàng Quốc Việt', amount: 1500000, date: '2023-10-27 11:20', method: 'Chuyển khoản NH', status: 'completed' },
+  ]);
 
+  // Dynamic Metrics
   const metrics = [
-    { title: 'Yêu cầu chờ xử lý', value: '12', icon: 'pending_actions', color: 'warning' },
-    { title: 'Đã hoàn (Tháng này)', value: '345tr', icon: 'check_circle', color: 'success' },
-    { title: 'Từ chối (Tháng này)', value: '4', icon: 'cancel', color: 'danger' },
+    { 
+      title: 'Yêu cầu chờ xử lý', 
+      value: refunds.filter(r => r.status === 'pending').length.toString(), 
+      icon: 'pending_actions', 
+      color: 'warning' 
+    },
+    { 
+      title: 'Đã hoàn (Tháng này)', 
+      value: (refunds.filter(r => r.status === 'completed').reduce((sum, r) => sum + r.amount, 0) / 1000000).toFixed(0) + 'tr', 
+      icon: 'check_circle', 
+      color: 'success' 
+    },
+    { 
+      title: 'Từ chối (Tháng này)', 
+      value: refunds.filter(r => r.status === 'rejected').length.toString(), 
+      icon: 'cancel', 
+      color: 'danger' 
+    },
   ];
 
-  const refunds = [
-    { id: 'REF-83921', ticket: '112-55443322', customer: 'Lê Hữu Đạt', amount: '3,500,000 đ', date: '29/10/2023 10:15', method: 'Chuyển khoản NH', status: 'pending' },
-    { id: 'REF-83918', ticket: '738-99283741', customer: 'Trần Thị Bé', amount: '1,890,000 đ', date: '28/10/2023 14:30', method: 'Thẻ tín dụng', status: 'completed' },
-    { id: 'REF-83905', ticket: '112-11223344', customer: 'Nguyễn Văn Nam', amount: '2,100,000 đ', date: '25/10/2023 09:00', method: 'Chuyển khoản NH', status: 'rejected' },
-    { id: 'REF-83925', ticket: '738-12345678', customer: 'Phạm Thu Hương', amount: '4,200,000 đ', date: '29/10/2023 15:45', method: 'Ví Momo', status: 'pending' },
-    { id: 'REF-83910', ticket: '738-87654321', customer: 'Hoàng Quốc Việt', amount: '1,500,000 đ', date: '27/10/2023 11:20', method: 'Chuyển khoản NH', status: 'completed' },
-  ];
+  const handleProcessRefund = (id: string, newStatus: 'completed' | 'rejected') => {
+    setRefunds(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+    setSelectedRefund(null);
+    // In a real app, this would be an API call
+  };
+
+  const filteredRefunds = refunds.filter(r => {
+    const matchesSearch = r.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          r.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          r.ticket.includes(searchTerm);
+    const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
 
   const getStatusDisplay = (status: string) => {
     switch(status) {
@@ -35,149 +65,152 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
   };
 
   return (
-    <div className="layout">
-      <Sidebar activeItem="refund-management" onNavigate={onNavigate} />
-      <div className="main-container">
-        <Header />
-        
-        <main className="content">
-          <div className="breadcrumb">
-            <span className="link" onClick={() => onNavigate && onNavigate('dashboard')}>Dashboard</span>
-            <span className="material-icons-round separator">chevron_right</span>
-            <span className="current">Quản lý Hoàn tiền</span>
+    <AppLayout 
+      activeItem="refund-management" 
+      onNavigate={onNavigate || (() => {})}
+      breadcrumb={[{ label: 'Điều hành', page: 'dashboard' }, { label: 'Quản lý Hoàn tiền' }]}
+    >
+      <div className="refund-page-content">
+        <div className="page-header">
+          <div>
+            <h1>Yêu cầu Hoàn tiền</h1>
+            <p>Theo dõi và xử lý các yêu cầu hoàn vé, hoàn tiền cho khách hàng.</p>
           </div>
-
-          <div className="page-header">
-            <div>
-              <h1>Yêu cầu Hoàn tiền</h1>
-              <p>Theo dõi và xử lý các yêu cầu hoàn vé, hoàn tiền cho khách hàng.</p>
-            </div>
-            <div className="flex-row gap-sm">
-              <Button variant="outline">
-                <span className="material-icons-round">download</span>
-                Xuất báo cáo
-              </Button>
-            </div>
+          <div className="flex-row gap-sm">
+            <Button variant="outline">
+              <span className="material-icons-round">download</span>
+              Xuất báo cáo
+            </Button>
           </div>
+        </div>
 
-          {/* Metrics */}
-          <div className="metrics-grid mb-lg">
-            {metrics.map((m, i) => (
-              <Card key={i} className="metric-card">
-                <div className={`metric-icon-box bg-${m.color}-light`}>
-                  <span className={`material-icons-round text-${m.color}`}>{m.icon}</span>
-                </div>
-                <div className="metric-content">
-                  <p className="metric-title">{m.title}</p>
-                  <h3 className="metric-value">{m.value}</h3>
-                </div>
-              </Card>
-            ))}
-          </div>
+        {/* Metrics */}
+        <div className="metrics-grid mb-lg">
+          {metrics.map((m, i) => (
+            <Card key={i} className="metric-card">
+              <div className={`metric-icon-box bg-${m.color}-light`}>
+                <span className={`material-icons-round text-${m.color}`}>{m.icon}</span>
+              </div>
+              <div className="metric-content">
+                <p className="metric-title">{m.title}</p>
+                <h3 className="metric-value">{m.value}</h3>
+              </div>
+            </Card>
+          ))}
+        </div>
 
-          {/* Filters */}
-          <Card className="filter-card mb-lg">
-            <div className="filter-row">
-              <div className="input-with-icon flex-2">
-                <span className="material-icons-round">search</span>
-                <input type="text" placeholder="Tìm theo mã yêu cầu, mã vé hoặc tên khách hàng..." />
-              </div>
-              <div className="input-with-icon select-wrapper flex-1">
-                <select defaultValue="all">
-                  <option value="all">Trạng thái: Tất cả</option>
-                  <option value="pending">Chờ xử lý</option>
-                  <option value="completed">Đã hoàn tiền</option>
-                  <option value="rejected">Từ chối</option>
-                </select>
-                <span className="material-icons-round arrow">expand_more</span>
-              </div>
-              <div className="input-with-icon flex-1">
-                <span className="material-icons-round">calendar_today</span>
-                <input type="text" placeholder="Khoảng thời gian" />
-              </div>
-              <Button className="btn-primary-alt">Lọc</Button>
+        {/* Filters */}
+        <Card className="filter-card mb-lg">
+          <div className="filter-row">
+            <div className="input-with-icon flex-2">
+              <span className="material-icons-round">search</span>
+              <input 
+                type="text" 
+                placeholder="Tìm theo mã yêu cầu, mã vé hoặc tên khách hàng..." 
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
             </div>
-          </Card>
+            <div className="input-with-icon select-wrapper flex-1">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">Trạng thái: Tất cả</option>
+                <option value="pending">Chờ xử lý</option>
+                <option value="completed">Đã hoàn tiền</option>
+                <option value="rejected">Từ chối</option>
+              </select>
+              <span className="material-icons-round arrow">expand_more</span>
+            </div>
+            <div className="input-with-icon flex-1">
+              <span className="material-icons-round">calendar_today</span>
+              <input type="text" placeholder="Khoảng thời gian" readOnly />
+            </div>
+            <Button className="btn-primary-alt" onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}>Xóa lọc</Button>
+          </div>
+        </Card>
 
-          {/* Data Table */}
-          <Card className="table-card">
-            <div className="table-responsive">
-              <table className="data-table">
-                <thead>
+        {/* Data Table */}
+        <Card className="table-card">
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Mã YC</th>
+                  <th>Khách hàng</th>
+                  <th>Thông tin vé</th>
+                  <th>Số tiền hoàn</th>
+                  <th>Ngày yêu cầu</th>
+                  <th>Phương thức</th>
+                  <th>Trạng thái</th>
+                  <th>Hành động</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredRefunds.length > 0 ? filteredRefunds.map((r, i) => {
+                  const statusInfo = getStatusDisplay(r.status);
+                  return (
+                    <tr key={i}>
+                      <td><span className="code-badge">{r.id}</span></td>
+                      <td>
+                        <p className="font-semibold text-main">{r.customer}</p>
+                      </td>
+                      <td>
+                        <p className="font-medium text-main">{r.ticket}</p>
+                      </td>
+                      <td>
+                        <p className="font-bold text-primary">{r.amount.toLocaleString('vi-VN')} đ</p>
+                      </td>
+                      <td>
+                        <p className="text-sm">{r.date.split(' ')[0]}</p>
+                        <p className="text-xs text-muted">{r.date.split(' ')[1]}</p>
+                      </td>
+                      <td><span className="method-chip">{r.method}</span></td>
+                      <td>
+                        <span className={`status-badge ${statusInfo.badge}`}>
+                          <span className="dot"></span>
+                          {statusInfo.label}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          {r.status === 'pending' ? (
+                            <button className="action-btn process" title="Xử lý hoàn tiền" onClick={() => setSelectedRefund(r.id)}>
+                              <span className="material-icons-round">rule</span>
+                            </button>
+                          ) : (
+                            <button className="action-btn view" title="Xem chi tiết" onClick={() => setSelectedRefund(r.id)}>
+                              <span className="material-icons-round">visibility</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                }) : (
                   <tr>
-                    <th>Mã YC</th>
-                    <th>Khách hàng</th>
-                    <th>Thông tin vé</th>
-                    <th>Số tiền hoàn</th>
-                    <th>Ngày yêu cầu</th>
-                    <th>Phương thức</th>
-                    <th>Trạng thái</th>
-                    <th>Hành động</th>
+                    <td colSpan={8} className="empty-row">
+                      <div className="empty-state">
+                        <span className="material-icons-round">history_toggle_off</span>
+                        <p>Không tìm thấy yêu cầu hoàn tiền nào khớp với bộ lọc.</p>
+                      </div>
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {refunds.map((r, i) => {
-                    const statusInfo = getStatusDisplay(r.status);
-                    return (
-                      <tr key={i}>
-                        <td><span className="code-badge">{r.id}</span></td>
-                        <td>
-                          <p className="font-semibold text-main">{r.customer}</p>
-                        </td>
-                        <td>
-                          <p className="font-medium text-main">{r.ticket}</p>
-                        </td>
-                        <td>
-                          <p className="font-bold text-primary">{r.amount}</p>
-                        </td>
-                        <td>
-                          <p className="text-sm">{r.date.split(' ')[0]}</p>
-                          <p className="text-xs text-muted">{r.date.split(' ')[1]}</p>
-                        </td>
-                        <td><span className="method-chip">{r.method}</span></td>
-                        <td>
-                          <span className={`status-badge ${statusInfo.badge}`}>
-                            <span className="dot"></span>
-                            {statusInfo.label}
-                          </span>
-                        </td>
-                        <td>
-                          <div className="action-buttons">
-                            {r.status === 'pending' ? (
-                              <button className="action-btn process" title="Xử lý hoàn tiền" onClick={() => setSelectedRefund(r.id)}>
-                                <span className="material-icons-round">rule</span>
-                              </button>
-                            ) : (
-                              <button className="action-btn view" title="Xem chi tiết" onClick={() => setSelectedRefund(r.id)}>
-                                <span className="material-icons-round">visibility</span>
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="pagination">
+            <p>Hiển thị <strong>{filteredRefunds.length}</strong> trong số <strong>{refunds.length}</strong> yêu cầu</p>
+            <div className="page-controls">
+              <button className="page-btn"><span className="material-icons-round">chevron_left</span></button>
+              <button className="page-btn active">1</button>
+              <button className="page-btn"><span className="material-icons-round">chevron_right</span></button>
             </div>
-            
-            <div className="pagination">
-              <p>Hiển thị <strong>1-5</strong> trong số <strong>42</strong> yêu cầu</p>
-              <div className="page-controls">
-                <button className="page-btn"><span className="material-icons-round">chevron_left</span></button>
-                <button className="page-btn active">1</button>
-                <button className="page-btn">2</button>
-                <button className="page-btn">3</button>
-                <button className="page-btn dots">...</button>
-                <button className="page-btn"><span className="material-icons-round">chevron_right</span></button>
-              </div>
-            </div>
-          </Card>
-        </main>
-      </div>
+          </div>
+        </Card>
 
-      {/* Detail/Process Modal */}
-      {selectedRefund && (() => {
+        {/* Detail/Process Modal */}
+        {selectedRefund && (() => {
         const refund = refunds.find(r => r.id === selectedRefund);
         if(!refund) return null;
         
@@ -224,7 +257,7 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
                 <div className="amount-box mb-md">
                   <div className="amount-row">
                     <span>Số tiền cần hoàn</span>
-                    <span className="amount-val">{refund.amount}</span>
+                    <span className="amount-val">{refund.amount.toLocaleString('vi-VN')} đ</span>
                   </div>
                 </div>
 
@@ -269,8 +302,12 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
                 <button className="btn-cancel" onClick={() => setSelectedRefund(null)}>Đóng</button>
                 {refund.status === 'pending' && (
                   <>
-                    <button className="btn-reject" onClick={() => setSelectedRefund(null)}><span className="material-icons-round">cancel</span> Từ chối</button>
-                    <button className="btn-save" onClick={() => setSelectedRefund(null)}><span className="material-icons-round">check_circle</span> Xác nhận đã hoàn tiền</button>
+                    <button className="btn-reject" onClick={() => handleProcessRefund(refund.id, 'rejected')}>
+                      <span className="material-icons-round">cancel</span> Từ chối
+                    </button>
+                    <button className="btn-save" onClick={() => handleProcessRefund(refund.id, 'completed')}>
+                      <span className="material-icons-round">check_circle</span> Xác nhận đã hoàn tiền
+                    </button>
                   </>
                 )}
               </div>
@@ -280,6 +317,12 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
       })()}
 
       <style>{`
+        /* Empty State */
+        .empty-row { padding: 80px 0 !important; text-align: center; background: #fafafa !important; }
+        .empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-muted); }
+        .empty-state .material-icons-round { font-size: 48px; opacity: 0.5; }
+        .empty-state p { font-size: 14px; font-weight: 500; }
+
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         /* Typography & Utilities */
@@ -423,7 +466,8 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
         .btn-save:hover { background: #1d4ed8; }
         .btn-save .material-icons-round, .btn-reject .material-icons-round { font-size: 18px; }
       `}</style>
-    </div>
+      </div>
+    </AppLayout>
   );
 };
 

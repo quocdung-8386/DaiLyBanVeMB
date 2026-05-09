@@ -1,283 +1,200 @@
 import React, { useState } from 'react';
-import AppLayout from '../../../components/AppLayout';
 import Card from '../../../components/Card';
+import Button from '../../../components/Button';
+import AppLayout from '../../../components/AppLayout';
 
 interface PaymentHistoryPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (id: string) => void;
 }
 
 const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) => {
-  const [selectedTx, setSelectedTx] = useState<any>(null);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const transactions = [
-    { id: 'TXN-2201', booking: 'BKG-8892', customer: 'Nguyễn Văn A', method: 'Chuyển khoản', amount: 4500000, status: 'Hoàn tất', badge: 'success', date: '2026-06-01 08:30', approvedBy: 'admin_dung' },
-    { id: 'TXN-2200', booking: 'BKG-8880', customer: 'Trần Thị B', method: 'Tiền mặt', amount: 1500000, status: 'Chờ xử lý', badge: 'warning', date: '2026-06-01 07:15', approvedBy: '—' },
-    { id: 'TXN-2199', booking: 'BKG-8871', customer: 'Lê Văn C', method: 'Thẻ ngân hàng', amount: 8000000, status: 'Đã hủy', badge: 'danger', date: '2026-05-31 16:40', approvedBy: 'ketoan_01' },
-    { id: 'TXN-2198', booking: 'BKG-8860', customer: 'Phạm Thị D', method: 'Ví điện tử', amount: 2100000, status: 'Hoàn tất', badge: 'success', date: '2026-05-31 14:20', approvedBy: 'admin_dung' },
+    { id: 'TXN-8829', booking: 'G7X9PQ', customer: 'Nguyễn Văn Trường', method: 'Chuyển khoản', amount: '2,450,000 đ', status: 'completed', date: '24/10/2023 10:12', bank: 'MB Bank' },
+    { id: 'TXN-8830', booking: 'A2B4C6', customer: 'Trần Thị Lan', method: 'Tiền mặt', amount: '1,890,000 đ', status: 'completed', date: '24/10/2023 11:30', bank: 'Quầy SGN' },
+    { id: 'TXN-8831', booking: 'L9M1N2', customer: 'Lê Quang Minh', method: 'Thẻ POS', amount: '4,100,000 đ', status: 'pending', date: '24/10/2023 14:15', bank: 'Visa ****42' },
+    { id: 'TXN-8832', booking: 'X7Y8Z9', customer: 'Phạm Thu Hà', method: 'Chuyển khoản', amount: '3,200,000 đ', status: 'failed', date: '24/10/2023 15:20', bank: 'Vietcombank' },
   ];
 
-  const statusStyle: Record<string, React.CSSProperties> = {
-    'Hoàn tất': { backgroundColor: '#dcfce7', color: '#166534' },
-    'Chờ xử lý': { backgroundColor: '#fef08a', color: '#854d0e' },
-    'Đã hủy': { backgroundColor: '#fecaca', color: '#991b1b' },
-  };
-
   return (
-    <AppLayout activeItem="payments" onNavigate={onNavigate} breadcrumb={[{ label: 'Thanh toán', page: 'payments' }, { label: 'Lịch sử giao dịch' }]}>
-      <div className="payment-history-page">
-        <div className="page-header">
-          <div className="header-titles">
-            <h1>Lịch Sử Giao Dịch</h1>
-            <p>Toàn bộ các giao dịch thanh toán đã được xử lý</p>
+    <AppLayout 
+      activeItem="payments" 
+      onNavigate={onNavigate || (() => {})}
+      breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Lịch sử giao dịch' }]}
+    >
+      <div className="payment-history-content">
+        
+        {/* ── HEADER ── */}
+        <div className="page-header-flex">
+          <div>
+            <h1>Nhật ký Giao dịch Tài chính</h1>
+            <p>Quản lý dòng tiền, đối soát thanh toán và biên lai điện tử.</p>
           </div>
-          <div className="header-actions">
-            <input type="date" className="date-input" defaultValue="2026-06-01" />
-            <button className="btn-export">
-              <span className="material-icons-round">download</span> Xuất Excel
-            </button>
+          <div className="action-buttons">
+            <Button variant="outline"><span className="material-icons-round">calendar_today</span> Tháng 10, 2023</Button>
+            <Button><span className="material-icons-round">cloud_download</span> Xuất báo cáo tài chính</Button>
           </div>
         </div>
 
-        <div className="filter-tabs">
-          <button className="filter-tab active">Tất cả giao dịch</button>
-          <button className="filter-tab">Hoàn tất</button>
-          <button className="filter-tab">Chờ xử lý</button>
-          <button className="filter-tab">Đã hủy</button>
+        {/* ── SUMMARY STATS ── */}
+        <div className="finance-stats">
+          <Card className="finance-pill">
+            <div className="icon-box" style={{ background: '#dcfce7', color: '#15803d' }}>
+              <span className="material-icons-round">payments</span>
+            </div>
+            <div className="data">
+              <p>Tổng thu hôm nay</p>
+              <h3>42.8M</h3>
+            </div>
+          </Card>
+          <Card className="finance-pill">
+            <div className="icon-box" style={{ background: '#eff6ff', color: '#1d4ed8' }}>
+              <span className="material-icons-round">account_balance</span>
+            </div>
+            <div className="data">
+              <p>Chuyển khoản chờ duyệt</p>
+              <h3>8.5M</h3>
+            </div>
+          </Card>
+          <Card className="finance-pill">
+            <div className="icon-box" style={{ background: '#fee2e2', color: '#b91c1c' }}>
+              <span className="material-icons-round">error_outline</span>
+            </div>
+            <div className="data">
+              <p>Giao dịch thất bại</p>
+              <h3>2.1M</h3>
+            </div>
+          </Card>
         </div>
 
-        <div className="stats-row">
-          {[
-            { label: 'Tổng giao dịch', value: '4', icon: 'receipt_long', color: '#0e74be' },
-            { label: 'Tổng thu', value: '16,100,000 đ', icon: 'payments', color: '#10b981' },
-            { label: 'Đã hủy', value: '8,000,000 đ', icon: 'cancel', color: '#ef4444' },
-            { label: 'Chờ xử lý', value: '1', icon: 'pending', color: '#f97316' },
-          ].map((s, i) => (
-            <Card key={i} className="stat-card">
-              <span className="material-icons-round stat-icon" style={{ color: s.color }}>{s.icon}</span>
-              <div>
-                <p className="stat-label">{s.label}</p>
-                <h3 className="stat-value">{s.value}</h3>
-              </div>
-            </Card>
-          ))}
-        </div>
-
-        <Card className="table-card">
-          <div className="table-responsive">
-          <table className="booking-table">
-            <thead>
-              <tr>
-                <th>Mã GD</th>
-                <th>Mã Booking</th>
-                <th>Khách hàng</th>
-                <th>Phương thức</th>
-                <th>Số tiền</th>
-                <th>Trạng thái</th>
-                <th>Ngày GD</th>
-                <th>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
-              {transactions.map(tx => (
-                <tr key={tx.id}>
-                  <td>
-                    <div className="tx-id">{tx.id.substring(0, 4)}<br/>{tx.id.substring(4)}</div>
-                  </td>
-                  <td>
-                    <div className="booking-id blue-border">{tx.booking.substring(0, 4)}<br/>{tx.booking.substring(4)}</div>
-                  </td>
-                  <td>
-                    <div className="customer-info">
-                      <div className="customer-avatar">{tx.customer.split(' ').map(w => w[0]).slice(-2).join('')}</div>
-                      <div>
-                        <p className="name">{tx.customer}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td><p className="text-muted">{tx.method}</p></td>
-                  <td><p className="price">{tx.amount.toLocaleString()} đ</p></td>
-                  <td>
-                    <span className={`status-badge ${tx.badge}`}>
-                      <span className="dot"></span>
-                      {tx.status}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="date-info">
-                      <p className="date">{tx.date.split(' ')[0]}</p>
-                      <p className="time">{tx.date.split(' ')[1]}</p>
-                    </div>
-                  </td>
-                  <td>
-                    <button className="action-btn view" onClick={() => setSelectedTx(tx)}>
-                      <span className="material-icons-round">visibility</span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
-        </Card>
-
-        {/* Detail Popup */}
-        {selectedTx && (
-          <div className="popup-overlay" onClick={() => setSelectedTx(null)}>
-            <div className="popup-card" onClick={e => e.stopPropagation()}>
-              <div className="popup-header">
-                <h3>Chi tiết giao dịch</h3>
-                <button className="popup-close" onClick={() => setSelectedTx(null)}>
-                  <span className="material-icons-round">close</span>
-                </button>
-              </div>
-              <div className="td-info-list">
-                <div className="td-info-row">
-                  <span className="material-icons-round">receipt_long</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Mã giao dịch</p>
-                    <p className="td-ival">{selectedTx.id}</p>
-                  </div>
-                </div>
-                <div className="td-info-row">
-                  <span className="material-icons-round">airplane_ticket</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Mã Booking</p>
-                    <p className="td-ival"><span className="mono-code blue">{selectedTx.booking}</span></p>
-                  </div>
-                </div>
-                <div className="td-info-row">
-                  <span className="material-icons-round">person</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Khách hàng</p>
-                    <p className="td-ival">{selectedTx.customer}</p>
-                  </div>
-                </div>
-                <div className="td-info-row">
-                  <span className="material-icons-round">account_balance_wallet</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Phương thức</p>
-                    <p className="td-ival">{selectedTx.method}</p>
-                  </div>
-                </div>
-                <div className="td-info-row">
-                  <span className="material-icons-round">payments</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Số tiền</p>
-                    <p className="td-ival amount-big">{selectedTx.amount.toLocaleString()} VND</p>
-                  </div>
-                </div>
-                <div className="td-info-row">
-                  <span className="material-icons-round">info</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Trạng thái</p>
-                    <p className="td-ival">
-                      <span className={`status-badge ${selectedTx.badge}`}>
-                        <span className="dot"></span>
-                        {selectedTx.status}
-                      </span>
-                    </p>
-                  </div>
-                </div>
-                <div className="td-info-row">
-                  <span className="material-icons-round">event</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Ngày giao dịch</p>
-                    <p className="td-ival">{selectedTx.date}</p>
-                  </div>
-                </div>
-                <div className="td-info-row">
-                  <span className="material-icons-round">verified_user</span>
-                  <div className="td-row-content">
-                    <p className="td-ikey">Người duyệt</p>
-                    <p className="td-ival">{selectedTx.approvedBy}</p>
-                  </div>
-                </div>
-              </div>
-              <div className="popup-footer">
-                <button className="btn-print">
-                  <span className="material-icons-round">print</span> In hóa đơn
-                </button>
-                <button className="btn-close-popup" onClick={() => setSelectedTx(null)}>Đóng</button>
-              </div>
+        {/* ── TRANSACTION TABLE ── */}
+        <Card className="transaction-card">
+          <div className="toolbar">
+            <div className="search-box">
+              <span className="material-icons-round">search</span>
+              <input type="text" placeholder="Tìm theo mã giao dịch, PNR, khách hàng..." />
+            </div>
+            <div className="filter-chips">
+              <span className="chip active">Tất cả</span>
+              <span className="chip">Hoàn tất</span>
+              <span className="chip">Chờ duyệt</span>
+              <span className="chip">Thất bại</span>
             </div>
           </div>
-        )}
+
+          <div className="table-wrapper">
+            <table className="premium-table">
+              <thead>
+                <tr>
+                  <th>THỜI GIAN</th>
+                  <th>GIAO DỊCH</th>
+                  <th>KHÁCH HÀNG</th>
+                  <th>PHƯƠNG THỨC</th>
+                  <th>SỐ TIỀN</th>
+                  <th>TRẠNG THÁI</th>
+                  <th>HÀNH ĐỘNG</th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map(tx => (
+                  <tr key={tx.id}>
+                    <td>
+                      <div className="time-cell">
+                        <b>{tx.date.split(' ')[1]}</b>
+                        <span>{tx.date.split(' ')[0]}</span>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="tx-cell">
+                        <code className="id-code">{tx.id}</code>
+                        <span className="pnr-link">PNR: {tx.booking}</span>
+                      </div>
+                    </td>
+                    <td><b>{tx.customer}</b></td>
+                    <td>
+                      <div className="method-cell">
+                        <span className="material-icons-round">account_balance_wallet</span>
+                        <div>
+                          <p>{tx.method}</p>
+                          <span>{tx.bank}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td><b className="amount-text">{tx.amount}</b></td>
+                    <td>
+                      <span className={`status-pill ${tx.status}`}>
+                        <i className="dot"></i>
+                        {tx.status === 'completed' ? 'Hoàn tất' : tx.status === 'pending' ? 'Đang xử lý' : 'Thất bại'}
+                      </span>
+                    </td>
+                    <td>
+                      <div className="action-row">
+                        <button className="icon-btn"><span className="material-icons-round">print</span></button>
+                        <button className="icon-btn"><span className="material-icons-round">info</span></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
       </div>
 
       <style>{`
-        .payment-history-page { padding: 24px 32px; animation: fadeIn 0.4s ease-out; }
-        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; }
-        .header-titles h1 { font-size: 24px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0; }
-        .header-titles p { font-size: 14px; color: #64748b; margin: 0; }
-        .header-actions { display: flex; gap: 12px; align-items: center; }
-        .date-input { padding: 9px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; }
-        .btn-export { display: flex; align-items: center; gap: 6px; padding: 9px 18px; background: #10b981; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
-
-        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 28px; }
-        .stat-card { display: flex; align-items: center; gap: 16px; padding: 20px 24px; }
-        .stat-icon { font-size: 32px; }
-        .stat-label { font-size: 12px; font-weight: 600; color: #64748b; margin: 0 0 4px 0; text-transform: uppercase; }
-        .stat-value { font-size: 20px; font-weight: 800; color: #1e293b; margin: 0; }
-
-        .filter-tabs { display: flex; gap: 8px; margin-bottom: 24px; border-bottom: 1px solid #e2e8f0; padding-bottom: 1px; }
-        .filter-tab { background: transparent; border: none; padding: 10px 16px; font-size: 14px; font-weight: 600; color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.2s; }
-        .filter-tab:hover { color: #0e74be; }
-        .filter-tab.active { color: #0e74be; border-bottom-color: #0e74be; }
-
-        .table-card { padding: 0; overflow: hidden; }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        .booking-table { width: 100%; border-collapse: collapse; text-align: left; min-width: 1000px; }
-        .booking-table th { padding: 16px var(--space-lg, 24px); font-size: 12px; font-weight: 600; color: #64748b; border-bottom: 1px solid #e2e8f0; background: #fcfcfc; text-transform: uppercase; white-space: nowrap; }
-        .booking-table td { padding: 16px var(--space-lg, 24px); border-bottom: 1px solid #f1f5f9; vertical-align: middle; white-space: nowrap; }
-        .booking-table tr:hover td { background: #f8fafc; }
-        
-        .tx-id { font-family: monospace; font-size: 13px; font-weight: 700; color: #475569; display: inline-block; text-align: center; line-height: 1.2; letter-spacing: 1px; }
-        .booking-id { font-family: monospace; font-size: 13px; font-weight: 700; background: #f0f4ff; color: #0e74be; padding: 6px 12px; border-radius: 6px; display: inline-block; text-align: center; line-height: 1.2; letter-spacing: 1px; border: 1px solid #bfdbfe; }
-        
-        .customer-info { display: flex; align-items: center; gap: 12px; }
-        .customer-avatar { width: 32px; height: 32px; border-radius: 50%; background: #e0e7ff; color: #3b82f6; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; text-transform: uppercase; }
-        .customer-info .name { font-size: 14px; font-weight: 600; margin: 0; color: #1e293b; }
-        
-        .date-info .date { font-size: 14px; font-weight: 500; margin: 0 0 2px 0; color: #1e293b; }
-        .date-info .time { font-size: 12px; color: #64748b; margin: 0; }
-        
-        .price { font-size: 15px; font-weight: 700; color: #1e293b; margin: 0; }
-        .text-muted { color: #64748b; margin: 0; font-size: 14px; }
-        
-        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-        .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-        .status-badge.success { background: #e6f4ea; color: #137333; }
-        .status-badge.success .dot { background: #137333; }
-        .status-badge.warning { background: #fef08a; color: #854d0e; }
-        .status-badge.warning .dot { background: #854d0e; }
-        .status-badge.danger { background: #fecaca; color: #991b1b; }
-        .status-badge.danger .dot { background: #991b1b; }
-        
-        .action-btn { display: flex; align-items: center; justify-content: center; color: #0e74be; padding: 6px; border-radius: 6px; transition: all 0.2s; border: none; background: #eff6ff; cursor: pointer; }
-        .action-btn .material-icons-round { font-size: 18px; }
-        .action-btn.view:hover { background: #dbeafe; color: #1e40af; }
-
-        /* Popup */
-        .popup-overlay { position: fixed; inset: 0; background: rgba(15,23,42,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); animation: fadeIn 0.2s; }
-        .popup-card { background: white; border-radius: 16px; padding: 32px; width: 500px; max-width: 95vw; box-shadow: 0 24px 80px rgba(0,0,0,0.2); }
-        .popup-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9; }
-        .popup-header h3 { font-size: 18px; font-weight: 700; color: #1e293b; margin: 0; }
-        .popup-close { background: none; border: none; cursor: pointer; color: #64748b; display: flex; padding: 4px; border-radius: 6px; }
-        .popup-close:hover { background: #f1f5f9; }
-        .td-info-list { display: flex; flex-direction: column; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
-        .td-info-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; background: white; transition: background 0.15s; }
-        .td-info-row:last-child { border-bottom: none; }
-        .td-info-row:hover { background: #f8faff; }
-        .td-info-row .material-icons-round { font-size: 20px; color: #94a3b8; flex-shrink: 0; }
-        .td-row-content { display: flex; justify-content: space-between; align-items: center; flex: 1; }
-        .td-ikey { font-size: 13px; color: #64748b; font-weight: 500; margin: 0; }
-        .td-ival { font-size: 14px; font-weight: 700; color: #1e293b; margin: 0; text-align: right; }
-        .amount-big { color: #0e74be; font-size: 18px; font-weight: 800; }
-        .popup-footer { display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid #f1f5f9; padding-top: 20px; }
-        .btn-print { display: flex; align-items: center; gap: 6px; padding: 10px 20px; border: 1px solid #e2e8f0; border-radius: 8px; background: white; font-size: 14px; font-weight: 600; cursor: pointer; color: #475569; }
-        .btn-close-popup { padding: 10px 24px; border: none; border-radius: 8px; background: #0e74be; color: white; font-size: 14px; font-weight: 600; cursor: pointer; }
-
+        .payment-history-content { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .page-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-header-flex h1 { font-size: 24px; color: #1e293b; }
+        .page-header-flex p { font-size: 14px; color: #64748b; }
+
+        .finance-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+        .finance-pill { padding: 20px; border: none; display: flex; align-items: center; gap: 16px; }
+        .icon-box { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .data p { font-size: 12px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+        .data h3 { font-size: 22px; color: #1e293b; }
+
+        .transaction-card { padding: 0; overflow: hidden; border: none; }
+        .toolbar { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; }
+        .search-box { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px 14px; width: 320px; }
+        .search-box input { border: none; outline: none; font-size: 13px; width: 100%; }
+        .filter-chips { display: flex; gap: 8px; }
+        .chip { padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; color: #64748b; cursor: pointer; border: 1px solid #e2e8f0; }
+        .chip.active { background: #1e293b; color: white; border-color: #1e293b; }
+
+        .table-wrapper { width: 100%; overflow-x: auto; }
+        .premium-table { width: 100%; border-collapse: collapse; }
+        .premium-table th { padding: 14px 24px; text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+        .premium-table td { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; font-size: 13px; }
+        
+        .time-cell { display: flex; flex-direction: column; }
+        .time-cell b { font-size: 14px; color: #1e293b; }
+        .time-cell span { font-size: 11px; color: #94a3b8; font-weight: 600; }
+        
+        .tx-cell { display: flex; flex-direction: column; gap: 2px; }
+        .id-code { font-family: monospace; font-weight: 700; color: #64748b; background: #f1f5f9; padding: 2px 6px; border-radius: 4px; display: inline-block; width: fit-content; }
+        .pnr-link { font-size: 11px; color: #2563eb; font-weight: 800; }
+        
+        .method-cell { display: flex; align-items: center; gap: 10px; }
+        .method-cell .material-icons-round { color: #94a3b8; font-size: 20px; }
+        .method-cell p { font-weight: 600; color: #1e293b; margin-bottom: 2px; }
+        .method-cell span { font-size: 11px; color: #94a3b8; }
+        
+        .amount-text { font-size: 15px; color: #1e293b; }
+        
+        .status-pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 800; }
+        .status-pill .dot { width: 6px; height: 6px; border-radius: 50%; }
+        .status-pill.completed { background: #dcfce7; color: #15803d; }
+        .status-pill.completed .dot { background: #15803d; }
+        .status-pill.pending { background: #fef3c7; color: #b45309; }
+        .status-pill.pending .dot { background: #b45309; }
+        .status-pill.failed { background: #fee2e2; color: #b91c1c; }
+        .status-pill.failed .dot { background: #b91c1c; }
+        
+        .icon-btn { width: 32px; height: 32px; border: none; background: transparent; color: #94a3b8; cursor: pointer; transition: all 0.2s; }
+        .icon-btn:hover { color: #2563eb; background: #eff6ff; border-radius: 6px; }
       `}</style>
     </AppLayout>
   );

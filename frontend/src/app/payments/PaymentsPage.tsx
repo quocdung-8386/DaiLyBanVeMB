@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
+import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import type { TicketData } from '../page';
@@ -15,11 +16,12 @@ interface PaymentsPageProps {
 
 const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkout', setView, ticketData, onClose }) => {
   const [paymentMode, setPaymentMode] = useState<'pos' | 'remote'>('pos');
-  const [posMethod, setPosMethod] = useState<'cash' | 'transfer' | 'card'>('cash');
+  const [posMethod, setPosMethod] = useState<'cash' | 'transfer' | 'card' | 'balance'>('cash');
   const [localTicket, setLocalTicket] = useState<TicketData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState('');
 
+  const isModal = !!onClose;
   const currentTicket = ticketData || localTicket;
   const [amountCollected, setAmountCollected] = useState<string>('');
 
@@ -30,10 +32,9 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
   }, [currentTicket]);
 
   const mockTickets = [
-    { id: '738-29481726', pnr: 'G7X9PQ', customer: 'Nguyễn Văn An', routeFrom: 'SGN', routeTo: 'HAN', date: '24/10/2023 08:30', total: '3,250,000', status: 'Đang hiệu lực', badge: 'success', airportFrom: 'Tân Sơn Nhất', airportTo: 'Nội Bài', gate: 'B12', terminal: 'T2', seat: '14A', boarding: '09:30' },
+    { id: 'VE-001', pnr: 'G7X9PQ', customer: 'Nguyễn Văn An', routeFrom: 'SGN', routeTo: 'HAN', date: '24/10/2023 08:30', total: '3,250,000', status: 'Đã xuất vé', badge: 'success', airportFrom: 'Tân Sơn Nhất', airportTo: 'Nội Bài', gate: 'B12', terminal: 'T2', seat: '14A', boarding: '09:30' },
+    { id: 'VE-005', pnr: 'HOLD01', customer: 'Nguyễn Quốc Dũng', routeFrom: 'HAN', routeTo: 'DAD', date: '10/05/2026 10:00', total: '2,150,000', status: 'Chờ thanh toán', badge: 'hold', airportFrom: 'Nội Bài', airportTo: 'Đà Nẵng', gate: 'A1', terminal: 'T1', seat: '12A', boarding: '09:30' },
     { id: '738-99283741', pnr: 'A2B4C6', customer: 'Trần Thị Bé', routeFrom: 'DAD', routeTo: 'SGN', date: '25/10/2023 14:15', total: '1,890,000', status: 'Đã hủy', badge: 'danger', airportFrom: 'Đà Nẵng', airportTo: 'Tân Sơn Nhất', gate: 'A5', terminal: 'T1', seat: '22C', boarding: '14:00' },
-    { id: '112-55443322', pnr: 'L9M1N2', customer: 'Lê Hữu Đạt', routeFrom: 'HAN', routeTo: 'PQC', date: '28/10/2023 09:40', total: '4,100,000', status: 'Đã hoàn tiền', badge: 'warning', airportFrom: 'Nội Bài', airportTo: 'Phú Quốc', gate: 'C3', terminal: 'T1', seat: '8B', boarding: '09:15' },
-    { id: '738-11229988', pnr: 'X7Y8Z9', customer: 'Phạm Tuấn Khải', routeFrom: 'SGN', routeTo: 'HPH', date: '02/11/2023 18:00', total: '2,450,000', status: 'Đã Void', badge: 'default', airportFrom: 'Tân Sơn Nhất', airportTo: 'Cát Bi', gate: 'B8', terminal: 'T2', seat: '31F', boarding: '17:30' },
   ];
 
   const handleSearch = () => {
@@ -48,61 +49,94 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
       setSearchError('Không tìm thấy vé hoặc Booking nào khớp với mã vừa nhập.');
     }
   };
-  return (
-    <div className="payments-modal-container" onClick={(e) => e.stopPropagation()}>
-      <div className="pm-header">
-        <h2>{view === 'success' ? 'Hoàn tất giao dịch' : 'Thanh toán & Ghi nhận'}</h2>
-        {onClose && (
-          <button className="pm-close-btn" onClick={onClose}>
-            <span className="material-icons-round">close</span>
-          </button>
-        )}
-      </div>
+
+  const content = (
+    <div className={isModal ? "payments-modal-container" : "payments-page-container"} onClick={(e) => e.stopPropagation()}>
+      {(isModal || !currentTicket) && (
+        <div className="pm-header">
+          <div className="pm-header-title">
+            <span className="material-icons-round text-primary">{currentTicket ? 'payments' : 'search'}</span>
+            <h2>{view === 'success' ? 'Hoàn tất giao dịch' : (currentTicket ? 'Thanh toán & Ghi nhận' : 'Tìm kiếm Booking')}</h2>
+          </div>
+          {onClose && (
+            <button className="pm-close-btn" onClick={onClose}>
+              <span className="material-icons-round">close</span>
+            </button>
+          )}
+        </div>
+      )}
 
       <div className="pm-content">
         {view === 'checkout' && (
           <>
-
-            <div className="payment-mode-tabs mb-lg">
-              <button className={`pm-tab ${paymentMode === 'pos' ? 'active' : ''}`} onClick={() => setPaymentMode('pos')}>
-                <span className="material-icons-round">point_of_sale</span>
-                Thu tiền tại quầy
-              </button>
-              <button className={`pm-tab ${paymentMode === 'remote' ? 'active' : ''}`} onClick={() => setPaymentMode('remote')}>
-                <span className="material-icons-round">qr_code_2</span>
-                Gửi yêu cầu thanh toán
-              </button>
-            </div>
-
             {!currentTicket ? (
               <div className="search-booking-container">
                 <Card className="search-card">
                   <div className="search-icon-wrapper">
-                    <span className="material-icons-round">search</span>
+                    <span className="material-icons-round">account_balance_wallet</span>
                   </div>
-                  <h2>Tìm kiếm thông tin thanh toán</h2>
-                  <p className="text-muted mb-lg">Nhập mã Booking (PNR) hoặc Mã vé để lấy dữ liệu thanh toán.</p>
+                  <h2>Lịch sử giao dịch Đại lý</h2>
+                  <p className="text-muted mb-lg">Nhập mã Booking (PNR) hoặc Số vé để thực hiện thanh toán, xuất vé hoặc đối soát công nợ.</p>
 
                   <div className="search-input-group">
-                    <input
-                      type="text"
-                      placeholder="VD: G7X9PQ hoặc 738-29481726"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    />
-                    <Button className="btn-primary-alt" onClick={handleSearch}>Tìm kiếm</Button>
+                    <div className="input-with-icon">
+                      <span className="material-icons-round">qr_code_scanner</span>
+                      <input
+                        type="text"
+                        placeholder="VD: G7X9PQ hoặc VE-005"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                      />
+                    </div>
+                    <Button className="btn-primary-alt" onClick={handleSearch}>
+                      <span className="material-icons-round">search</span>
+                      Tìm kiếm
+                    </Button>
                   </div>
-                  {searchError && <p className="text-danger mt-sm text-sm" style={{ textAlign: 'left' }}>{searchError}</p>}
+                  {searchError && (
+                    <div className="error-box mt-md">
+                      <span className="material-icons-round">error_outline</span>
+                      <p>{searchError}</p>
+                    </div>
+                  )}
+
+                  <div className="quick-actions mt-xl">
+                    <p className="text-xs font-bold text-muted mb-md">TRUY CẬP NHANH</p>
+                    <div className="quick-grid">
+                       <button className="q-item" onClick={() => { setSearchQuery('HOLD01'); handleSearch(); }}>
+                         <span className="material-icons-round">timer</span>
+                         <span>Booking đang giữ chỗ</span>
+                       </button>
+                       <button className="q-item" onClick={() => onNavigate?.('payment_history')}>
+                         <span className="material-icons-round">history</span>
+                         <span>Lịch sử thanh toán</span>
+                       </button>
+                    </div>
+                  </div>
                 </Card>
               </div>
             ) : (
               <div className="checkout-layout">
                 <div className="checkout-main">
+                  <div className="payment-mode-tabs mb-lg">
+                    <button className={`pm-tab ${paymentMode === 'pos' ? 'active' : ''}`} onClick={() => setPaymentMode('pos')}>
+                      <span className="material-icons-round">point_of_sale</span>
+                      Thu tiền tại quầy
+                    </button>
+                    <button className={`pm-tab ${paymentMode === 'remote' ? 'active' : ''}`} onClick={() => setPaymentMode('remote')}>
+                      <span className="material-icons-round">qr_code_2</span>
+                      Gửi yêu cầu thanh toán
+                    </button>
+                  </div>
+
                   <Card className="checkout-card mb-lg">
                     <div className="card-title">
                       <span className="material-icons-round text-primary">receipt</span>
-                      <h3>Thông tin vé</h3>
+                      <h3>Thông tin vé & Hành trình</h3>
+                      <div className="ml-auto">
+                        <span className={`badge badge-${currentTicket.badge}`}>{currentTicket.status}</span>
+                      </div>
                     </div>
                     <div className="booking-info-grid">
                       <div>
@@ -136,7 +170,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                   <Card className="checkout-card">
                     <div className="card-title">
                       <span className="material-icons-round text-primary">{paymentMode === 'pos' ? 'payments' : 'share'}</span>
-                      <h3>{paymentMode === 'pos' ? 'Ghi nhận phương thức' : 'Tạo mã thanh toán từ xa'}</h3>
+                      <h3>{paymentMode === 'pos' ? 'Phương thức thanh toán' : 'Thanh toán trực tuyến'}</h3>
                     </div>
                     {paymentMode === 'pos' ? (
                       <div className="payment-methods">
@@ -193,6 +227,29 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                             </div>
                           </div>
                         )}
+
+                        <label className={`method-option ${posMethod === 'balance' ? 'active' : ''}`}>
+                          <input type="radio" name="payment" checked={posMethod === 'balance'} onChange={() => setPosMethod('balance')} />
+                          <div className="method-icon" style={{ background: '#7c3aed' }}><span className="material-icons-round">account_balance_wallet</span></div>
+                          <div className="method-details">
+                            <h4>Số dư Đại lý (Agency Balance)</h4>
+                            <p>Khấu trừ trực tiếp từ quỹ ký quỹ</p>
+                          </div>
+                        </label>
+                        {posMethod === 'balance' && (
+                          <div className="sub-form" style={{ gridTemplateColumns: '1fr' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px', background: '#f5f3ff', borderRadius: 8, border: '1px solid #ddd6fe' }}>
+                              <div>
+                                <p style={{ fontSize: 11, color: '#6d28d9', fontWeight: 700, marginBottom: 2 }}>SỐ DƯ HIỆN TẠI</p>
+                                <p style={{ fontSize: 16, fontWeight: 800, color: '#4c1d95' }}>42,500,000 đ</p>
+                              </div>
+                              <div className="text-right">
+                                <p style={{ fontSize: 11, color: '#6d28d9', fontWeight: 700, marginBottom: 2 }}>SAU GIAO DỊCH</p>
+                                <p style={{ fontSize: 16, fontWeight: 800, color: '#7c3aed' }}>39,250,000 đ</p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <div className="remote-payment-gen">
@@ -220,16 +277,16 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                     </div>
                     <div className="summary-body">
                       <div className="summary-row">
-                        <span>Giá vé</span>
+                        <span>Giá vé Net (Hãng thu)</span>
                         <span>{currentTicket?.total ?? 'N/A'} đ</span>
                       </div>
                       <div className="summary-row">
-                        <span>Thuế & Phí</span>
-                        <span>50,000 đ</span>
+                        <span>Thuế & Phí sân bay</span>
+                        <span>120,000 đ</span>
                       </div>
-                      <div className="summary-row">
-                        <span>Phí dịch vụ</span>
-                        <span>20,000 đ</span>
+                      <div className="summary-row" style={{ color: '#059669', fontWeight: 700 }}>
+                        <span>Lợi nhuận đại lý (Markup)</span>
+                        <span>+ 50,000 đ</span>
                       </div>
                     </div>
                     <div className="summary-total">
@@ -238,15 +295,21 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                     </div>
                     <div className="summary-actions">
                       <div className="form-group mb-md mt-sm">
-                        <label className="text-sm font-semibold mb-xs" style={{ display: 'block' }}>Số tiền thu lần này (VNĐ)</label>
+                        <label className="text-sm font-semibold mb-xs" style={{ display: 'block' }}>Số tiền thu thực tế (VNĐ)</label>
                         <input type="text" className="input-field amount-input" value={amountCollected} onChange={(e) => setAmountCollected(e.target.value)} />
                       </div>
                       <Button className="w-full mb-sm btn-primary-alt" onClick={() => setView && setView('success')}>
                         <span className="material-icons-round">done_all</span>
                         Xác nhận thu tiền
                       </Button>
-                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => { if (onClose) onClose(); else if (onNavigate) onNavigate('booking'); }}>
-                        Hủy giao dịch
+                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => { 
+                        if (onClose) onClose(); 
+                        else {
+                          setLocalTicket(null);
+                          setSearchQuery('');
+                        }
+                      }}>
+                        {currentTicket === localTicket ? 'Quay lại tìm kiếm' : 'Hủy giao dịch'}
                       </Button>
                       {paymentMode === 'remote' && <p className="secure-note"><span className="material-icons-round">info</span> Giao dịch sẽ tự động xác nhận khi nhận được tiền</p>}
                     </div>
@@ -266,7 +329,11 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
               <h2>Thanh toán thành công!</h2>
               <p>Booking <strong>{currentTicket?.pnr ?? 'N/A'}</strong> đã được thanh toán và vé đã được xuất.</p>
               <div className="flex-row gap-sm mt-md justify-center">
-                <Button variant="outline" onClick={() => { if (onClose) onClose(); onNavigate && onNavigate('payment_history'); }}>Xem lịch sử giao dịch</Button>
+                <Button variant="outline" onClick={() => { if (onClose) onClose(); onNavigate && onNavigate('payment_history'); }}>Xem lịch sử</Button>
+                <Button variant="outline" onClick={() => alert('Đang tạo hóa đơn điện tử (E-Invoice)...')}>
+                   <span className="material-icons-round">receipt_long</span>
+                   Xuất HĐĐT
+                </Button>
                 <Button className="btn-primary-alt" onClick={() => window.print()}>
                   <span className="material-icons-round">print</span>
                   In vé máy bay
@@ -277,7 +344,6 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
             <div className="tickets-display">
               <h3>Boarding Pass — {currentTicket?.customer ?? 'Hành khách'}</h3>
               <div className="tickets-grid mt-md">
-                {/* Printed ticket with real data */}
                 <Card className="issued-ticket-card">
                   <div className="it-header bg-primary">
                     <div className="flex-row justify-between">
@@ -362,6 +428,13 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
           box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
           animation: modalSlideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        
+        .payments-page-container {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+        }
+
         @keyframes modalSlideUp {
           from { transform: translateY(40px) scale(0.95); opacity: 0; }
           to { transform: translateY(0) scale(1); opacity: 1; }
@@ -376,6 +449,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
           border-bottom: 1px solid var(--border);
           flex-shrink: 0;
         }
+        .pm-header-title { display: flex; align-items: center; gap: 12px; }
         .pm-header h2 { font-size: 20px; color: var(--text-main); margin: 0; }
         .pm-close-btn {
           background: transparent; border: none; cursor: pointer;
@@ -388,9 +462,97 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         .pm-content {
           flex: 1;
           overflow-y: auto;
-          padding: 24px;
+          padding: ${isModal ? '24px' : '0'};
         }
 
+        .ml-auto { margin-left: auto; }
+
+        /* Search Styles */
+        .search-booking-container { 
+          display: flex; 
+          justify-content: center; 
+          align-items: center; 
+          padding: ${isModal ? '40px 0' : '60px 0'}; 
+        }
+        .search-card { 
+          max-width: 600px; 
+          width: 100%; 
+          text-align: center; 
+          padding: 48px; 
+          border: 1px solid var(--border);
+          box-shadow: var(--shadow-lg); 
+        }
+        .search-icon-wrapper { 
+          width: 80px; 
+          height: 80px; 
+          background: var(--primary-light); 
+          color: var(--primary); 
+          border-radius: 20px; 
+          display: flex; 
+          align-items: center; 
+          justify-content: center; 
+          margin: 0 auto 24px; 
+          font-size: 40px; 
+        }
+        .search-card h2 { font-size: 24px; font-weight: 800; margin-bottom: 12px; color: #0f172a; }
+        .search-input-group { display: flex; gap: 12px; margin-top: 32px; }
+        
+        .input-with-icon {
+          flex: 1;
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+        .input-with-icon .material-icons-round {
+          position: absolute;
+          left: 16px;
+          color: var(--text-muted);
+        }
+        .input-with-icon input { 
+          width: 100%; 
+          padding: 14px 16px 14px 48px; 
+          border: 2px solid var(--border); 
+          border-radius: 12px; 
+          outline: none; 
+          font-size: 16px; 
+          font-weight: 500;
+          transition: all 0.2s;
+        }
+        .input-with-icon input:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
+
+        .error-box {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px 16px;
+          background: #fef2f2;
+          color: #b91c1c;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 500;
+          text-align: left;
+        }
+
+        .quick-actions { border-top: 1px solid var(--border); padding-top: 24px; }
+        .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .q-item {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          padding: 12px;
+          background: var(--bg-main);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          cursor: pointer;
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text-main);
+          transition: all 0.2s;
+        }
+        .q-item:hover { border-color: var(--primary); background: var(--primary-light); color: var(--primary); }
+        .q-item .material-icons-round { font-size: 18px; opacity: 0.7; }
+
+        /* Rest of existing styles... */
         .text-primary { color: var(--primary); }
         .text-danger { color: var(--danger); }
         .text-muted { color: var(--text-muted); }
@@ -402,47 +564,29 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         .font-bold { font-weight: 700; }
         .font-monospace { font-family: monospace; }
         .text-sm { font-size: 12px; }
+        .text-xs { font-size: 10px; }
         .text-right { text-align: right; }
         .w-full { width: 100%; }
         .flex-row { display: flex; align-items: center; }
         .justify-between { justify-content: space-between; }
         .justify-center { justify-content: center; }
         .gap-sm { gap: var(--space-sm); }
-        .mb-sm { margin-bottom: var(--space-sm); }
-        .mb-md { margin-bottom: var(--space-md); }
-        .mb-lg { margin-bottom: var(--space-lg); }
-        .mb-xl { margin-bottom: var(--space-xl); }
-        .mt-md { margin-top: var(--space-md); }
+        .mb-sm { margin-bottom: 8px; }
+        .mb-md { margin-bottom: 16px; }
+        .mb-lg { margin-bottom: 24px; }
+        .mb-xl { margin-bottom: 32px; }
+        .mt-sm { margin-top: 8px; }
+        .mt-md { margin-top: 16px; }
+        .mt-lg { margin-top: 24px; }
+        .mt-xl { margin-top: 32px; }
         .flex-1 { flex: 1; }
-        .flex-end { justify-content: flex-end; }
 
-        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
-        .breadcrumb .link { color: var(--primary); cursor: pointer; }
-        .breadcrumb .separator { font-size: 16px; }
-        .breadcrumb .current { color: var(--text-main); }
-
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl); }
-        .page-header h1 { font-size: 24px; margin-bottom: 4px; }
-        .page-header p { color: var(--text-secondary); font-size: 14px; }
-
-        /* Search Booking View */
-        .search-booking-container { display: flex; justify-content: center; align-items: center; padding: 40px 0; }
-        .search-card { max-width: 500px; width: 100%; text-align: center; padding: 40px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
-        .search-icon-wrapper { width: 64px; height: 64px; background: #eff6ff; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 32px; }
-        .search-icon-wrapper .material-icons-round { font-size: inherit; }
-        .search-card h2 { font-size: 20px; margin-bottom: 8px; }
-        .search-input-group { display: flex; gap: 8px; margin-top: 24px; }
-        .search-input-group input { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; outline: none; font-size: 15px; }
-        .search-input-group input:focus { border-color: var(--primary); }
-
-
-        /* Checkout View */
-        .checkout-layout { display: flex; gap: var(--space-xl); align-items: flex-start; }
+        .checkout-layout { display: flex; gap: 24px; align-items: flex-start; }
         .checkout-main { flex: 1; min-width: 0; }
-        .checkout-sidebar { width: 340px; flex-shrink: 0; position: sticky; top: 20px; }
+        .checkout-sidebar { width: 340px; flex-shrink: 0; position: sticky; top: 0; }
         
-        .checkout-card { padding: var(--space-lg); }
-        .card-title { display: flex; align-items: center; gap: 8px; margin-bottom: var(--space-lg); border-bottom: 1px solid var(--border); padding-bottom: 12px; }
+        .checkout-card { padding: 24px; }
+        .card-title { display: flex; align-items: center; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; }
         .card-title h3 { font-size: 16px; margin: 0; }
 
         .booking-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 14px; }
@@ -450,7 +594,6 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         .booking-info-grid .val { color: var(--text-main); display: flex; align-items: center; gap: 4px; }
         .booking-info-grid .sub-val { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
         .icon-xs { font-size: 14px; }
-        .icon-sm { font-size: 18px; }
 
         .payment-methods { display: flex; flex-direction: column; gap: 12px; }
         .method-option { display: flex; align-items: center; gap: 16px; border: 1px solid var(--border); padding: 16px; border-radius: var(--radius-md); cursor: pointer; transition: all 0.2s; }
@@ -458,11 +601,9 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         .method-option.active { border-color: var(--primary); background: #f4f8fc; }
         .method-option input[type="radio"] { width: 18px; height: 18px; accent-color: var(--primary); }
         .method-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; }
-        .method-option.active .method-icon { background: var(--primary); }
-        .method-icon:not(.active) { background: #e0e0e0; color: #757575; }
-        .method-icon.bg-pink { background: #a50064; color: white; }
-        .method-icon.bg-gray { background: #607d8b; color: white; }
-        .method-icon.bg-green { background: #4caf50; color: white; }
+        .method-icon.bg-primary { background: var(--primary); }
+        .method-icon.bg-gray { background: #607d8b; }
+        .method-icon.bg-green { background: #4caf50; }
         
         .method-details h4 { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
         .method-details p { font-size: 12px; color: var(--text-secondary); }
@@ -473,11 +614,10 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         .input-field { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 14px; outline: none; transition: border 0.2s; }
         .input-field:focus { border-color: var(--primary); }
         .bg-light { background: #f1f5f9; color: var(--text-secondary); }
-        .btn-upload { color: var(--text-secondary); }
 
         .remote-payment-gen { text-align: center; padding: 24px 0; }
         .qr-preview { display: inline-flex; flex-direction: column; align-items: center; padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: #fcfcfc; margin-bottom: 24px; }
-        .qr-preview img { width: 180px; height: 180px; margin-bottom: 16px; mix-blend-mode: multiply; }
+        .qr-preview img { width: 180px; height: 180px; margin-bottom: 16px; }
         .qr-preview p { font-size: 14px; color: var(--text-main); }
         .qr-preview strong { font-size: 18px; color: var(--primary); display: block; margin-top: 4px; }
         .remote-actions { max-width: 300px; margin: 0 auto; }
@@ -495,42 +635,31 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         .pm-tab.active { background: #eff6ff; color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary); }
 
         .amount-input { font-size: 18px; font-weight: 700; color: var(--primary); text-align: right; }
-        .mb-xs { margin-bottom: 4px; }
 
-        .summary-card { padding: 0; overflow: hidden; }
-        .summary-header { padding: var(--space-md) var(--space-lg); background: #fcfcfc; border-bottom: 1px solid var(--border); }
+        .summary-card { padding: 0; overflow: hidden; border: 1px solid var(--border); }
+        .summary-header { padding: 16px 20px; background: #fcfcfc; border-bottom: 1px solid var(--border); }
         .summary-header h3 { font-size: 16px; margin: 0; }
-        .summary-body { padding: var(--space-lg); display: flex; flex-direction: column; gap: 12px; border-bottom: 1px dashed var(--border); }
+        .summary-body { padding: 20px; display: flex; flex-direction: column; gap: 12px; border-bottom: 1px dashed var(--border); }
         .summary-row { display: flex; justify-content: space-between; font-size: 13px; color: var(--text-secondary); }
-        .summary-total { padding: var(--space-lg); display: flex; justify-content: space-between; align-items: center; }
+        .summary-total { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
         .summary-total span { font-size: 14px; font-weight: 600; }
         .summary-total h2 { font-size: 24px; color: var(--primary); margin: 0; }
-        .summary-actions { padding: 0 var(--space-lg) var(--space-lg) var(--space-lg); }
+        .summary-actions { padding: 0 20px 20px 20px; }
         .border-danger { border-color: var(--danger); color: var(--danger); }
-        .border-danger:hover { background: #fef2f2; }
         .secure-note { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 12px; }
-        .secure-note .material-icons-round { font-size: 14px; }
 
-        /* Success View & Print Ticket */
         .success-view { max-width: 900px; margin: 0 auto; width: 100%; }
         .success-banner { text-align: center; padding: 40px 20px; background: white; border-radius: var(--radius-lg); border: 1px solid #e6f4ea; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .success-icon { font-size: 64px; color: var(--success); margin-bottom: 16px; display: inline-block; }
-        .success-icon .material-icons-round { font-size: inherit; }
         .success-banner h2 { font-size: 28px; color: var(--text-main); margin-bottom: 8px; }
         .success-banner p { font-size: 15px; color: var(--text-secondary); }
 
-        .tickets-display h3 { font-size: 18px; margin-bottom: var(--space-lg); border-bottom: 2px solid var(--border); padding-bottom: 8px; display: inline-block; }
-        .tickets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xl); }
+        .tickets-display h3 { font-size: 18px; margin-bottom: 24px; border-bottom: 2px solid var(--border); padding-bottom: 8px; display: inline-block; }
+        .tickets-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         
-        .issued-ticket-card { padding: 0; overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .issued-ticket-card { padding: 0; overflow: hidden; border: 1px solid var(--border); }
         .it-header { padding: 20px; border-bottom: 2px dashed rgba(255,255,255,0.5); position: relative; }
-        /* Cutout circles for ticket effect */
-        .it-header::before, .it-header::after { content: ''; position: absolute; bottom: -10px; width: 20px; height: 20px; background: var(--bg-main); border-radius: 50%; z-index: 2; border: 1px solid var(--border); }
-        .it-header::before { left: -10px; border-right-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
-        .it-header::after { right: -10px; border-left-color: transparent; border-top-color: transparent; border-bottom-color: transparent; }
-        
         .airline-logo { width: 32px; height: 32px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; }
-        
         .it-body { padding: 24px 20px; background: white; }
         .it-route { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 16px; }
         .it-route .loc h2 { font-size: 28px; line-height: 1.1; }
@@ -538,23 +667,34 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         .it-route .dur { display: flex; flex-direction: column; align-items: center; }
         .it-route .dur .material-icons-round { font-size: 24px; transform: rotate(45deg); margin-bottom: 4px; }
         .it-route .dur p { font-size: 12px; font-weight: 600; }
-
         .it-info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
         .it-info-grid .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px; }
         .it-info-grid .val { font-size: 14px; color: var(--text-main); font-weight: 500; }
-
         .it-footer { padding: 16px 20px; background: #fafafa; border-top: 1px dashed var(--border); }
 
         @media print {
           .pm-header, .pm-close-btn, .payment-mode-tabs, .checkout-sidebar { display: none !important; }
           .payments-modal-container { box-shadow: none; max-width: none; background: white; }
           .pm-content { padding: 0; overflow: visible; }
-          .issued-ticket-card { break-inside: avoid; margin-bottom: 20px; border: 1px solid #000; box-shadow: none; }
+          .issued-ticket-card { break-inside: avoid; margin-bottom: 20px; border: 1px solid #000; }
           .it-header { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .tickets-grid { display: block; }
         }
       `}</style>
     </div>
+  );
+
+  return isModal ? content : (
+    <AppLayout 
+      activeItem="payments" 
+      onNavigate={onNavigate || (() => {})}
+      breadcrumb={[
+        { label: 'Lịch sử giao dịch', page: 'payments' },
+        currentTicket ? { label: `Xác nhận: ${currentTicket.pnr}` } : { label: 'Tra cứu' }
+      ]}
+    >
+      {content}
+    </AppLayout>
   );
 };
 

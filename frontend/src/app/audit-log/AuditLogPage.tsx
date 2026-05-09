@@ -1,103 +1,170 @@
 import React, { useState } from 'react';
-import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
+import Button from '../../components/Button';
+import AppLayout from '../../components/AppLayout';
 
 interface AuditLogPageProps {
-  onNavigate: (page: string) => void;
+  onNavigate?: (id: string) => void;
 }
 
 const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate }) => {
-  const [filterAction, setFilterAction] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const logs = [
-    { id: 1, nv: 'admin_dung', action: 'Tao dat cho', table: 'DatCho', note: 'Mã: BKG-8892', time: '2026-06-01 08:12:34', color: 'blue' },
-    { id: 2, nv: 'ketoan_01', action: 'Phe duyet hoan tien', table: 'ThanhToan', note: 'Mã GD: TXN-221', time: '2026-06-01 09:04:11', color: 'orange' },
-    { id: 3, nv: 'agent_le', action: 'Huy ve', table: 'VeMayBay', note: 'Mã vé: TKT-112', time: '2026-06-01 10:33:00', color: 'red' },
-    { id: 4, nv: 'admin_dung', action: 'Cap nhat chuyen bay', table: 'ChuyenBay', note: 'Mã CB: VN123', time: '2026-06-01 11:55:44', color: 'green' },
-    { id: 5, nv: 'ketoan_01', action: 'Xuat hoa don', table: 'HoaDon', note: 'Mã HD: INV-5581', time: '2026-06-01 13:20:05', color: 'blue' },
+    { id: 'LOG-4829', user: 'admin_dung', action: 'Phát hành vé', module: 'Tickets', target: '738-29481726', time: '10:12:34 24/10', type: 'info' },
+    { id: 'LOG-4830', user: 'agent_an', action: 'Hủy đặt chỗ', module: 'Booking', target: 'G7X9PQ', time: '11:04:11 24/10', type: 'warning' },
+    { id: 'LOG-4831', user: 'admin_dung', action: 'Thay đổi giá vé', module: 'Flights', target: 'QH-202', time: '13:45:00 24/10', type: 'danger' },
+    { id: 'LOG-4832', user: 'sys_bot', action: 'Tự động khóa PNR', module: 'System', target: 'PNR-EXP-01', time: '15:20:05 24/10', type: 'info' },
+    { id: 'LOG-4833', user: 'agent_an', action: 'Hoàn tiền', module: 'Refund', target: 'RFD-1022', time: '16:10:22 24/10', type: 'warning' },
   ];
 
-  const colorMap: Record<string, string> = {
-    blue: '#0e74be', orange: '#f97316', red: '#ef4444', green: '#10b981',
-  };
-
   return (
-    <AppLayout activeItem="audit-log" onNavigate={onNavigate} breadcrumb={[{ label: 'Nhật Ký Hệ Thống' }]}>
-      <div className="audit-page">
-        <div className="page-header">
-          <div className="header-titles">
-            <h1>Nhật Ký Hệ Thống (Audit Log)</h1>
-            <p>Theo dõi toàn bộ thao tác của nhân viên trên hệ thống</p>
+    <AppLayout 
+      activeItem="audit-log" 
+      onNavigate={onNavigate || (() => {})}
+      breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Nhật ký hoạt động' }]}
+    >
+      <div className="audit-log-page">
+        
+        {/* ── HEADER ── */}
+        <div className="page-header-flex">
+          <div>
+            <h1>Nhật ký Hoạt động Hệ thống</h1>
+            <p>Truy vết mọi thao tác và thay đổi dữ liệu trên toàn hệ thống.</p>
           </div>
-          <div className="header-actions">
-            <select className="filter-select" value={filterAction} onChange={e => setFilterAction(e.target.value)}>
-              <option value="all">Tất cả hành động</option>
-              <option value="dat_cho">Tạo đặt chỗ</option>
-              <option value="huy">Hủy vé</option>
-              <option value="hoan_tien">Hoàn tiền</option>
-            </select>
-            <button className="btn-export">
-              <span className="material-icons-round">download</span> Xuất Log
-            </button>
+          <div className="action-buttons">
+            <Button variant="outline"><span className="material-icons-round">filter_list</span> Bộ lọc nâng cao</Button>
+            <Button><span className="material-icons-round">cloud_download</span> Tải tệp nhật ký</Button>
           </div>
         </div>
 
-        <Card className="log-table-card">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Thời gian</th>
-                <th>Nhân viên</th>
-                <th>Hành động</th>
-                <th>Bảng tác động</th>
-                <th>Ghi chú</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.map(log => (
-                <tr key={log.id}>
-                  <td className="muted">{log.id}</td>
-                  <td className="mono-text">{log.time}</td>
-                  <td><span className="agent-tag">{log.nv}</span></td>
-                  <td>
-                    <span className="action-badge" style={{ background: `${colorMap[log.color]}18`, color: colorMap[log.color] }}>
-                      {log.action}
-                    </span>
-                  </td>
-                  <td><span className="table-tag">{log.table}</span></td>
-                  <td className="muted">{log.note}</td>
+        {/* ── STATS ── */}
+        <div className="audit-stats">
+          <Card className="mini-stat">
+            <p>Tổng log hôm nay</p>
+            <h3>1,248</h3>
+          </Card>
+          <Card className="mini-stat">
+            <p>Cảnh báo bảo mật</p>
+            <h3 className="text-warning">12</h3>
+          </Card>
+          <Card className="mini-stat">
+            <p>Lỗi hệ thống</p>
+            <h3 className="text-danger">0</h3>
+          </Card>
+        </div>
+
+        {/* ── LOG TABLE ── */}
+        <Card className="log-card">
+          <div className="log-toolbar">
+            <div className="search-box">
+              <span className="material-icons-round">search</span>
+              <input type="text" placeholder="Tìm theo ID, người dùng, hành động..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
+            <div className="type-filters">
+              <span className="badge active">Tất cả</span>
+              <span className="badge info">Thông tin</span>
+              <span className="badge warning">Cảnh báo</span>
+              <span className="badge danger">Nghiêm trọng</span>
+            </div>
+          </div>
+
+          <div className="table-wrapper">
+            <table className="premium-table">
+              <thead>
+                <tr>
+                  <th>THỜI GIAN</th>
+                  <th>NGƯỜI DÙNG</th>
+                  <th>HÀNH ĐỘNG</th>
+                  <th>MODULE</th>
+                  <th>ĐỐI TƯỢNG TÁC ĐỘNG</th>
+                  <th>MÃ LOG</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {logs.map(log => (
+                  <tr key={log.id}>
+                    <td><div className="time-cell"><span className="material-icons-round">schedule</span> {log.time}</div></td>
+                    <td><span className="user-tag">{log.user}</span></td>
+                    <td>
+                      <div className="action-cell">
+                        <i className={`dot ${log.type}`}></i>
+                        {log.action}
+                      </div>
+                    </td>
+                    <td><span className="module-tag">{log.module}</span></td>
+                    <td><b>{log.target}</b></td>
+                    <td><code className="log-id">{log.id}</code></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="pagination">
+            <span>Trang 1 của 42</span>
+            <div className="btns">
+              <button disabled><span className="material-icons-round">chevron_left</span></button>
+              <button className="active">1</button>
+              <button>2</button>
+              <button>3</button>
+              <button><span className="material-icons-round">chevron_right</span></button>
+            </div>
+          </div>
         </Card>
       </div>
 
       <style>{`
-        .audit-page { padding: 24px 32px; animation: fadeIn 0.4s ease-out; }
-        .page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 28px; }
-        .header-titles h1 { font-size: 24px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0; }
-        .header-titles p { font-size: 14px; color: #64748b; margin: 0; }
-        .header-actions { display: flex; gap: 12px; align-items: center; }
-        .filter-select { padding: 9px 14px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-weight: 600; color: #1e293b; outline: none; background: white; cursor: pointer; font-family: inherit; }
-        .btn-export { display: flex; align-items: center; gap: 6px; padding: 9px 18px; background: #0e74be; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.2s; }
-        .btn-export:hover { background: #0b5a94; }
-
-        .log-table-card { padding: 0; overflow: hidden; }
-        .data-table { width: 100%; border-collapse: collapse; }
-        .data-table th { text-align: left; padding: 14px 20px; font-size: 12px; font-weight: 700; color: #64748b; border-bottom: 1px solid #e2e8f0; background: #f8fafc; text-transform: uppercase; letter-spacing: 0.5px; }
-        .data-table td { padding: 16px 20px; font-size: 14px; color: #1e293b; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .data-table tr:last-child td { border-bottom: none; }
-        .data-table tr:hover td { background: #f8fafc; }
-
-        .muted { color: #94a3b8 !important; font-size: 13px !important; }
-        .mono-text { font-family: monospace; font-size: 13px !important; }
-        .agent-tag { background: #f1f5f9; color: #334155; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 700; font-family: monospace; }
-        .action-badge { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
-        .table-tag { background: #eff6ff; color: #0e74be; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
-
+        .audit-log-page { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        .page-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .page-header-flex h1 { font-size: 24px; color: #1e293b; }
+        .page-header-flex p { font-size: 14px; color: #64748b; }
+        
+        .audit-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 24px; }
+        .mini-stat { padding: 16px 20px; border: none; }
+        .mini-stat p { font-size: 12px; color: #94a3b8; font-weight: 700; text-transform: uppercase; margin-bottom: 4px; }
+        .mini-stat h3 { font-size: 24px; color: #1e293b; }
+        .text-warning { color: #f59e0b; }
+        .text-danger { color: #ef4444; }
+
+        .log-card { padding: 0; overflow: hidden; border: none; }
+        .log-toolbar { padding: 16px 24px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; }
+        .search-box { display: flex; align-items: center; gap: 10px; background: white; border: 1px solid #e2e8f0; border-radius: 10px; padding: 6px 14px; width: 320px; }
+        .search-box input { border: none; outline: none; font-size: 13px; width: 100%; }
+        .type-filters { display: flex; gap: 8px; }
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; cursor: pointer; color: #64748b; border: 1px solid #e2e8f0; }
+        .badge.active { background: #1e293b; color: white; border-color: #1e293b; }
+        .badge.info:hover { color: #2563eb; background: #eff6ff; }
+        .badge.warning:hover { color: #f59e0b; background: #fffbeb; }
+        .badge.danger:hover { color: #ef4444; background: #fef2f2; }
+
+        .table-wrapper { width: 100%; overflow-x: auto; }
+        .premium-table { width: 100%; border-collapse: collapse; }
+        .premium-table th { padding: 14px 24px; text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; background: #f8fafc; border-bottom: 1px solid #f1f5f9; }
+        .premium-table td { padding: 14px 24px; border-bottom: 1px solid #f1f5f9; font-size: 13px; vertical-align: middle; }
+        
+        .time-cell { display: flex; align-items: center; gap: 8px; color: #64748b; font-weight: 500; }
+        .time-cell .material-icons-round { font-size: 16px; color: #cbd5e1; }
+        
+        .user-tag { background: #f1f5f9; color: #475569; padding: 4px 10px; border-radius: 6px; font-family: monospace; font-weight: 700; font-size: 12px; }
+        
+        .action-cell { display: flex; align-items: center; gap: 10px; font-weight: 600; color: #1e293b; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .dot.info { background: #3b82f6; }
+        .dot.warning { background: #f59e0b; }
+        .dot.danger { background: #ef4444; }
+        
+        .module-tag { color: #2563eb; font-weight: 700; }
+        .log-id { background: #f8fafc; padding: 2px 6px; border-radius: 4px; border: 1px solid #e2e8f0; font-family: monospace; color: #94a3b8; }
+
+        .pagination { padding: 16px 24px; display: flex; justify-content: space-between; align-items: center; background: #fafbfc; }
+        .pagination span { font-size: 12px; color: #94a3b8; font-weight: 600; }
+        .btns { display: flex; gap: 4px; }
+        .btns button { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0; background: white; color: #64748b; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .btns button.active { background: #2563eb; color: white; border-color: #2563eb; }
+        .btns button:disabled { opacity: 0.5; cursor: not-allowed; }
       `}</style>
     </AppLayout>
   );

@@ -111,111 +111,45 @@ DaiLyBanVeMB/
 ├── frontend/                        # Next.js 16 App Router
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── layout.tsx           # Root layout
-│   │   │   ├── page.tsx             # Trang chính (Điều hướng module)
-│   │   │   ├── login/               # Đăng nhập
-│   │   │   │   └── LoginPage.tsx
-│   │   │   ├── dashboard/           # Trang tổng quan
-│   │   │   │   └── Dashboard.tsx
-│   │   │   ├── flights/             # Quản lý chuyến bay
-│   │   │   │   ├── FlightsPage.tsx
-│   │   │   │   └── [id]/            # Chi tiết chuyến bay
-│   │   │   ├── booking/             # Đặt chỗ
-│   │   │   │   ├── BookingPage.tsx
-│   │   │   │   ├── [id]/            # Chi tiết đặt chỗ
-│   │   │   │   └── create/          # Quy trình đặt chỗ mới
-│   │   │   ├── tickets/             # Quản lý Vé máy bay
-│   │   │   │   ├── TicketsPage.tsx
-│   │   │   │   ├── cancel/          # Hủy vé
-│   │   │   │   │   └── CancelTicketPage.tsx
-│   │   │   │   ├── exchange/        # Đổi vé
-│   │   │   │   │   └── ExchangeTicketPage.tsx
-│   │   │   │   └── issue/           # Xuất vé
-│   │   │   │       └── IssueTicketPage.tsx
-│   │   │   ├── refund-management/   # Quản lý hoàn tiền
-│   │   │   │   └── RefundManagementPage.tsx
-│   │   │   ├── payments/            # Thanh toán
-│   │   │   │   ├── PaymentsPage.tsx
-│   │   │   │   ├── history/         # Lịch sử thanh toán
-│   │   │   │   └── invoice/         # Hóa đơn
-│   │   │   ├── customers/           # Quản lý khách hàng
-│   │   │   │   └── CustomersPage.tsx
-│   │   │   ├── settings/            # Cài đặt hệ thống
-│   │   │   │   ├── SettingsPage.tsx
-│   │   │   │   └── system-config/   # Cấu hình tham số
-│   │   │   ├── reports/             # Báo cáo thống kê
-│   │   │   │   └── ReportsPage.tsx
-│   │   │   ├── users/               # Quản lý người dùng
-│   │   │   │   ├── UsersPage.tsx
-│   │   │   │   └── roles/           # Phân quyền
-│   │   │   ├── profile/             # Hồ sơ cá nhân
-│   │   │   │   └── ProfilePage.tsx
-│   │   │   ├── loyalty/             # Chương trình tích điểm
-│   │   │   │   └── LoyaltyPage.tsx
-│   │   │   ├── audit-log/           # Nhật ký hệ thống
-│   │   │   │   └── AuditLogPage.tsx
-│   │   │   ├── ai-admin/            # Quản trị AI
-│   │   │   │   └── AiAdminPage.tsx
-│   │   │   └── core-data/           # Dữ liệu nền tảng
-│   │   │       ├── airlines/        # Quản lý hãng bay
-│   │   │       ├── airports/        # Quản lý sân bay
-│   │   │       ├── fare-rules/      # Quy định giá vé
-│   │   │       ├── policies/        # Chính sách đại lý
-│   │   │       └── routes/          # Tuyến bay
-│   │   ├── components/              # Shared Components (Core UI)
-│   │   │   ├── AppLayout.tsx        # Layout chung của app
-│   │   │   ├── Sidebar.tsx          # Menu điều hướng
-│   │   │   ├── Header.tsx           # Thanh tiêu đề
-│   │   │   ├── Card.tsx             # Card component
-│   │   │   └── Button.tsx           # Button component
-│   │   ├── hooks/                   # Custom React hooks
-│   │   ├── services/                # API service calls
-│   │   ├── types/                   # TypeScript types/interfaces
-│   │   ├── utils/                   # Utility functions
-│   │   └── index.css                # Global styles
-│   ├── next.config.mjs
+│   │   │   ├── layout.tsx           # Root layout (Global Design Tokens)
+│   │   │   ├── page.tsx             # Home Router & Module Switcher
+│   │   │   ├── dashboard/           # Trung tâm Điều hành (Dashboard)
+│   │   │   ├── flights/             # Tìm kiếm & Quản lý Chuyến bay
+│   │   │   ├── booking/             # Quy trình Đặt chỗ (Booking & Seat Map)
+│   │   │   ├── tickets/             # Kho vé (Boarding Pass & Issue)
+│   │   │   ├── customers/           # CRM Khách hàng
+│   │   │   ├── loyalty/             # Chương trình Thành viên
+│   │   │   ├── payments/            # Thanh toán & Lịch sử Giao dịch
+│   │   │   ├── reports/             # Báo cáo BI & Doanh thu
+│   │   │   ├── ai-admin/            # AI Command Center
+│   │   │   ├── audit-log/           # Nhật ký Hoạt động (Traceability)
+│   │   │   ├── settings/            # Cấu hình Hệ thống & Hãng bay
+│   │   │   ├── users/               # Quản lý Nhân sự & Phân quyền
+│   │   │   ├── profile/             # Thông tin Cá nhân
+│   │   │   └── refund-management/   # Xử lý Hoàn/Hủy vé
+│   │   ├── components/              # Premium Shared Components
+│   │   │   ├── AppLayout.tsx        # Enterprise Layout Wrapper
+│   │   │   ├── Sidebar.tsx          # Professional Sidebar
+│   │   │   ├── Header.tsx           # Dashboard Header
+│   │   │   ├── Card.tsx             # Standardized Card Component
+│   │   │   └── Button.tsx           # Standardized Button Component
+│   │   └── index.css                # Core Design System Tokens
 │   ├── package.json
-│   ├── tsconfig.json
-│   └── tsconfig.node.json
+│   └── tsconfig.json
 │
-├── backend/                         # FastAPI Python
+├── backend/                         # FastAPI Backend
 │   ├── app/
 │   │   ├── main.py                  # Entry point
-│   │   ├── api/                     # Route handlers
-│   │   ├── models/                  # SQLAlchemy models
-│   │   ├── schemas/                 # Pydantic schemas
-│   │   ├── services/                # Business logic
-│   │   ├── repositories/            # Data access layer
-│   │   ├── core/                    # Config, security
-│   │   ├── dependencies/            # DI dependencies
-│   │   ├── ai/                      # AI/ML features
-│   │   ├── background_tasks/        # Tác vụ nền
-│   │   ├── notifications/           # Hệ thống thông báo
-│   │   └── utils/                   # Tiện ích
-│   ├── migrations/                  # Alembic migrations
-│   ├── tests/                       # Unit & integration tests
+│   │   ├── api/                     # REST Endpoints
+│   │   ├── models/                  # DB Models
+│   │   └── services/                # Business Logic
 │   └── requirements.txt
 │
-├── database/                        # PostgreSQL
-│   ├── scripts/
-│   │   ├── schema.sql               # Schema khởi tạo
-│   │   ├── seed.sql                 # Dữ liệu mẫu
-│   │   └── procedures.sql           # Stored procedures
-│   └── backups/                     # Backup files
-│
-├── docs/                            # Tài liệu
-│   ├── API.md
-│   ├── api/                         # API docs chi tiết
-│   └── diagrams/                    # ERD, sequence diagrams
-│
-├── docker/                          # Docker
-│   ├── docker-compose.yml
-│   ├── Dockerfile.frontend
-│   └── Dockerfile.backend
-│
-├── .gitignore
+├── database/                        # PostgreSQL Resources
+├── docker/                          # Containerization (Dev/Prod)
 └── README.md
 ```
+
 
 ---
 
