@@ -6,11 +6,14 @@ import SeatMap from '../../components/SeatMap';
 
 interface CheckinPageProps {
   onNavigate: (id: string) => void;
+  bookings: any[];
+  onUpdateBooking?: (updated: any) => void;
 }
 
-const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
+const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdateBooking }) => {
   const [pnr, setPnr] = useState('');
   const [lastName, setLastName] = useState('');
+  const [foundBooking, setFoundBooking] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState<'search' | 'passengers' | 'baggage' | 'boarding_pass'>('search');
 
@@ -26,9 +29,25 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
     e.preventDefault();
     if (!pnr || !lastName) return;
     setIsLoading(true);
+    
+    // Simulate API search in global bookings
     setTimeout(() => {
+      setIsLoading(true);
+      const queryPnr = pnr.trim().toUpperCase();
+      const queryName = lastName.trim().toUpperCase();
+      
+      const booking = bookings.find(b => 
+        b.pnr.toUpperCase() === queryPnr && 
+        b.customer.toUpperCase().includes(queryName)
+      );
+
       setIsLoading(false);
-      setStep('passengers');
+      if (booking) {
+        setFoundBooking(booking);
+        setStep('passengers');
+      } else {
+        alert('Không tìm thấy mã đặt chỗ hoặc tên khách hàng không khớp. Vui lòng kiểm tra lại.');
+      }
     }, 1200);
   };
 
@@ -110,16 +129,16 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
           )}
 
           {step === 'passengers' && (
-            <Card title="Chọn Hành khách" subtitle={`Tìm thấy mã: ${pnr} • Chuyến bay VN234`}>
+            <Card title="Chọn Hành khách" subtitle={`Tìm thấy mã: ${pnr} • Chuyến bay ${foundBooking?.flight}`}>
               <div className="flight-summary-banner">
                 <div className="route">
-                  <h3>HAN</h3>
+                  <h3>{foundBooking?.from}</h3>
                   <span className="material-icons-round">flight_takeoff</span>
-                  <h3>SGN</h3>
+                  <h3>{foundBooking?.to}</h3>
                 </div>
                 <div className="f-details">
-                  <p><strong>Ngày bay:</strong> 15 Thg 10 2026</p>
-                  <p><strong>Giờ bay:</strong> 14:30 - 16:45</p>
+                  <p><strong>Ngày bay:</strong> {foundBooking?.date}</p>
+                  <p><strong>Giờ bay:</strong> {foundBooking?.time}</p>
                 </div>
               </div>
 
@@ -132,22 +151,10 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
                     onChange={() => togglePassenger('p1')}
                   />
                   <div className="p-info">
-                    <strong>NGUYEN VAN A</strong>
-                    <span>Số vé: 738-1234567890</span>
+                    <strong>{foundBooking?.customer || 'NGUYEN VAN A'}</strong>
+                    <span>Số vé: {foundBooking?.id || '738-1234567890'}</span>
                   </div>
-                  <div className="p-seat">Ghế {passengerSeats['p1']}</div>
-                </label>
-                <label className={`passenger-item ${selectedPassengers.includes('p2') ? 'selected' : ''}`}>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedPassengers.includes('p2')} 
-                    onChange={() => togglePassenger('p2')}
-                  />
-                  <div className="p-info">
-                    <strong>TRAN THI B</strong>
-                    <span>Số vé: 738-1234567891</span>
-                  </div>
-                  <div className="p-seat">Ghế {passengerSeats['p2']}</div>
+                  <div className="p-seat">Ghế {passengerSeats['p1'] || foundBooking?.seat}</div>
                 </label>
               </div>
 
@@ -195,7 +202,12 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
 
               <div className="action-row">
                 <Button variant="outline" onClick={() => setStep('passengers')}>Quay lại</Button>
-                <Button onClick={() => setStep('boarding_pass')}>Hoàn tất Check-in</Button>
+                <Button onClick={() => {
+                  if (foundBooking && onUpdateBooking) {
+                    onUpdateBooking({ ...foundBooking, status: 'Đã Check-in', badge: 'success' });
+                  }
+                  setStep('boarding_pass');
+                }}>Hoàn tất Check-in</Button>
               </div>
             </Card>
           )}
@@ -218,43 +230,43 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
                     <div className="bp-body">
                       <div className="bp-route">
                         <div>
-                          <h2>HAN</h2>
-                          <span>Hà Nội</span>
+                          <h2>{foundBooking?.from}</h2>
+                          <span>Hành trình đi</span>
                         </div>
                         <span className="material-icons-round">flight_takeoff</span>
                         <div>
-                          <h2>SGN</h2>
-                          <span>Hồ Chí Minh</span>
+                          <h2>{foundBooking?.to}</h2>
+                          <span>Hành trình đến</span>
                         </div>
                       </div>
                       
                       <div className="bp-details">
                         <div className="detail-item">
                           <span>Hành khách</span>
-                          <strong>{p === 'p1' ? 'NGUYEN VAN A' : 'TRAN THI B'}</strong>
+                          <strong>{foundBooking?.customer}</strong>
                         </div>
                         <div className="detail-item">
                           <span>Chuyến bay</span>
-                          <strong>VN234</strong>
+                          <strong>{foundBooking?.flight}</strong>
                         </div>
                         <div className="detail-item">
                           <span>Ngày</span>
-                          <strong>15 Thg 10</strong>
+                          <strong>{foundBooking?.date}</strong>
                         </div>
                       </div>
 
                       <div className="bp-highlights">
                         <div className="h-item">
                           <span>Cửa (Gate)</span>
-                          <strong>04</strong>
+                          <strong>{foundBooking?.gate !== '--' ? foundBooking?.gate : '04'}</strong>
                         </div>
                         <div className="h-item">
                           <span>Giờ lên tàu</span>
-                          <strong>13:45</strong>
+                          <strong>{foundBooking?.boarding}</strong>
                         </div>
                         <div className="h-item">
                           <span>Ghế</span>
-                          <strong>{passengerSeats[p]}</strong>
+                          <strong>{passengerSeats[p] || foundBooking?.seat}</strong>
                         </div>
                         <div className="h-item">
                           <span>Nhóm (Zone)</span>
@@ -290,9 +302,12 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate }) => {
           onConfirm={(seat) => {
             if (editingPassengerSeat) {
               setPassengerSeats(prev => ({ ...prev, [editingPassengerSeat]: seat }));
+              setIsSeatMapOpen(false);
+              setEditingPassengerSeat(null);
+              if (foundBooking && onUpdateBooking) {
+                onUpdateBooking({ ...foundBooking, seat: seat });
+              }
             }
-            setIsSeatMapOpen(false);
-            setEditingPassengerSeat(null);
           }}
           onCancel={() => {
             setIsSeatMapOpen(false);

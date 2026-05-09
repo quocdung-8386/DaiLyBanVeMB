@@ -9,6 +9,24 @@ interface ReportsPageProps {
 
 const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
   const [dateRange, setDateRange] = useState('Tháng này');
+  const [isExporting, setIsExporting] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
+
+  const handleExport = () => {
+    setIsExporting(true);
+    setTimeout(() => {
+      setIsExporting(false);
+      alert('Đã xuất báo cáo PDF thành công!');
+    }, 1500);
+  };
+
+  const handleShare = () => {
+    setIsSharing(true);
+    setTimeout(() => {
+      setIsSharing(false);
+      alert('Link báo cáo đã được sao chép vào bộ nhớ tạm!');
+    }, 800);
+  };
 
   const stats = [
     { label: 'Tổng doanh thu (Gross)', value: '1,250,000,000 đ', change: '+12.5%', icon: 'payments', color: '#2563eb' },
@@ -41,8 +59,21 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
                 <option>Năm nay</option>
               </select>
             </div>
-            <Button variant="outline"><span className="material-icons-round">file_download</span> Xuất PDF</Button>
-            <Button><span className="material-icons-round">share</span> Chia sẻ báo cáo</Button>
+            <Button 
+              variant="outline" 
+              onClick={handleExport}
+              disabled={isExporting}
+            >
+              <span className={`material-icons-round ${isExporting ? 'animate-spin' : ''}`}>{isExporting ? 'sync' : 'file_download'}</span> 
+              {isExporting ? 'Đang xử lý...' : 'Xuất PDF'}
+            </Button>
+            <Button 
+              onClick={handleShare}
+              disabled={isSharing}
+            >
+              <span className={`material-icons-round ${isSharing ? 'animate-spin' : ''}`}>{isSharing ? 'sync' : 'share'}</span> 
+              {isSharing ? 'Đang gửi...' : 'Chia sẻ báo cáo'}
+            </Button>
           </div>
         </div>
 
@@ -122,7 +153,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
         <Card className="routes-table-card">
           <div className="card-header-flex">
             <h3>Top 5 Tuyến bay Hiệu quả nhất</h3>
-            <Button size="sm" variant="outline">Xem chi tiết</Button>
+            <Button size="sm" variant="outline" onClick={() => onNavigate?.('flights')}>Xem chi tiết</Button>
           </div>
           <table className="premium-table">
             <thead>
@@ -216,6 +247,14 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
         .trend-pill.up { background: #dcfce7; color: #15803d; }
         .trend-pill.down { background: #fee2e2; color: #b91c1c; }
         .text-success { color: #10b981 !important; }
+
+        .material-icons-round.animate-spin {
+          animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
       `}</style>
     </AppLayout>
   );

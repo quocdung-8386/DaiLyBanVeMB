@@ -5,10 +5,23 @@ import Button from '../../components/Button';
 
 interface GateManagementPageProps {
   onNavigate: (id: string) => void;
+  bookings: any[];
+  onUpdateStatus?: (id: string, status: string, badge: string) => void;
 }
 
-const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate }) => {
+const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, bookings, onUpdateStatus }) => {
   const [gateStatus, setGateStatus] = useState<'OPEN' | 'BOARDING' | 'CLOSED'>('OPEN');
+  
+  // Filter bookings for a specific flight (simulated VN234 for demo)
+  const flightBookings = bookings.filter(b => b.status === 'Đã xuất vé' || b.status === 'Boarded');
+  const boardedCount = flightBookings.filter(b => b.status === 'Boarded').length;
+
+  const handleScanBoarding = (id: string) => {
+    if (onUpdateStatus) {
+      onUpdateStatus(id, 'Boarded', 'success');
+      alert('Đã quét thẻ lên máy bay thành công!');
+    }
+  };
 
   return (
     <AppLayout activeItem="gate-management" onNavigate={onNavigate}>
@@ -104,45 +117,39 @@ const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate }) =
                   </tr>
                 </thead>
                 <tbody>
-                  <tr>
-                    <td>001</td>
-                    <td><div className="seat-badge">12A</div></td>
-                    <td>
-                      <strong>NGUYEN VAN A</strong>
-                      <span className="sub-text">PNR: R2K9L1</span>
-                    </td>
-                    <td>Nhóm 1</td>
-                    <td><span className="badge badge-success">Đã Lên tàu</span></td>
-                    <td>
-                      <button className="icon-btn" disabled><span className="material-icons-round">qr_code_scanner</span></button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>002</td>
-                    <td><div className="seat-badge">14C</div></td>
-                    <td>
-                      <strong>TRAN THI B</strong>
-                      <span className="sub-text">PNR: X8M2P4</span>
-                    </td>
-                    <td>Nhóm 2</td>
-                    <td><span className="badge badge-primary">Đã Check-in</span></td>
-                    <td>
-                      <button className="icon-btn scan-btn" title="Quét Thẻ Lên Máy Bay"><span className="material-icons-round">qr_code_scanner</span></button>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>003</td>
-                    <td><div className="seat-badge">15D</div></td>
-                    <td>
-                      <strong>LE MINH C</strong>
-                      <span className="sub-text">PNR: L9Q1W3</span>
-                    </td>
-                    <td>Nhóm 2</td>
-                    <td><span className="badge badge-warning">Chờ Check-in</span></td>
-                    <td>
-                      <button className="icon-btn" disabled><span className="material-icons-round">qr_code_scanner</span></button>
-                    </td>
-                  </tr>
+                  {flightBookings.map((b, i) => (
+                    <tr key={b.id}>
+                      <td>{String(i + 1).padStart(3, '0')}</td>
+                      <td><div className="seat-badge">{b.seat}</div></td>
+                      <td>
+                        <strong>{b.customer}</strong>
+                        <span className="sub-text">PNR: {b.pnr}</span>
+                      </td>
+                      <td>Nhóm {i % 3 + 1}</td>
+                      <td>
+                        <span className={`badge badge-${b.status === 'Boarded' ? 'success' : 'primary'}`}>
+                          {b.status === 'Boarded' ? 'Đã Lên tàu' : 'Đã Check-in'}
+                        </span>
+                      </td>
+                      <td>
+                        <button 
+                          className="icon-btn scan-btn" 
+                          title="Quét Thẻ Lên Máy Bay"
+                          disabled={b.status === 'Boarded'}
+                          onClick={() => handleScanBoarding(b.id)}
+                        >
+                          <span className="material-icons-round">qr_code_scanner</span>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {flightBookings.length === 0 && (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
+                        Chưa có hành khách nào hoàn tất check-in cho chuyến bay này.
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>

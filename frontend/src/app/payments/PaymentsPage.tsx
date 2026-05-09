@@ -4,22 +4,35 @@ import Header from '../../components/Header';
 import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import type { TicketData } from '../page';
+import type { BookingData } from '../page';
 
 interface PaymentsPageProps {
   onNavigate?: (id: string) => void;
   view?: 'checkout' | 'success';
   setView?: (view: 'checkout' | 'success') => void;
-  ticketData?: TicketData | null;
+  ticketData?: BookingData | null;
   onClose?: () => void;
+  onPaymentSuccess?: (id: string) => void;
+  onUpdateStatus?: (id: string, status: string, badge: string) => void;
+  bookings?: any[];
 }
 
-const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkout', setView, ticketData, onClose }) => {
+const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkout', setView, ticketData, onClose, onPaymentSuccess, onUpdateStatus, bookings = [] }) => {
   const [paymentMode, setPaymentMode] = useState<'pos' | 'remote'>('pos');
   const [posMethod, setPosMethod] = useState<'cash' | 'transfer' | 'card' | 'balance'>('cash');
-  const [localTicket, setLocalTicket] = useState<TicketData | null>(null);
+  const [localTicket, setLocalTicket] = useState<BookingData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState('');
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+  };
 
   const isModal = !!onClose;
   const currentTicket = ticketData || localTicket;
@@ -31,22 +44,21 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
     }
   }, [currentTicket]);
 
-  const mockTickets = [
-    { id: 'VE-001', pnr: 'G7X9PQ', customer: 'Nguyễn Văn An', routeFrom: 'SGN', routeTo: 'HAN', date: '24/10/2023 08:30', total: '3,250,000', status: 'Đã xuất vé', badge: 'success', airportFrom: 'Tân Sơn Nhất', airportTo: 'Nội Bài', gate: 'B12', terminal: 'T2', seat: '14A', boarding: '09:30' },
-    { id: 'VE-005', pnr: 'HOLD01', customer: 'Nguyễn Quốc Dũng', routeFrom: 'HAN', routeTo: 'DAD', date: '10/05/2026 10:00', total: '2,150,000', status: 'Chờ thanh toán', badge: 'hold', airportFrom: 'Nội Bài', airportTo: 'Đà Nẵng', gate: 'A1', terminal: 'T1', seat: '12A', boarding: '09:30' },
-    { id: '738-99283741', pnr: 'A2B4C6', customer: 'Trần Thị Bé', routeFrom: 'DAD', routeTo: 'SGN', date: '25/10/2023 14:15', total: '1,890,000', status: 'Đã hủy', badge: 'danger', airportFrom: 'Đà Nẵng', airportTo: 'Tân Sơn Nhất', gate: 'A5', terminal: 'T1', seat: '22C', boarding: '14:00' },
-  ];
 
   const handleSearch = () => {
     if (!searchQuery) return;
     const query = searchQuery.trim().toUpperCase();
-    const found = mockTickets.find(t => t.pnr.toUpperCase() === query || t.id === query);
+    
+    // Search in the global bookings passed via props
+    const found = bookings.find(t => t.pnr.toUpperCase() === query || t.id.toUpperCase() === query);
 
     if (found) {
       setLocalTicket(found);
       setSearchError('');
+      showToast('Đã tìm thấy thông tin Booking!', 'success');
     } else {
       setSearchError('Không tìm thấy vé hoặc Booking nào khớp với mã vừa nhập.');
+      showToast('Không tìm thấy dữ liệu.', 'error');
     }
   };
 
@@ -145,7 +157,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                       </div>
                       <div className="text-right">
                         <p className="label">CHUYẾN BAY</p>
-                        <p className="val font-bold">{currentTicket?.routeFrom ?? '---'} <span className="material-icons-round icon-xs">flight_takeoff</span> {currentTicket?.routeTo ?? '---'}</p>
+                        <p className="val font-bold">{currentTicket?.from ?? '---'} <span className="material-icons-round icon-xs">flight_takeoff</span> {currentTicket?.to ?? '---'}</p>
                         <p className="sub-val">PNR: {currentTicket?.pnr ?? 'N/A'}</p>
                       </div>
                       <div>
@@ -158,7 +170,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                       </div>
                       <div>
                         <p className="label">SÂN BAY CẤT CÁNH</p>
-                        <p className="val font-medium">{currentTicket?.airportFrom ?? 'N/A'} ({currentTicket?.routeFrom})</p>
+                        <p className="val font-medium">{currentTicket?.airportFrom ?? 'N/A'} ({currentTicket?.from})</p>
                       </div>
                       <div className="text-right">
                         <p className="label">CỔNG SOÁT VÉ / NHÀ GA</p>
@@ -298,7 +310,15 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         <label className="text-sm font-semibold mb-xs" style={{ display: 'block' }}>Số tiền thu thực tế (VNĐ)</label>
                         <input type="text" className="input-field amount-input" value={amountCollected} onChange={(e) => setAmountCollected(e.target.value)} />
                       </div>
-                      <Button className="w-full mb-sm btn-primary-alt" onClick={() => setView && setView('success')}>
+                      <Button className="w-full mb-sm btn-primary-alt" onClick={() => { 
+                        if (setView) setView('success');
+                        const ticketId = currentTicket?.id;
+                        if (ticketId) {
+                          if (onPaymentSuccess) onPaymentSuccess(ticketId);
+                          if (onUpdateStatus) onUpdateStatus(ticketId, 'Đã xuất vé', 'success');
+                        }
+                        showToast('Xác nhận thanh toán và xuất vé thành công!', 'success');
+                      }}>
                         <span className="material-icons-round">done_all</span>
                         Xác nhận thu tiền
                       </Button>
@@ -355,7 +375,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                   <div className="it-body">
                     <div className="it-route mb-md">
                       <div className="loc">
-                        <h2>{currentTicket?.routeFrom ?? '---'}</h2>
+                        <h2>{currentTicket?.from ?? '---'}</h2>
                         <p>{currentTicket?.airportFrom ?? 'N/A'}</p>
                       </div>
                       <div className="dur">
@@ -363,7 +383,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         <p>Bay thẳng</p>
                       </div>
                       <div className="loc text-right">
-                        <h2>{currentTicket?.routeTo ?? '---'}</h2>
+                        <h2>{currentTicket?.to ?? '---'}</h2>
                         <p>{currentTicket?.airportTo ?? 'N/A'}</p>
                       </div>
                     </div>
@@ -680,6 +700,32 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
           .it-header { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .tickets-grid { display: block; }
         }
+
+        /* Toast Styles */
+        .toast-notification {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          padding: 16px 24px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: white;
+          font-weight: 600;
+          font-size: 14px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+          z-index: 9999;
+          animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-notification.success { background: #10b981; }
+        .toast-notification.error { background: #ef4444; }
+        .toast-notification button { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; opacity: 0.8; margin-left: 24px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.2); }
+        .toast-notification button:hover { opacity: 1; }
       `}</style>
     </div>
   );
@@ -693,9 +739,15 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
         currentTicket ? { label: `Xác nhận: ${currentTicket.pnr}` } : { label: 'Tra cứu' }
       ]}
     >
-      {content}
-    </AppLayout>
-  );
-};
+        {toast.visible && (
+          <div className={`toast-notification ${toast.type}`}>
+            <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
+            <span>{toast.message}</span>
+            <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
+          </div>
+        )}
+      </AppLayout>
+    );
+  };
 
 export default PaymentsPage;

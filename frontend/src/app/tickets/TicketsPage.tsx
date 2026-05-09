@@ -7,6 +7,8 @@ import Button from '../../components/Button';
 interface TicketsPageProps {
   onNavigate?: (id: string) => void;
   onCheckout?: (ticket: any) => void;
+  bookings: any[];
+  onUpdateStatus: (id: string, status: string, badge: string) => void;
 }
 
 const passengers: Record<string, { name: string; seat: string; dob: string; passport: string; tier: string; eTicket: string }[]> = {
@@ -75,8 +77,12 @@ const CountdownTimer: React.FC<{ limit: string | null }> = ({ limit }) => {
   );
 };
 
-const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => {
+const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, bookings, onUpdateStatus }) => {
   const [bookingsData, setBookingsData] = useState(bookings);
+  
+  React.useEffect(() => {
+    setBookingsData(bookings);
+  }, [bookings]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAirline, setFilterAirline] = useState('all');
@@ -88,6 +94,16 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
   const [viewingTicket, setViewingTicket] = useState<any>(null);
   const [viewMode, setViewMode] = useState<'passengers' | 'history'>('passengers');
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+  };
 
 
 
@@ -109,6 +125,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
     const searchMatch = !search || 
       t.pnr.toLowerCase().includes(search.toLowerCase()) || 
       t.flight.toLowerCase().includes(search.toLowerCase()) ||
+      t.customer?.toLowerCase().includes(search.toLowerCase()) ||
       (passengersData[t.id] || []).some(p => p.name.toLowerCase().includes(search.toLowerCase()));
       
     return searchMatch;
@@ -126,14 +143,15 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
 
   const handleBulkAction = (action: 'void' | 'refund') => {
     if (selectedTickets.length === 0) return;
-    const statusText = action === 'void' ? 'Đã Void' : 'Đã hoàn tiền';
+    const statusText = action === 'void' ? 'Đã Void' : 'Yêu cầu hoàn';
     const badgeType = action === 'void' ? 'default' : 'warning';
     
     setBookingsData(prev => prev.map(t => 
       selectedTickets.includes(t.id) ? { ...t, status: statusText, badge: badgeType as any } : t
     ));
+    selectedTickets.forEach(id => onUpdateStatus(id, statusText, badgeType));
     setSelectedTickets([]);
-    alert(`Đã xử lý hàng loạt ${selectedTickets.length} vé.`);
+    showToast(`Đã xử lý hàng loạt ${selectedTickets.length} vé thành công!`, 'success');
   };
 
   return (
@@ -512,7 +530,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
         <div className="modal-overlay" onClick={() => setActionType(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{actionType === 'issue' ? 'Xuất vé máy bay' : actionType === 'void' ? 'Hủy vé ngay lập tức (Void)' : 'Thủ tục hoàn vé (Refund)'}</h3>
+              <h3>{actionType === 'issue' ? 'Xuất vé máy bay' : actionType === 'void' ? 'Hủy vé ngay lập tức (Void)' : 'Yêu cầu hoàn vé (Request Refund)'}</h3>
               <button className="close-btn" onClick={() => setActionType(null)}>
                 <span className="material-icons-round">close</span>
               </button>
@@ -523,7 +541,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                   <span className="material-icons-round">{actionType === 'issue' ? 'receipt_long' : actionType === 'void' ? 'dangerous' : 'assignment_return'}</span>
                 </div>
                 <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Xác nhận thực hiện thao tác?</p>
-                <p style={{ fontSize: 14, color: '#64748b' }}>Hệ thống sẽ ghi nhận yêu cầu {actionType === 'issue' ? 'xuất vé' : actionType === 'void' ? 'Void vé' : 'hoàn vé'} cho mã booking <strong>{selected?.pnr}</strong>.</p>
+                <p style={{ fontSize: 14, color: '#64748b' }}>Hệ thống sẽ ghi nhận {actionType === 'issue' ? 'xuất vé' : actionType === 'void' ? 'Void vé' : 'yêu cầu hoàn vé'} cho mã booking <strong>{selected?.pnr}</strong>.</p>
               </div>
             </div>
             <div className="modal-footer" style={{ gap: 12 }}>
@@ -533,13 +551,11 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                 onClick={() => { 
                   if (actionType === 'issue') {
                     if (selected) {
-                      setBookingsData(bookingsData.map(t => t.id === selectedId ? { ...t, status: 'Đã xuất vé', badge: 'success', timeLimit: null } : t));
+                      onUpdateStatus(selected.id, 'Đã xuất vé', 'success');
                       if (onCheckout) {
                         onCheckout({
                           ...selected,
                           customer: passengersData[selected.id]?.[0]?.name || 'Nhiều khách hàng',
-                          routeFrom: selected.from,
-                          routeTo: selected.to,
                           airportFrom: selected.from === 'SGN' ? 'Tân Sơn Nhất' : 'Nội Bài',
                           airportTo: selected.to === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
                           gate: 'B12',
@@ -550,10 +566,11 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
                       }
                     }
                   } else if (actionType === 'void') {
-                    setBookingsData(bookingsData.map(t => t.id === selectedId ? { ...t, status: 'Đã Void', badge: 'default' } : t));
+                    onUpdateStatus(selectedId!, 'Đã Void', 'default');
                   } else if (actionType === 'refund') {
-                    setBookingsData(bookingsData.map(t => t.id === selectedId ? { ...t, status: 'Đã hoàn tiền', badge: 'warning' } : t));
+                    onUpdateStatus(selectedId!, 'Yêu cầu hoàn', 'warning');
                   }
+                  showToast('Thao tác đã được hệ thống ghi nhận thành công!', 'success');
                   setActionType(null); 
                 }} 
               >
@@ -724,8 +741,41 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout }) => 
         .mt-lg { margin-top: 24px; }
         .tickets-page-content { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* Toast Styles */
+        .toast-notification {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          padding: 16px 24px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: white;
+          font-weight: 600;
+          font-size: 14px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+          z-index: 9999;
+          animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-notification.success { background: #10b981; }
+        .toast-notification.error { background: #ef4444; }
+        .toast-notification button { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; opacity: 0.8; margin-left: 24px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.2); }
+        .toast-notification button:hover { opacity: 1; }
       `}</style>
-    </AppLayout>
+        {toast.visible && (
+          <div className={`toast-notification ${toast.type}`}>
+            <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
+            <span>{toast.message}</span>
+            <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
+          </div>
+        )}
+      </AppLayout>
   );
 };
 

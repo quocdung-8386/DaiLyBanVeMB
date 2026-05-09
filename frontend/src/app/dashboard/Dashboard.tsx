@@ -3,7 +3,10 @@ import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
 import AppLayout from '../../components/AppLayout';
 
-interface DashboardProps { onNavigate?: (id: string) => void; }
+interface DashboardProps { 
+  onNavigate?: (id: string) => void; 
+  bookings?: any[];
+}
 
 const S = {
   layout: { display:'flex', minHeight:'100vh', background:'#f0f4f8' } as React.CSSProperties,
@@ -57,8 +60,38 @@ const badgeStyle = (b: string) => {
   return { bg:'#dcfce7', color:'#15803d' };
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
   const [activeTab, setActiveTab] = useState<'today'|'week'|'month'>('today');
+
+  // Dynamic calculations
+  const totalBooked = bookings.length;
+  const pendingCount = bookings.filter(b => b.status === 'Chờ thanh toán').length;
+  const cancelledCount = bookings.filter(b => b.status === 'Đã hủy').length;
+  const ticketedCount = bookings.filter(b => b.status === 'Đã xuất vé').length;
+  
+  const totalRevenue = bookings
+    .filter(b => b.status === 'Đã xuất vé')
+    .reduce((sum, b) => {
+      const price = parseInt(b.total?.replace(/\D/g, '') || '0');
+      return sum + price;
+    }, 0);
+
+  const formatCurrency = (val: number) => {
+    if (val >= 1000000000) return (val / 1000000000).toFixed(1) + 'B';
+    if (val >= 1000000) return (val / 1000000).toFixed(0) + 'M';
+    return val.toLocaleString();
+  };
+
+  const dynamicMetrics = [
+    { label:'Vé bán hôm nay', value: ticketedCount.toString(), sub:'Tổng vé đã xuất', icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff' },
+    { label:'Chờ thanh toán', value: pendingCount.toString(), sub:'Cần xử lý ngay', icon:'pending_actions', color:'#d97706', bg:'#fef3c7' },
+    { label:'Vé đã hủy', value: cancelledCount.toString(), sub:'Thống kê hệ thống', icon:'cancel', color:'#dc2626', bg:'#fef2f2' },
+    { label:'Doanh thu (Tổng)', value: formatCurrency(totalRevenue), sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
+    { label:'Số lượng khách', value: bookings.reduce((sum, b) => sum + (b.pax || 1), 0).toString(), sub:'Hành khách hệ thống', icon:'groups', color:'#7c3aed', bg:'#f5f3ff' },
+    { label:'Booking mới', value: totalBooked.toString(), sub:'Tổng số giao dịch', icon:'analytics', color:'#db2777', bg:'#fdf2f8' },
+    { label:'Tỷ lệ lấp đầy', value:'84.2%', sub:'+2.1% mục tiêu', icon:'leaderboard', color:'#4f46e5', bg:'#eef2ff' },
+    { label:'Ghế còn trống', value:'428', sub:'Trong 24h tới', icon:'event_seat', color:'#0891b2', bg:'#ecfeff' },
+  ];
 
   return (
     <AppLayout activeItem="dashboard" onNavigate={onNavigate || (() => {})}>
@@ -143,7 +176,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate }) => {
 
           {/* Metric cards */}
           <div style={S.grid4}>
-            {metricCards.map((m,i) => (
+            {dynamicMetrics.map((m,i) => (
               <div key={i} style={S.card}>
                 <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', marginBottom:12 }}>
                   <div style={{ width:44, height:44, borderRadius:12, background:m.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>

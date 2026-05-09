@@ -5,52 +5,88 @@ import Button from '../../components/Button';
 
 interface RefundManagementPageProps {
   onNavigate?: (id: string) => void;
+  bookings?: any[];
+  onUpdateStatus?: (id: string, status: string, badge: any) => void;
 }
 
-const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate }) => {
-  const [selectedRefund, setSelectedRefund] = useState<string | null>(null);
+const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate, bookings = [], onUpdateStatus }) => {
+  const [selectedRefundId, setSelectedRefundId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [refunds, setRefunds] = useState([
-    { id: 'REF-83921', ticket: '112-55443322', customer: 'Lê Hữu Đạt', amount: 3500000, date: '2023-10-29 10:15', method: 'Chuyển khoản NH', status: 'pending' },
-    { id: 'REF-83918', ticket: '738-99283741', customer: 'Trần Thị Bé', amount: 1890000, date: '2023-10-28 14:30', method: 'Thẻ tín dụng', status: 'completed' },
-    { id: 'REF-83905', ticket: '112-11223344', customer: 'Nguyễn Văn Nam', amount: 2100000, date: '2023-10-25 09:00', method: 'Chuyển khoản NH', status: 'rejected' },
-    { id: 'REF-83925', ticket: '738-12345678', customer: 'Phạm Thu Hương', amount: 4200000, date: '2023-10-29 15:45', method: 'Ví Momo', status: 'pending' },
-    { id: 'REF-83910', ticket: '738-87654321', customer: 'Hoàng Quốc Việt', amount: 1500000, date: '2023-10-27 11:20', method: 'Chuyển khoản NH', status: 'completed' },
+  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
+    visible: false,
+    message: '',
+    type: 'success',
+  });
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ visible: true, message, type });
+    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
+  };
+  
+  // Combine global bookings that are 'Cancelled' or 'Refunding' with static mock data
+  const [localRefunds, setLocalRefunds] = useState([
+    { id: 'REF-83921', ticket: 'BK-002', customer: 'Trần Thị Bé', amount: 1890000, date: '2023-10-29 10:15', method: 'Chuyển khoản NH', status: 'pending', isGlobal: false },
+    { id: 'REF-83918', ticket: 'VE-998', customer: 'Lê Hữu Đạt', amount: 3500000, date: '2023-10-28 14:30', method: 'Thẻ tín dụng', status: 'completed', isGlobal: false },
   ]);
+
+  // Derived refunds from global state
+  const globalRefundRequests = bookings
+    .filter(b => b.status === 'Đã hủy' || b.status === 'Yêu cầu hoàn')
+    .map(b => ({
+      id: `REF-${b.id}`,
+      ticket: b.id,
+      customer: b.customer,
+      amount: parseInt(b.total?.replace(/\D/g, '') || '0'),
+      date: b.date + ' ' + b.time,
+      method: 'Chuyển khoản NH',
+      status: b.status === 'Đã hủy' ? 'pending' : (b.status === 'Đã hoàn tiền' ? 'completed' : 'pending'),
+      isGlobal: true
+    }));
+
+  const allRefunds = [...globalRefundRequests, ...localRefunds];
 
   // Dynamic Metrics
   const metrics = [
     { 
       title: 'Yêu cầu chờ xử lý', 
-      value: refunds.filter(r => r.status === 'pending').length.toString(), 
+      value: allRefunds.filter(r => r.status === 'pending').length.toString(), 
       icon: 'pending_actions', 
       color: 'warning' 
     },
     { 
       title: 'Đã hoàn (Tháng này)', 
-      value: (refunds.filter(r => r.status === 'completed').reduce((sum, r) => sum + r.amount, 0) / 1000000).toFixed(0) + 'tr', 
+      value: (allRefunds.filter(r => r.status === 'completed').reduce((sum, r) => sum + r.amount, 0) / 1000000).toFixed(1) + 'tr', 
       icon: 'check_circle', 
       color: 'success' 
     },
     { 
-      title: 'Từ chối (Tháng này)', 
-      value: refunds.filter(r => r.status === 'rejected').length.toString(), 
-      icon: 'cancel', 
-      color: 'danger' 
+      title: 'Tổng số yêu cầu', 
+      value: allRefunds.length.toString(), 
+      icon: 'history', 
+      color: 'primary' 
     },
   ];
 
   const handleProcessRefund = (id: string, newStatus: 'completed' | 'rejected') => {
-    setRefunds(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
-    setSelectedRefund(null);
-    // In a real app, this would be an API call
+    const refund = allRefunds.find(r => r.id === id);
+    if (!refund) return;
+
+    if (refund.isGlobal && onUpdateStatus) {
+      const finalStatus = newStatus === 'completed' ? 'Đã hoàn tiền' : 'Từ chối hoàn';
+      const finalBadge = newStatus === 'completed' ? 'success' : 'danger';
+      onUpdateStatus(refund.ticket, finalStatus, finalBadge);
+    } else {
+      setLocalRefunds(prev => prev.map(r => r.id === id ? { ...r, status: newStatus } : r));
+    }
+    showToast(`Đã ${newStatus === 'completed' ? 'phê duyệt' : 'từ chối'} yêu cầu hoàn tiền thành công!`, 'success');
+    setSelectedRefundId(null);
   };
 
-  const filteredRefunds = refunds.filter(r => {
+  const filteredRefunds = allRefunds.filter(r => {
     const matchesSearch = r.id.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           r.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          r.ticket.includes(searchTerm);
+                          r.ticket.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || r.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -72,112 +108,136 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
     >
       <div className="refund-page-content">
         <div className="page-header">
-          <div>
-            <h1>Yêu cầu Hoàn tiền</h1>
-            <p>Theo dõi và xử lý các yêu cầu hoàn vé, hoàn tiền cho khách hàng.</p>
+          <div className="header-title-area">
+            <div className="icon-badge bg-primary-light">
+              <span className="material-icons-round text-primary">assignment_return</span>
+            </div>
+            <div>
+              <h1>Trung tâm Quản lý Hoàn tiền</h1>
+              <p>Phê duyệt và theo dõi các yêu cầu hoàn trả tài chính cho khách hàng.</p>
+            </div>
           </div>
-          <div className="flex-row gap-sm">
-            <Button variant="outline">
-              <span className="material-icons-round">download</span>
+          <div className="header-actions">
+            <Button variant="outline" className="btn-modern">
+              <span className="material-icons-round">history</span>
+              Nhật ký xử lý
+            </Button>
+            <Button className="btn-primary-alt shadow-sm">
+              <span className="material-icons-round">file_download</span>
               Xuất báo cáo
             </Button>
           </div>
         </div>
 
-        {/* Metrics */}
-        <div className="metrics-grid mb-lg">
+        {/* Metrics Section */}
+        <div className="metrics-grid">
           {metrics.map((m, i) => (
-            <Card key={i} className="metric-card">
-              <div className={`metric-icon-box bg-${m.color}-light`}>
-                <span className={`material-icons-round text-${m.color}`}>{m.icon}</span>
+            <Card key={i} className="metric-card-premium">
+              <div className="metric-top">
+                <div className={`metric-icon bg-${m.color}-light`}>
+                  <span className={`material-icons-round text-${m.color}`}>{m.icon}</span>
+                </div>
+                <div className="metric-trend up">
+                  <span className="material-icons-round">trending_up</span>
+                  <span>12%</span>
+                </div>
               </div>
-              <div className="metric-content">
-                <p className="metric-title">{m.title}</p>
-                <h3 className="metric-value">{m.value}</h3>
+              <div className="metric-info">
+                <h3 className="metric-val">{m.value}</h3>
+                <p className="metric-lbl">{m.title}</p>
+              </div>
+              <div className="metric-progress">
+                <div className={`progress-bar bg-${m.color}`} style={{ width: '65%' }}></div>
               </div>
             </Card>
           ))}
         </div>
 
-        {/* Filters */}
-        <Card className="filter-card mb-lg">
-          <div className="filter-row">
-            <div className="input-with-icon flex-2">
-              <span className="material-icons-round">search</span>
-              <input 
-                type="text" 
-                placeholder="Tìm theo mã yêu cầu, mã vé hoặc tên khách hàng..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="input-with-icon select-wrapper flex-1">
-              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                <option value="all">Trạng thái: Tất cả</option>
-                <option value="pending">Chờ xử lý</option>
-                <option value="completed">Đã hoàn tiền</option>
-                <option value="rejected">Từ chối</option>
-              </select>
-              <span className="material-icons-round arrow">expand_more</span>
-            </div>
-            <div className="input-with-icon flex-1">
-              <span className="material-icons-round">calendar_today</span>
-              <input type="text" placeholder="Khoảng thời gian" readOnly />
-            </div>
-            <Button className="btn-primary-alt" onClick={() => { setSearchTerm(''); setStatusFilter('all'); }}>Xóa lọc</Button>
+        {/* Filter Section */}
+        <div className="table-controls-row">
+          <div className="search-box-modern">
+            <span className="material-icons-round">search</span>
+            <input 
+              type="text" 
+              placeholder="Tìm theo PNR, Tên khách, Mã yêu cầu..." 
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-        </Card>
+          <div className="filter-group">
+            <div className="select-modern">
+              <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                <option value="all">Tất cả trạng thái</option>
+                <option value="pending">⏳ Chờ xử lý</option>
+                <option value="completed">✅ Đã hoàn tiền</option>
+                <option value="rejected">❌ Từ chối</option>
+              </select>
+            </div>
+            <Button variant="outline" className="btn-icon-only" title="Lọc theo ngày">
+              <span className="material-icons-round">calendar_month</span>
+            </Button>
+            <Button variant="outline" className="btn-icon-only" onClick={() => { setSearchTerm(''); setStatusFilter('all'); }} title="Làm mới">
+              <span className="material-icons-round">refresh</span>
+            </Button>
+          </div>
+        </div>
 
         {/* Data Table */}
-        <Card className="table-card">
+        <Card className="table-container-premium">
+          <div className="table-header-info">
+            <p>Hiển thị <strong>{filteredRefunds.length}</strong> yêu cầu phù hợp</p>
+          </div>
           <div className="table-responsive">
-            <table className="data-table">
+            <table className="modern-table">
               <thead>
                 <tr>
-                  <th>Mã YC</th>
-                  <th>Khách hàng</th>
-                  <th>Thông tin vé</th>
-                  <th>Số tiền hoàn</th>
-                  <th>Ngày yêu cầu</th>
-                  <th>Phương thức</th>
-                  <th>Trạng thái</th>
-                  <th>Hành động</th>
+                  <th>MÃ YÊU CẦU</th>
+                  <th>KHÁCH HÀNG</th>
+                  <th>MÃ ĐẶT CHỖ / VÉ</th>
+                  <th>SỐ TIỀN HOÀN</th>
+                  <th>NGÀY GỬI</th>
+                  <th>TRẠNG THÁI</th>
+                  <th className="text-right">THAO TÁC</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredRefunds.length > 0 ? filteredRefunds.map((r, i) => {
                   const statusInfo = getStatusDisplay(r.status);
                   return (
-                    <tr key={i}>
-                      <td><span className="code-badge">{r.id}</span></td>
+                    <tr key={i} className="table-row-hover">
+                      <td><span className="code-tag">{r.id}</span></td>
                       <td>
-                        <p className="font-semibold text-main">{r.customer}</p>
+                        <div className="user-cell">
+                          <div className="user-avatar">{r.customer.charAt(0)}</div>
+                          <span className="user-name">{r.customer}</span>
+                        </div>
                       </td>
                       <td>
-                        <p className="font-medium text-main">{r.ticket}</p>
+                        <div className="ticket-cell">
+                          <span className="pnr-tag">{r.ticket}</span>
+                          <span className="method-sub">{r.method}</span>
+                        </div>
+                      </td>
+                      <td><span className="amount-text">{r.amount.toLocaleString('vi-VN')} đ</span></td>
+                      <td>
+                        <div className="date-cell">
+                          <span className="d-date">{r.date.split(' ')[0]}</span>
+                          <span className="d-time">{r.date.split(' ')[1]}</span>
+                        </div>
                       </td>
                       <td>
-                        <p className="font-bold text-primary">{r.amount.toLocaleString('vi-VN')} đ</p>
-                      </td>
-                      <td>
-                        <p className="text-sm">{r.date.split(' ')[0]}</p>
-                        <p className="text-xs text-muted">{r.date.split(' ')[1]}</p>
-                      </td>
-                      <td><span className="method-chip">{r.method}</span></td>
-                      <td>
-                        <span className={`status-badge ${statusInfo.badge}`}>
-                          <span className="dot"></span>
+                        <span className={`status-pill ${statusInfo.badge}`}>
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td>
-                        <div className="action-buttons">
+                      <td className="text-right">
+                        <div className="action-flex">
                           {r.status === 'pending' ? (
-                            <button className="action-btn process" title="Xử lý hoàn tiền" onClick={() => setSelectedRefund(r.id)}>
-                              <span className="material-icons-round">rule</span>
+                            <button className="btn-action-primary" onClick={() => setSelectedRefundId(r.id)}>
+                              Xử lý ngay
                             </button>
                           ) : (
-                            <button className="action-btn view" title="Xem chi tiết" onClick={() => setSelectedRefund(r.id)}>
+                            <button className="btn-action-view" onClick={() => setSelectedRefundId(r.id)}>
                               <span className="material-icons-round">visibility</span>
                             </button>
                           )}
@@ -187,10 +247,13 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
                   );
                 }) : (
                   <tr>
-                    <td colSpan={8} className="empty-row">
-                      <div className="empty-state">
-                        <span className="material-icons-round">history_toggle_off</span>
-                        <p>Không tìm thấy yêu cầu hoàn tiền nào khớp với bộ lọc.</p>
+                    <td colSpan={7} className="empty-table-cell">
+                      <div className="empty-state-modern">
+                        <div className="empty-icon-circle">
+                          <span className="material-icons-round">sentiment_dissatisfied</span>
+                        </div>
+                        <h3>Không tìm thấy yêu cầu nào</h3>
+                        <p>Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm của bạn.</p>
                       </div>
                     </td>
                   </tr>
@@ -198,275 +261,235 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate 
               </tbody>
             </table>
           </div>
-          
-          <div className="pagination">
-            <p>Hiển thị <strong>{filteredRefunds.length}</strong> trong số <strong>{refunds.length}</strong> yêu cầu</p>
-            <div className="page-controls">
-              <button className="page-btn"><span className="material-icons-round">chevron_left</span></button>
-              <button className="page-btn active">1</button>
-              <button className="page-btn"><span className="material-icons-round">chevron_right</span></button>
-            </div>
-          </div>
         </Card>
 
-        {/* Detail/Process Modal */}
-        {selectedRefund && (() => {
-        const refund = refunds.find(r => r.id === selectedRefund);
-        if(!refund) return null;
-        
-        return (
-          <div className="modal-backdrop" onClick={() => setSelectedRefund(null)}>
-            <div className="modal-box" onClick={e => e.stopPropagation()}>
-              <div className="modal-header">
-                <div className="modal-title-row">
-                  <div className={`modal-icon-box bg-${refund.status === 'pending' ? 'warning' : 'primary'}-light`}>
-                    <span className={`material-icons-round text-${refund.status === 'pending' ? 'warning' : 'primary'}`}>
-                      {refund.status === 'pending' ? 'rule' : 'receipt_long'}
-                    </span>
+        {/* Process Modal */}
+        {selectedRefundId && (() => {
+          const refund = allRefunds.find(r => r.id === selectedRefundId);
+          if(!refund) return null;
+          
+          return (
+            <div className="modal-overlay-modern" onClick={() => setSelectedRefundId(null)}>
+              <div className="modal-content-modern" onClick={e => e.stopPropagation()}>
+                <div className="modal-top-bar">
+                  <div className="modal-title-group">
+                    <span className="material-icons-round">verified_user</span>
+                    <h3>Chi tiết & Phê duyệt Hoàn tiền</h3>
                   </div>
-                  <div>
-                    <h2>{refund.status === 'pending' ? 'Xử lý Hoàn tiền' : 'Chi tiết Hoàn tiền'}</h2>
-                    <p>Mã YC: <strong>{refund.id}</strong></p>
-                  </div>
-                </div>
-                <button className="modal-close" onClick={() => setSelectedRefund(null)}>
-                  <span className="material-icons-round">close</span>
-                </button>
-              </div>
-              
-              <div className="modal-body">
-                <div className="info-grid mb-md">
-                  <div className="info-item">
-                    <label>Khách hàng</label>
-                    <p>{refund.customer}</p>
-                  </div>
-                  <div className="info-item">
-                    <label>Số vé</label>
-                    <p className="font-mono">{refund.ticket}</p>
-                  </div>
-                  <div className="info-item">
-                    <label>Ngày yêu cầu</label>
-                    <p>{refund.date}</p>
-                  </div>
-                  <div className="info-item">
-                    <label>Phương thức</label>
-                    <p>{refund.method}</p>
-                  </div>
+                  <button className="close-x" onClick={() => setSelectedRefundId(null)}>
+                    <span className="material-icons-round">close</span>
+                  </button>
                 </div>
                 
-                <div className="amount-box mb-md">
-                  <div className="amount-row">
-                    <span>Số tiền cần hoàn</span>
-                    <span className="amount-val">{refund.amount.toLocaleString('vi-VN')} đ</span>
+                <div className="modal-inner">
+                  <div className="refund-summary-card">
+                    <div className="s-row">
+                      <span className="s-label">Khách hàng:</span>
+                      <span className="s-val">{refund.customer}</span>
+                    </div>
+                    <div className="s-row">
+                      <span className="s-label">Mã vé/Booking:</span>
+                      <span className="s-val font-mono">{refund.ticket}</span>
+                    </div>
+                    <div className="s-row">
+                      <span className="s-label">Phương thức:</span>
+                      <span className="s-val">{refund.method}</span>
+                    </div>
+                    <div className="s-divider"></div>
+                    <div className="s-row total">
+                      <span className="s-label">TỔNG TIỀN HOÀN:</span>
+                      <span className="s-val-price">{refund.amount.toLocaleString('vi-VN')} đ</span>
+                    </div>
                   </div>
-                </div>
 
-                {refund.status === 'pending' && (
-                  <div className="process-form">
-                    <div className="form-group mb-sm">
-                      <label>Ghi chú xử lý</label>
-                      <textarea rows={3} placeholder="Nhập mã giao dịch ngân hàng hoặc lý do từ chối..."></textarea>
-                    </div>
-                    <div className="form-group">
-                      <label>Tải lên chứng từ (Ủy nhiệm chi / Biên lai)</label>
-                      <div className="upload-box">
-                        <span className="material-icons-round text-muted">cloud_upload</span>
-                        <p>Kéo thả file hoặc <strong>nhấn để chọn</strong></p>
+                  <div className="modal-form-section">
+                    <h4>Ghi chú xử lý <span className="required">*</span></h4>
+                    <textarea 
+                      placeholder="Nhập nội dung phản hồi cho khách hàng hoặc ghi chú nội bộ..."
+                      className="modern-textarea"
+                      rows={3}
+                    ></textarea>
+                    
+                    <div className="evidence-section mt-lg">
+                      <h4>Chứng từ thanh toán (UNC/Biên lai)</h4>
+                      <div className="upload-dropzone">
+                        <span className="material-icons-round">cloud_upload</span>
+                        <p>Kéo thả file vào đây hoặc <strong>Bấm để chọn file</strong></p>
+                        <span className="file-hint">Định dạng hỗ trợ: JPG, PNG, PDF (Max 5MB)</span>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
                 
-                {refund.status !== 'pending' && (
-                  <div className="history-box">
-                    <label>Lịch sử xử lý</label>
-                    <div className="history-item">
-                      <span className="material-icons-round text-success">check_circle</span>
-                      <div>
-                        <p><strong>Kế toán viên (NV_012)</strong> đã duyệt và chuyển khoản.</p>
-                        <span className="time">28/10/2023 16:20</span>
-                      </div>
+                <div className="modal-bottom-actions">
+                  <button className="btn-m-secondary" onClick={() => setSelectedRefundId(null)}>Hủy bỏ</button>
+                  {refund.status === 'pending' && (
+                    <div className="flex-row gap-md">
+                      <button className="btn-m-danger" onClick={() => handleProcessRefund(refund.id, 'rejected')}>
+                        <span className="material-icons-round">block</span> Từ chối
+                      </button>
+                      <button className="btn-m-success" onClick={() => handleProcessRefund(refund.id, 'completed')}>
+                        <span className="material-icons-round">check_circle</span> Xác nhận & Hoàn tiền
+                      </button>
                     </div>
-                    <div className="history-item">
-                      <span className="material-icons-round text-muted">note_add</span>
-                      <div>
-                        <p><strong>Hệ thống</strong> tạo yêu cầu tự động từ Đơn Hủy Vé.</p>
-                        <span className="time">{refund.date}</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-              
-              <div className="modal-footer">
-                <button className="btn-cancel" onClick={() => setSelectedRefund(null)}>Đóng</button>
-                {refund.status === 'pending' && (
-                  <>
-                    <button className="btn-reject" onClick={() => handleProcessRefund(refund.id, 'rejected')}>
-                      <span className="material-icons-round">cancel</span> Từ chối
-                    </button>
-                    <button className="btn-save" onClick={() => handleProcessRefund(refund.id, 'completed')}>
-                      <span className="material-icons-round">check_circle</span> Xác nhận đã hoàn tiền
-                    </button>
-                  </>
-                )}
+                  )}
+                </div>
               </div>
             </div>
+          );
+        })()}
+
+        {toast.visible && (
+          <div className={`toast-notification ${toast.type}`}>
+            <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
+            <span>{toast.message}</span>
+            <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
           </div>
-        );
-      })()}
+        )}
+      </div>
 
       <style>{`
-        /* Empty State */
-        .empty-row { padding: 80px 0 !important; text-align: center; background: #fafafa !important; }
-        .empty-state { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-muted); }
-        .empty-state .material-icons-round { font-size: 48px; opacity: 0.5; }
-        .empty-state p { font-size: 14px; font-weight: 500; }
+        .refund-page-content { animation: slideUpIn 0.4s ease-out; }
+        @keyframes slideUpIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        /* Typography & Utilities */
-        .text-primary { color: var(--primary); }
-        .text-success { color: var(--success); }
-        .text-warning { color: #d97706; }
-        .text-danger { color: var(--danger); }
-        .text-muted { color: var(--text-muted); }
-        .text-main { color: var(--text-main); }
-        .text-secondary { color: var(--text-secondary); }
-        
-        .bg-primary-light { background: #e0e7ff; }
-        .bg-success-light { background: #dcfce7; }
-        .bg-warning-light { background: #fef3c7; }
-        .bg-danger-light { background: #fee2e2; }
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .header-title-area { display: flex; align-items: center; gap: 14px; }
+        .icon-badge { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; }
+        .header-title-area h1 { font-size: 24px; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.5px; }
+        .header-title-area p { font-size: 13px; color: #64748b; margin: 2px 0 0; }
+        .header-actions { display: flex; gap: 10px; }
+        .btn-modern { border-radius: 8px; font-weight: 700; font-size: 12px; padding: 8px 16px; }
 
-        .font-semibold { font-weight: 600; }
-        .font-bold { font-weight: 700; }
-        .font-medium { font-weight: 500; }
-        .font-mono { font-family: monospace; letter-spacing: 0.5px; }
-        .text-sm { font-size: 13px; }
-        .text-xs { font-size: 11px; }
+        /* Background Utils */
+        .bg-primary-light { background: #eff6ff; }
+        .bg-success-light { background: #ecfdf5; }
+        .bg-warning-light { background: #fffbeb; }
+        .bg-danger-light { background: #fef2f2; }
+        .bg-primary { background: #2563eb; }
+        .bg-success { background: #059669; }
+        .bg-warning { background: #d97706; }
+        .bg-danger { background: #dc2626; }
 
-        .flex-row { display: flex; align-items: center; }
-        .gap-sm { gap: var(--space-sm); }
-        .mb-sm { margin-bottom: var(--space-sm); }
-        .mb-md { margin-bottom: var(--space-md); }
-        .mb-lg { margin-bottom: var(--space-lg); }
-        .flex-1 { flex: 1; }
-        .flex-2 { flex: 2; }
+        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+        .metric-card-premium { padding: 20px; border-radius: 12px; border: 1px solid #e2e8f0; transition: all 0.2s; position: relative; overflow: hidden; background: white; }
+        .metric-card-premium:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .metric-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .metric-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; }
+        .metric-trend { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; }
+        .metric-trend.up { background: #dcfce7; color: #15803d; }
+        .metric-info h3 { font-size: 26px; font-weight: 900; color: #0f172a; margin: 0; line-height: 1.1; }
+        .metric-lbl { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; margin: 4px 0 12px; letter-spacing: 0.5px; }
+        .metric-progress { height: 4px; background: #f1f5f9; border-radius: 2px; overflow: hidden; }
+        .progress-bar { height: 100%; border-radius: 2px; }
 
-        /* Layout & Header */
-        .breadcrumb { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; }
-        .breadcrumb .link { color: var(--primary); cursor: pointer; }
-        .breadcrumb .separator { font-size: 16px; }
-        .breadcrumb .current { color: var(--text-main); }
+        .table-controls-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; gap: 16px; }
+        .search-box-modern { flex: 1; position: relative; display: flex; align-items: center; }
+        .search-box-modern .material-icons-round { position: absolute; left: 14px; color: #94a3b8; font-size: 20px; }
+        .search-box-modern input { width: 100%; padding: 10px 14px 10px 42px; border-radius: 10px; border: 1px solid #e2e8f0; outline: none; font-size: 13px; transition: all 0.2s; background: white; }
+        .search-box-modern input:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,0.08); }
+        .filter-group { display: flex; gap: 8px; align-items: center; }
+        .select-modern select { padding: 10px 14px; border-radius: 10px; border: 1px solid #e2e8f0; outline: none; font-size: 13px; font-weight: 600; color: #475569; background: white; cursor: pointer; }
+        .btn-icon-only { width: 38px; height: 38px; padding: 0 !important; display: flex; align-items: center; justify-content: center; border-radius: 10px; }
 
-        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-xl); }
-        .page-header h1 { font-size: 24px; margin-bottom: 4px; font-weight: 700; }
-        .page-header p { color: var(--text-secondary); font-size: 14px; }
+        .table-container-premium { padding: 0; overflow: hidden; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 2px rgba(0,0,0,0.03); background: white; }
+        .table-header-info { padding: 12px 20px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 12px; color: #64748b; font-weight: 600; }
+        .modern-table { width: 100%; border-collapse: collapse; }
+        .modern-table th { padding: 12px 20px; text-align: left; font-size: 11px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
+        .modern-table td { padding: 14px 20px; border-bottom: 1px solid #f1f5f9; vertical-align: middle; font-size: 13px; }
+        .table-row-hover:hover { background: #f8fafc; }
 
-        /* Metrics */
-        .metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-lg); }
-        .metric-card { display: flex; align-items: center; gap: 20px; padding: 24px; }
-        .metric-icon-box { width: 56px; height: 56px; border-radius: 16px; display: flex; align-items: center; justify-content: center; }
-        .metric-icon-box .material-icons-round { font-size: 28px; }
-        .metric-content { flex: 1; }
-        .metric-title { font-size: 13px; color: var(--text-secondary); font-weight: 600; text-transform: uppercase; margin-bottom: 4px; }
-        .metric-value { font-size: 28px; color: var(--text-main); margin-bottom: 4px; line-height: 1; font-weight: 800; }
+        .code-tag { background: #f1f5f9; color: #475569; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-size: 11px; font-weight: 700; border: 1px solid #e2e8f0; }
+        .user-cell { display: flex; align-items: center; gap: 10px; }
+        .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+        .user-name { font-size: 13px; font-weight: 700; color: #1e293b; }
+        .ticket-cell { display: flex; flex-direction: column; gap: 1px; }
+        .pnr-tag { font-size: 12px; font-weight: 800; color: #2563eb; }
+        .method-sub { font-size: 10px; color: #94a3b8; font-weight: 500; }
+        .amount-text { font-size: 14px; font-weight: 800; color: #0f172a; }
+        .date-cell { display: flex; flex-direction: column; }
+        .d-date { font-size: 12px; font-weight: 600; color: #475569; }
+        .d-time { font-size: 10px; color: #94a3b8; }
+        .status-pill { padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; white-space: nowrap; display: inline-flex; }
+        .status-pill.warning { background: #fffbeb; color: #b45309; }
+        .status-pill.success { background: #ecfdf5; color: #059669; }
+        .status-pill.danger { background: #fef2f2; color: #dc2626; }
 
-        /* Filter */
-        .filter-card { padding: 16px var(--space-lg); }
-        .filter-row { display: flex; gap: var(--space-md); align-items: center; }
-        .input-with-icon { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; background: white; font-size: 14px; transition: border-color 0.2s; }
-        .input-with-icon:focus-within { border-color: var(--primary); }
-        .input-with-icon input { border: none; background: transparent; outline: none; width: 100%; color: var(--text-main); }
-        .input-with-icon .material-icons-round { color: var(--text-muted); font-size: 20px; }
-        .select-wrapper { position: relative; }
-        .select-wrapper select { width: 100%; border: none; background: transparent; outline: none; appearance: none; padding-right: 20px; cursor: pointer; color: var(--text-main); font-weight: 500; }
-        .select-wrapper .arrow { position: absolute; right: 12px; pointer-events: none; }
-        .btn-primary-alt { background: linear-gradient(135deg, #005a8c, #003d5c); color: white; border: none; padding: 10px 24px; font-size: 14px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .action-flex { display: flex; justify-content: flex-end; gap: 6px; }
+        .btn-action-primary { padding: 6px 12px; background: #2563eb; color: white; border: none; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+        .btn-action-primary:hover { background: #1d4ed8; }
+        .btn-action-view { width: 32px; height: 32px; border-radius: 6px; border: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; cursor: pointer; transition: all 0.2s; }
+        .btn-action-view:hover { background: #f1f5f9; color: #2563eb; }
 
-        /* Table */
-        .table-card { padding: 0; overflow: hidden; }
-        .table-responsive { width: 100%; overflow-x: auto; }
-        .data-table { width: 100%; border-collapse: collapse; text-align: left; table-layout: auto; }
-        .data-table th { padding: 16px 20px; font-size: 11px; font-weight: 700; color: #5f6368; border-bottom: 1px solid var(--border); background: #f8f9fa; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-        .data-table td { padding: 16px 20px; border-bottom: 1px solid var(--border); vertical-align: middle; font-size: 14px; white-space: nowrap; }
-        
-        .code-badge { background: #f3f4f6; color: #374151; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 13px; font-weight: 600; }
-        .method-chip { display: inline-block; padding: 4px 10px; background: #eef2ff; color: #4338ca; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        /* Modal Modern Styles */
+        .modal-overlay-modern { position: fixed; inset: 0; background: rgba(15,23,42,0.5); backdrop-filter: blur(4px); z-index: 3000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeInModal 0.2s ease-out; }
+        .modal-content-modern { background: white; border-radius: 16px; width: 100%; max-width: 520px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 40px -12px rgba(0,0,0,0.15); overflow: hidden; animation: zoomInModal 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+        @keyframes fadeInModal { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes zoomInModal { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        .status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
-        .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
-        .status-badge.success { background: #e6f4ea; color: #137333; }
-        .status-badge.success .dot { background: #137333; }
-        .status-badge.warning { background: #fef08a; color: #854d0e; }
-        .status-badge.warning .dot { background: #854d0e; }
-        .status-badge.danger { background: #fecaca; color: #991b1b; }
-        .status-badge.danger .dot { background: #991b1b; }
-        
-        .action-buttons { display: flex; gap: 4px; }
-        .action-btn { background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 6px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
-        .action-btn .material-icons-round { font-size: 18px; }
-        .action-btn.view:hover { background: #e0e7ff; color: var(--primary); }
-        .action-btn.process:hover { background: #fef7e0; color: #b06000; }
+        .modal-top-bar { padding: 20px 24px; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; }
+        .modal-title-group { display: flex; align-items: center; gap: 10px; }
+        .modal-title-group .material-icons-round { color: #2563eb; font-size: 20px; }
+        .modal-title-group h3 { margin: 0; font-size: 16px; font-weight: 800; color: #0f172a; }
+        .close-x { background: transparent; border: none; cursor: pointer; color: #94a3b8; padding: 4px; border-radius: 50%; display: flex; transition: all 0.2s; }
+        .close-x:hover { background: #f1f5f9; color: #ef4444; }
 
-        .pagination { display: flex; justify-content: space-between; align-items: center; padding: 16px var(--space-lg); font-size: 13px; color: var(--text-secondary); }
-        .page-controls { display: flex; gap: 4px; }
-        .page-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border); border-radius: 8px; background: white; color: var(--text-secondary); font-size: 13px; cursor: pointer; transition: all 0.2s; font-weight: 500; }
-        .page-btn:hover:not(.dots) { border-color: var(--primary); color: var(--primary); }
-        .page-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
-        .page-btn.dots { border: none; background: transparent; cursor: default; }
+        .modal-inner { padding: 24px; overflow-y: auto; flex: 1; }
+        .refund-summary-card { background: #f8fafc; border-radius: 12px; padding: 16px; margin-bottom: 24px; border: 1px solid #e2e8f0; }
+        .s-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+        .s-label { color: #64748b; font-weight: 600; }
+        .s-val { color: #1e293b; font-weight: 700; }
+        .s-divider { height: 1px; background: #e2e8f0; margin: 12px 0; border-style: dashed; }
+        .s-row.total { margin-bottom: 0; }
+        .s-val-price { font-size: 20px; font-weight: 900; color: #d97706; }
 
-        /* Modal */
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,0.45); z-index: 2000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); animation: tdFadeIn 0.15s ease; padding: 20px; }
-        .modal-box { background: white; border-radius: 16px; width: 560px; max-width: 100%; max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 24px 64px rgba(0,0,0,0.18); animation: tdSlideUp 0.2s ease; overflow: hidden; }
-        
-        .modal-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 24px 28px 20px; border-bottom: 1px solid var(--border); background: white; flex-shrink: 0; }
-        .modal-title-row { display: flex; align-items: center; gap: 14px; }
-        .modal-icon-box { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-        .modal-icon-box .material-icons-round { font-size: 24px; }
-        .modal-header h2 { font-size: 18px; margin: 0 0 3px; color: var(--text-main); font-weight: 700; }
-        .modal-header p { font-size: 13px; color: var(--text-secondary); margin: 0; }
-        .modal-close { background: transparent; border: none; cursor: pointer; padding: 6px; border-radius: 8px; color: var(--text-muted); display: flex; transition: all 0.2s; }
-        .modal-close:hover { background: #f3f4f6; color: var(--text-main); }
+        .modal-form-section h4 { font-size: 12px; font-weight: 800; color: #475569; text-transform: uppercase; margin: 0 0 10px; letter-spacing: 0.5px; }
+        .required { color: #ef4444; }
+        .modern-textarea { width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; padding: 12px; outline: none; font-family: inherit; font-size: 13px; transition: all 0.2s; }
+        .modern-textarea:focus { border-color: #2563eb; }
 
-        .modal-body { padding: 24px 28px; overflow-y: auto; flex: 1; }
-        
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; background: #f8fafc; padding: 16px; border-radius: 12px; border: 1px solid var(--border); }
-        .info-item label { display: block; font-size: 11px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; margin-bottom: 4px; }
-        .info-item p { font-size: 14px; color: var(--text-main); font-weight: 500; margin: 0; }
-        
-        .amount-box { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 20px; }
-        .amount-row { display: flex; justify-content: space-between; align-items: center; }
-        .amount-row span:first-child { font-size: 14px; font-weight: 600; color: #92400e; }
-        .amount-val { font-size: 24px; font-weight: 800; color: #d97706; }
+        .upload-dropzone { border: 2px dashed #cbd5e1; border-radius: 12px; padding: 24px; text-align: center; background: #f8fafc; cursor: pointer; transition: all 0.2s; }
+        .upload-dropzone:hover { border-color: #2563eb; background: #f0f7ff; }
+        .upload-dropzone .material-icons-round { font-size: 32px; color: #94a3b8; margin-bottom: 8px; }
+        .upload-dropzone p { font-size: 13px; color: #475569; margin: 0 0 4px; }
+        .file-hint { font-size: 10px; color: #94a3b8; font-weight: 500; }
 
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        .form-group label { font-size: 13px; font-weight: 600; color: var(--text-main); }
-        .form-group textarea { padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px; resize: none; outline: none; }
-        .form-group textarea:focus { border-color: var(--primary); }
-        
-        .upload-box { border: 2px dashed var(--border); border-radius: 8px; padding: 24px; text-align: center; cursor: pointer; background: #fafbfc; transition: all 0.2s; }
-        .upload-box:hover { border-color: var(--primary); background: #f0f4ff; }
-        .upload-box .material-icons-round { font-size: 32px; margin-bottom: 8px; }
-        .upload-box p { font-size: 13px; color: var(--text-secondary); margin: 0; }
-        
-        .history-box { display: flex; flex-direction: column; gap: 12px; }
-        .history-box label { font-size: 14px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-        .history-item { display: flex; gap: 12px; align-items: flex-start; }
-        .history-item p { font-size: 13px; color: var(--text-main); margin: 0 0 2px; }
-        .history-item .time { font-size: 11px; color: var(--text-muted); }
+        .modal-bottom-actions { padding: 16px 24px; background: #f8fafc; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
+        .btn-m-secondary { padding: 10px 20px; border: 1px solid #e2e8f0; background: white; border-radius: 8px; font-size: 13px; font-weight: 700; color: #64748b; cursor: pointer; }
+        .btn-m-danger { padding: 10px 20px; border: none; background: #fef2f2; color: #dc2626; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+        .btn-m-success { padding: 10px 20px; border: none; background: #2563eb; color: white; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 8px rgba(37,99,235,0.2); }
 
-        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 28px; border-top: 1px solid var(--border); background: #f8f9fb; flex-shrink: 0; }
-        .btn-cancel { padding: 10px 24px; border: 1px solid var(--border); border-radius: 8px; background: white; cursor: pointer; font-size: 13px; font-weight: 600; color: var(--text-secondary); transition: all 0.2s; }
-        .btn-cancel:hover { border-color: var(--text-secondary); color: var(--text-main); }
-        .btn-reject { display: flex; align-items: center; gap: 6px; padding: 10px 20px; border: none; border-radius: 8px; background: #fee2e2; color: #dc2626; cursor: pointer; font-size: 13px; font-weight: 700; transition: background 0.2s; }
-        .btn-reject:hover { background: #fca5a5; }
-        .btn-save { display: flex; align-items: center; gap: 6px; padding: 10px 24px; border: none; border-radius: 8px; background: var(--primary); color: white; cursor: pointer; font-size: 13px; font-weight: 700; transition: background 0.2s; }
-        .btn-save:hover { background: #1d4ed8; }
-        .btn-save .material-icons-round, .btn-reject .material-icons-round { font-size: 18px; }
+        .empty-state-modern { padding: 40px 0; text-align: center; }
+        .empty-icon-circle { width: 52px; height: 52px; border-radius: 50%; background: #f1f5f9; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px; }
+        .empty-icon-circle .material-icons-round { font-size: 28px; color: #94a3b8; }
+        .empty-state-modern h3 { font-size: 16px; font-weight: 800; color: #1e293b; margin: 0 0 4px; }
+        .empty-state-modern p { font-size: 13px; color: #64748b; margin: 0; }
+
+        /* Toast Styles */
+        .toast-notification {
+          position: fixed;
+          bottom: 24px;
+          right: 24px;
+          padding: 16px 24px;
+          border-radius: 12px;
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          color: white;
+          font-weight: 600;
+          font-size: 14px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+          z-index: 9999;
+          animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes slideInRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .toast-notification.success { background: #10b981; }
+        .toast-notification.error { background: #ef4444; }
+        .toast-notification button { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; opacity: 0.8; margin-left: 24px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.2); }
+        .toast-notification button:hover { opacity: 1; }
       `}</style>
-      </div>
     </AppLayout>
   );
 };
