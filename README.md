@@ -58,8 +58,12 @@ Hệ thống hỗ trợ toàn bộ quy trình: từ tìm kiếm chuyến bay, th
 
 ### 🎫 Quản lý Vé (Tickets - Core Module)
 - **Ticket-Centric Workflow**: Mọi giao dịch, hành khách, dịch vụ đều xoay quanh vòng đời của Vé.
+- Hỗ trợ đầy đủ nghiệp vụ: Xuất vé, Đổi vé, Tính phí tự động, Hoàn/Hủy vé.
+
+### 🛂 Làm thủ tục & Lên máy bay (Check-in & Boarding)
+- **Web Check-in**: Hỗ trợ check-in trực tuyến, chọn ghế, in Boarding Pass.
+- **Gate Management**: Quản lý cửa khởi hành, theo dõi tiến độ lên máy bay (Boarding).
 - Quản lý Boarding Pass đầy đủ thông tin: mã sân bay, cổng soát vé, nhà ga, số ghế.
-- Đổi vé, tính phí tự động, xuất PDF & In vé trực tiếp từ hệ thống.
 
 ### 👥 Quản lý Hành khách & Khách hàng (Passengers & Customers)
 - Quản lý chi tiết Hành khách (Passengers) đi kèm vé.
@@ -70,6 +74,11 @@ Hệ thống hỗ trợ toàn bộ quy trình: từ tìm kiếm chuyến bay, th
 - Hỗ trợ đa phương thức: VNPay, MoMo, Visa/Mastercard, Tiền mặt.
 - Đồng bộ tự động trạng thái thanh toán và xuất vé ngay khi hoàn tất.
 - Lịch sử giao dịch chi tiết, cho phép lọc đa chiều và kiểm tra đối soát.
+
+### ⚙️ Hệ thống & Phân quyền (System & Access Control)
+- Quản lý Nhân sự (Users) với hệ thống phân quyền (Role-based access).
+- Hệ thống thông báo toàn cục (Global Toast Notifications) cho mọi thao tác.
+- Nhật ký hệ thống (Audit Log) theo dõi thay đổi dữ liệu.
 
 ---
 
@@ -89,7 +98,7 @@ Hệ thống hỗ trợ toàn bộ quy trình: từ tìm kiếm chuyến bay, th
 
 ## 📁 Cấu trúc dự án
 
-Kiến trúc thư mục được quy hoạch chuẩn mực theo mô hình App Router của Next.js 16:
+Kiến trúc thư mục được quy hoạch chuẩn mực theo mô hình App Router của Next.js 16 và Backend Domain-Driven Design (DDD):
 
 ```text
 DaiLyBanVeMB/
@@ -104,6 +113,8 @@ DaiLyBanVeMB/
 │   │   │   ├── booking/             # Quy trình Đặt chỗ (Booking Workflow)
 │   │   │   ├── seat-map/            # Sơ đồ ghế ngồi tương tác
 │   │   │   ├── tickets/             # Quản lý Vé (Ticket-Centric Hub)
+│   │   │   ├── checkin/             # Online Check-in (Web Check-in)
+│   │   │   ├── gate-management/     # Quản lý Cửa khởi hành & Lên máy bay
 │   │   │   ├── passengers/          # Quản lý Hành khách
 │   │   │   ├── customers/           # Quản lý Khách hàng / Đại lý
 │   │   │   ├── payments/            # Thanh toán & Lịch sử Giao dịch
@@ -111,9 +122,12 @@ DaiLyBanVeMB/
 │   │   │   ├── reports/             # Báo cáo BI & Doanh thu
 │   │   │   ├── settings/            # Cấu hình Hệ thống & Hãng bay
 │   │   │   ├── users/               # Quản lý Nhân sự & Phân quyền
+│   │   │   ├── profile/             # Thông tin cá nhân người dùng
+│   │   │   ├── audit-log/           # Nhật ký hệ thống
+│   │   │   ├── ai-admin/            # Quản trị viên AI (Smart Assistant)
 │   │   │   └── refund-management/   # Xử lý Hoàn/Hủy vé
 │   │   ├── components/              # Premium Shared Components (Dark-Navy System)
-│   │   │   ├── AppLayout.tsx        # Enterprise Layout Wrapper
+│   │   │   ├── AppLayout.tsx        # Enterprise Layout Wrapper (Tích hợp Toaster)
 │   │   │   ├── Sidebar.tsx          # Professional Sidebar
 │   │   │   ├── Header.tsx           # Dashboard Header
 │   │   │   ├── Card.tsx             # Standardized Card Component
@@ -124,10 +138,16 @@ DaiLyBanVeMB/
 │
 ├── backend/                         # FastAPI Backend
 │   ├── app/
-│   │   ├── main.py                  # Entry point
-│   │   ├── api/                     # REST Endpoints
-│   │   ├── models/                  # DB Models
-│   │   └── services/                # Business Logic
+│   │   ├── core/                    # Core Config & Security
+│   │   ├── domain/                  # DDD (Domain-Driven Design) Modules
+│   │   │   ├── checkin/             # Web Check-in & Boarding
+│   │   │   ├── inventory/           # Flights & Seats Inventory
+│   │   │   ├── pnr/                 # Passenger Name Record (Booking)
+│   │   │   └── ticketing/           # Ticket Issuance & Lifecycle
+│   │   ├── models/                  # Global DB Models (SQLAlchemy)
+│   │   ├── repositories/            # Data Access Layer
+│   │   ├── schemas/                 # Pydantic Schemas
+│   │   └── main.py                  # Entry point
 │   └── requirements.txt
 │
 ├── database/                        # PostgreSQL Resources
@@ -260,12 +280,13 @@ docker compose -f docker/docker-compose.yml up -d
 |--------|-------|
 | 🏠 Dashboard | Tổng quan KPI, biểu đồ doanh thu |
 | ✈️ Chuyến bay | Tìm kiếm, lọc, quản lý lịch bay |
-| 📋 Đặt chỗ | Quy trình đặt vé multi-step |
-| 🎫 Vé máy bay | Quản lý vé, đổi vé, in Boarding Pass |
-| 💳 Thanh toán | Xử lý thanh toán vé, quản lý hóa đơn |
+| 📋 Đặt chỗ | Quy trình đặt vé multi-step, chọn chỗ (Seat Map) |
+| 🎫 Vé máy bay | Quản lý vé, đổi vé, hủy vé |
+| 🛂 Check-in | Web check-in, quản lý cửa khởi hành (Gate Management), in Boarding Pass |
+| 💳 Thanh toán | Xử lý thanh toán vé, quản lý hóa đơn, lịch sử giao dịch |
 | 👥 Hành khách | Quản lý thông tin hành khách theo từng vé |
 | 👤 Khách hàng | CRM đại lý/khách hàng, chương trình thành viên |
-| ⚙️ Hệ thống | Quản lý cấu hình, hãng bay, tuyến bay |
+| ⚙️ Hệ thống | Quản lý cấu hình, hãng bay, tuyến bay, phân quyền nhân sự (Users), Audit Log |
 | 📊 Báo cáo | Phân tích số liệu, xuất file |
 
 ---
