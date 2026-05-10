@@ -128,22 +128,25 @@ export default function Home() {
             onCheckout={handleGoToCheckout}
             bookings={globalBookings}
             onUpdateStatus={updateBookingStatus}
+            onDeleteBooking={(id) => setGlobalBookings(prev => prev.filter(b => b.id !== id))}
           />
         );
       case 'payments':
         return (
-          <PaymentsPage 
-            onNavigate={setCurrentPage} 
-            view={paymentView} 
-            setView={setPaymentView} 
-            ticketData={selectedTicketData} 
-            onPaymentSuccess={(id) => handlePaymentSuccess(id)} 
+          <PaymentsPage
+            onNavigate={setCurrentPage}
+            view={paymentView}
+            setView={setPaymentView}
+            ticketData={selectedTicketData}
+            onPaymentSuccess={(id) => handlePaymentSuccess(id)}
             onUpdateStatus={updateBookingStatus}
-            bookings={globalBookings} 
+            bookings={globalBookings}
           />
         );
       case 'settings':
         return <SettingsPage onNavigate={setCurrentPage} />;
+      case 'profile':
+        return <ProfilePage onNavigate={setCurrentPage} />;
       case 'reports':
         return <ReportsPage onNavigate={setCurrentPage} />;
       case 'users':

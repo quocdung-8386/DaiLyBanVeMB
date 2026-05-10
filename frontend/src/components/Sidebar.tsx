@@ -106,13 +106,13 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
       </nav>
 
       <div className="sidebar-footer">
-        <div className="user-card">
+        <div className={`user-card ${activeItem === 'profile' ? 'active' : ''}`} onClick={() => onNavigate?.('profile')} style={{ cursor: 'pointer', transition: 'all 0.2s' }} title="Quản lý tài khoản">
           <div className="user-avatar">AD</div>
           <div className="user-meta">
             <p className="user-name">Nguyễn Văn Admin</p>
             <p className="user-role">Quản trị viên</p>
           </div>
-          <button className="logout-btn" onClick={() => onNavigate?.('login')}>
+          <button className="logout-btn" onClick={(e) => { e.stopPropagation(); onNavigate?.('login'); }} title="Đăng xuất">
             <span className="material-icons-round">logout</span>
           </button>
         </div>
@@ -197,6 +197,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
           padding: 12px;
           background: #f8fafc;
           border-radius: 16px;
+          border-left: 4px solid transparent;
+        }
+        .user-card:hover {
+          background: #f1f5f9;
+        }
+        .user-card.active {
+          background: #eff6ff;
+          border-left: 4px solid #2563eb;
         }
         .user-avatar {
           width: 36px;

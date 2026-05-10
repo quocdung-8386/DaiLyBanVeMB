@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import Button from './Button';
+import { showToast } from './AppLayout';
 
 interface SeatMapProps {
   flightNumber: string;
   aircraftType?: string;
   occupiedSeats?: string[];
   initialSelectedSeat?: string;
+  allowedClass?: string;
   onConfirm: (seat: string) => void;
   onCancel: () => void;
 }
@@ -15,6 +17,7 @@ const SeatMap: React.FC<SeatMapProps> = ({
   aircraftType = 'A321', 
   occupiedSeats = ['12B', '14A', '14C', '15D', '15E', '15F', '1A', '1B', '2A', '2C'], 
   initialSelectedSeat,
+  allowedClass,
   onConfirm, 
   onCancel 
 }) => {
@@ -27,8 +30,18 @@ const SeatMap: React.FC<SeatMapProps> = ({
   const isOccupied = (seatId: string) => occupiedSeats.includes(seatId);
   const isSelected = (seatId: string) => selectedSeat === seatId;
 
-  const handleSeatClick = (seatId: string) => {
+  const handleSeatClick = (seatId: string, isBusiness: boolean) => {
     if (isOccupied(seatId)) return;
+    if (allowedClass) {
+       if (allowedClass === 'Economy' && isBusiness) {
+          showToast('Vui lòng chọn ghế thuộc hạng Phổ thông (Economy).', 'warning');
+          return;
+       }
+       if ((allowedClass === 'Business' || allowedClass === 'First Class') && !isBusiness) {
+          showToast('Vui lòng chọn ghế thuộc hạng Thương gia (Business).', 'warning');
+          return;
+       }
+    }
     setSelectedSeat(seatId);
   };
 
@@ -45,13 +58,18 @@ const SeatMap: React.FC<SeatMapProps> = ({
             const seatId = `${rowNum}${letter}`;
             const occupied = isOccupied(seatId);
             const selected = isSelected(seatId);
-            const seatClass = `seat ${isBusiness ? 'business' : 'economy'} ${occupied ? 'occupied' : ''} ${selected ? 'selected' : ''}`;
+            const isSelectable = allowedClass ? (
+              (allowedClass === 'Economy' && !isBusiness) ||
+              ((allowedClass === 'Business' || allowedClass === 'First Class') && isBusiness)
+            ) : true;
+            
+            const seatClass = `seat ${isBusiness ? 'business' : 'economy'} ${occupied ? 'occupied' : ''} ${selected ? 'selected' : ''} ${!isSelectable && !occupied ? 'disabled-class' : ''}`;
             
             return (
               <div 
                 key={seatId} 
                 className={seatClass}
-                onClick={() => handleSeatClick(seatId)}
+                onClick={() => handleSeatClick(seatId, isBusiness)}
                 title={`Ghế ${seatId}${occupied ? ' (Đã đặt)' : ''}`}
               >
                 {letter}
@@ -185,6 +203,7 @@ const SeatMap: React.FC<SeatMapProps> = ({
         
         .seat.occupied, .seat-sample.occupied { background: #e2e8f0; border-color: #cbd5e1; color: transparent; cursor: not-allowed; }
         .seat.occupied::after { content: '×'; color: #94a3b8; font-size: 16px; position: absolute; }
+        .seat.disabled-class { opacity: 0.3; cursor: not-allowed; }
         
         .seat.selected, .seat-sample.selected { background: #2563eb; border-color: #1d4ed8; color: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.2); }
 

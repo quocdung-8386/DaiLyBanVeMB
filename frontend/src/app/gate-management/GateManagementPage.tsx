@@ -11,15 +11,60 @@ interface GateManagementPageProps {
 
 const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, bookings, onUpdateStatus }) => {
   const [gateStatus, setGateStatus] = useState<'OPEN' | 'BOARDING' | 'CLOSED'>('OPEN');
-  
-  // Filter bookings for a specific flight (simulated VN234 for demo)
-  const flightBookings = bookings.filter(b => b.status === 'Đã xuất vé' || b.status === 'Boarded');
-  const boardedCount = flightBookings.filter(b => b.status === 'Boarded').length;
+  const [selectedFlight, setSelectedFlight] = useState<string>('');
 
-  const handleScanBoarding = (id: string) => {
+  // Lọc ra các chuyến bay có khách đã xuất vé / check-in
+  const availableFlights = React.useMemo(() => {
+    const flightsMap = new Map();
+    bookings.forEach(b => {
+      if ((b.status === 'Đã Check-in' || b.status === 'Boarded' || b.status === 'Đã xuất vé') && b.flight) {
+        if (!flightsMap.has(b.flight)) {
+          flightsMap.set(b.flight, { flight: b.flight, from: b.from, to: b.to, time: b.time, gate: b.gate });
+        }
+      }
+    });
+    return Array.from(flightsMap.values());
+  }, [bookings]);
+
+  React.useEffect(() => {
+    if (!selectedFlight && availableFlights.length > 0) {
+      setSelectedFlight(availableFlights[0].flight);
+    }
+  }, [availableFlights, selectedFlight]);
+
+  const activeFlightData = availableFlights.find(f => f.flight === selectedFlight) || { flight: '---', from: '---', to: '---', time: '00:00', gate: '--' };
+  
+  // Lấy toàn bộ hành khách của chuyến bay được chọn (không bao gồm vé bị hủy hoặc void)
+  const allPassengers = React.useMemo(() => {
+    return bookings
+      .filter(b => b.flight === selectedFlight && b.badge !== 'danger' && b.badge !== 'default')
+      .flatMap(b => {
+        const pList = b.passengersList || [];
+        const paxList = pList.length > 0 
+          ? pList 
+          : Array.from({ length: b.pax || 1 }).map((_, i) => ({
+              name: i === 0 ? b.customer : `HÀNH KHÁCH ${i+1}`,
+              seat: i === 0 ? (b.seat || '12A') : `12${String.fromCharCode(66+i)}`
+            }));
+        
+        return paxList.map((p: any, idx: number) => ({
+          id: `${b.id}-${idx}`,
+          bookingId: b.id,
+          pnr: b.pnr,
+          name: p.name,
+          seat: p.seat || b.seat,
+          status: b.status
+        }));
+      });
+  }, [bookings]);
+
+  const boardedCount = allPassengers.filter(p => p.status === 'Boarded').length;
+  const totalCount = allPassengers.length;
+  const pendingCheckinCount = bookings.reduce((acc, b) => acc + (b.flight === selectedFlight && b.status !== 'Đã Check-in' && b.status !== 'Boarded' && b.badge !== 'danger' && b.badge !== 'default' ? (b.pax||1) : 0), 0);
+
+  const handleScanBoarding = (bookingId: string) => {
     if (onUpdateStatus) {
-      onUpdateStatus(id, 'Boarded', 'success');
-      alert('Đã quét thẻ lên máy bay thành công!');
+      onUpdateStatus(bookingId, 'Boarded', 'success');
     }
   };
 
@@ -29,10 +74,38 @@ const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, boo
         {/* Header Section */}
         <div className="dashboard-header">
           <div className="flight-info">
-            <div className="flight-number">VN234</div>
+            <div className="flight-number" style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '12px 16px' }}>
+              <select 
+                value={selectedFlight} 
+                onChange={(e) => setSelectedFlight(e.target.value)}
+                style={{ 
+                  background: 'transparent', 
+                  color: 'white', 
+                  border: 'none', 
+                  fontSize: 24, 
+                  fontWeight: 800, 
+                  outline: 'none', 
+                  cursor: 'pointer', 
+                  WebkitAppearance: 'none',
+                  MozAppearance: 'none',
+                  appearance: 'none',
+                  paddingRight: '28px',
+                  width: '100%',
+                  zIndex: 2
+                }}
+              >
+                {availableFlights.map(f => (
+                  <option key={f.flight} value={f.flight} style={{ color: '#0A192F', background: 'white' }}>
+                    {f.flight} ({f.from} - {f.to})
+                  </option>
+                ))}
+                {availableFlights.length === 0 && <option value="" style={{ color: '#0A192F', background: 'white' }}>Không có chuyến</option>}
+              </select>
+              <span className="material-icons-round" style={{ fontSize: 24, position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', zIndex: 1, pointerEvents: 'none', color: 'white' }}>expand_more</span>
+            </div>
             <div className="flight-details">
-              <h1>Hà Nội (HAN) <span className="material-icons-round">flight_takeoff</span> Hồ Chí Minh (SGN)</h1>
-              <p>Lịch trình: 14:30 • Cửa: 04 • Tàu bay: A321</p>
+              <h1>{activeFlightData.from} <span className="material-icons-round">flight_takeoff</span> {activeFlightData.to}</h1>
+              <p>Lịch trình: {activeFlightData.time} • Cửa: {activeFlightData.gate} • Tàu bay: A321</p>
             </div>
           </div>
           
@@ -66,7 +139,7 @@ const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, boo
             </div>
             <div className="stat-info">
               <h3>Đã Check-in</h3>
-              <div className="stat-value">245 <span className="text-muted">/ 280</span></div>
+              <div className="stat-value">{totalCount - boardedCount} <span className="text-muted">/ {totalCount}</span></div>
             </div>
           </Card>
           
@@ -76,7 +149,7 @@ const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, boo
             </div>
             <div className="stat-info">
               <h3>Chưa Check-in</h3>
-              <div className="stat-value">35</div>
+              <div className="stat-value">{pendingCheckinCount}</div>
             </div>
           </Card>
           
@@ -86,10 +159,10 @@ const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, boo
             </div>
             <div className="stat-info">
               <h3>Đã Lên tàu</h3>
-              <div className="stat-value">120 <span className="text-muted">/ 245</span></div>
+              <div className="stat-value">{boardedCount} <span className="text-muted">/ {totalCount}</span></div>
             </div>
             <div className="progress-bar">
-              <div className="progress" style={{ width: '48%' }}></div>
+              <div className="progress" style={{ width: `${totalCount > 0 ? (boardedCount/totalCount)*100 : 0}%` }}></div>
             </div>
           </Card>
         </div>
@@ -111,39 +184,42 @@ const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, boo
                     <th>STT</th>
                     <th>Ghế</th>
                     <th>Tên Hành khách</th>
-                    <th>Nhóm</th>
+                    <th>Zone</th>
                     <th>Trạng thái</th>
                     <th>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {flightBookings.map((b, i) => (
-                    <tr key={b.id}>
+                  {allPassengers.map((p, i) => (
+                    <tr key={p.id}>
                       <td>{String(i + 1).padStart(3, '0')}</td>
-                      <td><div className="seat-badge">{b.seat}</div></td>
+                      <td><div className="seat-badge">{p.seat}</div></td>
                       <td>
-                        <strong>{b.customer}</strong>
-                        <span className="sub-text">PNR: {b.pnr}</span>
+                        <strong>{p.name?.toUpperCase()}</strong>
+                        <span className="sub-text">PNR: {p.pnr}</span>
                       </td>
-                      <td>Nhóm {i % 3 + 1}</td>
+                      <td>Zone {i % 3 + 1}</td>
                       <td>
-                        <span className={`badge badge-${b.status === 'Boarded' ? 'success' : 'primary'}`}>
-                          {b.status === 'Boarded' ? 'Đã Lên tàu' : 'Đã Check-in'}
+                        <span className={`badge badge-${p.status === 'Boarded' ? 'success' : (p.status === 'Đã Check-in' ? 'primary' : 'warning')}`}>
+                          {p.status}
                         </span>
                       </td>
                       <td>
                         <button 
                           className="icon-btn scan-btn" 
-                          title="Quét Thẻ Lên Máy Bay"
-                          disabled={b.status === 'Boarded'}
-                          onClick={() => handleScanBoarding(b.id)}
+                          title={gateStatus === 'CLOSED' ? 'Cửa đã đóng, không thể quét thẻ' : 'Quét Thẻ Lên Máy Bay'}
+                          disabled={p.status === 'Boarded' || gateStatus === 'CLOSED'}
+                          onClick={() => handleScanBoarding(p.bookingId)}
+                          style={{ opacity: gateStatus === 'CLOSED' ? 0.4 : 1, cursor: gateStatus === 'CLOSED' ? 'not-allowed' : 'pointer' }}
                         >
-                          <span className="material-icons-round">qr_code_scanner</span>
+                          <span className="material-icons-round">
+                            {gateStatus === 'CLOSED' ? 'block' : 'qr_code_scanner'}
+                          </span>
                         </button>
                       </td>
                     </tr>
                   ))}
-                  {flightBookings.length === 0 && (
+                  {allPassengers.length === 0 && (
                     <tr>
                       <td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#94a3b8' }}>
                         Chưa có hành khách nào hoàn tất check-in cho chuyến bay này.

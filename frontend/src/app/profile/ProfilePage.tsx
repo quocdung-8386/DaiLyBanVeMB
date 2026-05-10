@@ -1,5 +1,5 @@
 import React from 'react';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast } from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 
@@ -42,7 +42,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
           <Card className="settings-section">
             <div className="section-header">
               <h3>Thông tin cơ bản</h3>
-              <Button variant="secondary" onClick={() => alert('Đang lưu...')}>Lưu thay đổi</Button>
+              <Button variant="secondary" onClick={() => showToast('Cập nhật thông tin cơ bản thành công!', 'success')}>Lưu thay đổi</Button>
             </div>
             <div className="form-grid">
               <div className="input-group">
@@ -80,7 +80,7 @@ const ProfilePage: React.FC<ProfilePageProps> = ({ onNavigate }) => {
           <Card className="settings-section">
             <div className="section-header">
               <h3>Bảo mật &amp; Mật khẩu</h3>
-              <Button variant="secondary" onClick={() => alert('Mật khẩu đã đổi!')}>Cập nhật mật khẩu</Button>
+              <Button variant="secondary" onClick={() => showToast('Thay đổi mật khẩu thành công!', 'success')}>Cập nhật mật khẩu</Button>
             </div>
             <div className="form-grid">
               <div className="input-group">

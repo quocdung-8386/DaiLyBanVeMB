@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from '../../../components/Sidebar';
 import Header from '../../../components/Header';
+import { showToast } from '../../../components/AppLayout';
 import Card from '../../../components/Card';
 import Button from '../../../components/Button';
 
@@ -126,7 +127,7 @@ const ExchangeTicketPage: React.FC<ExchangeTicketPageProps> = ({ onNavigate, tic
                   </div>
                 </div>
                 <div className="summary-actions">
-                  <Button className="w-full" disabled={!selectedFlight} onClick={() => { alert('Yêu cầu đổi vé đã được gửi!'); onNavigate?.('tickets'); }}>
+                  <Button className="w-full" disabled={!selectedFlight} onClick={() => { showToast('Yêu cầu đổi vé đã được gửi!', 'success'); onNavigate?.('tickets'); }}>
                     <span className="material-icons-round">published_with_changes</span>
                     Xác nhận Đổi vé
                   </Button>

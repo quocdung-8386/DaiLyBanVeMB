@@ -15,38 +15,53 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
   const [lastName, setLastName] = useState('');
   const [foundBooking, setFoundBooking] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [step, setStep] = useState<'search' | 'passengers' | 'baggage' | 'boarding_pass'>('search');
 
-  const [selectedPassengers, setSelectedPassengers] = useState<string[]>(['p1']);
+  const [selectedPassengers, setSelectedPassengers] = useState<string[]>([]);
   const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
-  const [passengerSeats, setPassengerSeats] = useState<Record<string, string>>({
-    'p1': '12A',
-    'p2': '12B'
-  });
+  const [passengerSeats, setPassengerSeats] = useState<Record<string, string>>({});
+  
+  const paxList = React.useMemo(() => {
+    if (!foundBooking) return [];
+    return foundBooking.passengersList && foundBooking.passengersList.length > 0
+      ? foundBooking.passengersList
+      : Array.from({ length: foundBooking.pax || 1 }).map((_, i) => ({
+          name: i === 0 ? foundBooking.customer : `HÀNH KHÁCH ${i+1}`,
+          seat: i === 0 ? (foundBooking.seat || '12A') : `12${String.fromCharCode(66+i)}`
+        }));
+  }, [foundBooking]);
   const [editingPassengerSeat, setEditingPassengerSeat] = useState<string | null>(null);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (!pnr || !lastName) return;
     setIsLoading(true);
+    setErrorMessage('');
     
     // Simulate API search in global bookings
     setTimeout(() => {
-      setIsLoading(true);
       const queryPnr = pnr.trim().toUpperCase();
       const queryName = lastName.trim().toUpperCase();
       
-      const booking = bookings.find(b => 
-        b.pnr.toUpperCase() === queryPnr && 
-        b.customer.toUpperCase().includes(queryName)
-      );
+      const booking = bookings.find(b => {
+        const custName = b.customer || (b.passengers && b.passengers[0]?.name) || 'NGUYEN VAN A';
+        return b.pnr.toUpperCase() === queryPnr && custName.toUpperCase().includes(queryName);
+      });
 
       setIsLoading(false);
       if (booking) {
         setFoundBooking(booking);
+        
+        // Mặc định chọn tất cả hành khách khi check-in
+        const bookingPaxList = booking.passengersList && booking.passengersList.length > 0
+          ? booking.passengersList
+          : Array.from({ length: booking.pax || 1 });
+        setSelectedPassengers(bookingPaxList.map((_: any, i: number) => i.toString()));
+        
         setStep('passengers');
       } else {
-        alert('Không tìm thấy mã đặt chỗ hoặc tên khách hàng không khớp. Vui lòng kiểm tra lại.');
+        setErrorMessage('Không tìm thấy chuyến bay khớp với Mã đặt chỗ và Họ đã nhập. Vui lòng kiểm tra lại.');
       }
     }, 1200);
   };
@@ -119,6 +134,13 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                     />
                   </div>
 
+                  {errorMessage && (
+                    <div className="error-message">
+                      <span className="material-icons-round">error_outline</span>
+                      {errorMessage}
+                    </div>
+                  )}
+
                   <Button type="submit" fullWidth size="lg" className="mt-8" disabled={!pnr || !lastName || isLoading}>
                     {isLoading ? 'Đang tìm kiếm...' : 'Tiếp tục'}
                     {!isLoading && <span className="material-icons-round" style={{ fontSize: '18px' }}>arrow_forward</span>}
@@ -144,18 +166,20 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
 
               <h4 className="section-heading">Ai sẽ làm thủ tục check-in hôm nay?</h4>
               <div className="passenger-list">
-                <label className={`passenger-item ${selectedPassengers.includes('p1') ? 'selected' : ''}`}>
-                  <input 
-                    type="checkbox" 
-                    checked={selectedPassengers.includes('p1')} 
-                    onChange={() => togglePassenger('p1')}
-                  />
-                  <div className="p-info">
-                    <strong>{foundBooking?.customer || 'NGUYEN VAN A'}</strong>
-                    <span>Số vé: {foundBooking?.id || '738-1234567890'}</span>
-                  </div>
-                  <div className="p-seat">Ghế {passengerSeats['p1'] || foundBooking?.seat}</div>
-                </label>
+                {paxList.map((p: any, idx: number) => (
+                  <label key={idx} className={`passenger-item ${selectedPassengers.includes(idx.toString()) ? 'selected' : ''}`}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedPassengers.includes(idx.toString())} 
+                      onChange={() => togglePassenger(idx.toString())}
+                    />
+                    <div className="p-info">
+                      <strong>{p.name?.toUpperCase()}</strong>
+                      <span>Số vé: {foundBooking?.id}-{idx+1}</span>
+                    </div>
+                    <div className="p-seat">Ghế {passengerSeats[idx.toString()] || p.seat || foundBooking?.seat}</div>
+                  </label>
+                ))}
               </div>
 
               <div className="action-row">
@@ -221,8 +245,11 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
               </div>
 
               <div className="boarding-passes">
-                {selectedPassengers.map(p => (
-                  <div key={p} className="boarding-pass-card">
+                {selectedPassengers.map(idxStr => {
+                  const p = paxList[parseInt(idxStr)];
+                  if (!p) return null;
+                  return (
+                  <div key={idxStr} className="boarding-pass-card">
                     <div className="bp-header">
                       <div className="bp-airline">SKYWARD AIRLINES</div>
                       <div className="bp-class">PHỔ THÔNG</div>
@@ -243,7 +270,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                       <div className="bp-details">
                         <div className="detail-item">
                           <span>Hành khách</span>
-                          <strong>{foundBooking?.customer}</strong>
+                          <strong>{p.name?.toUpperCase()}</strong>
                         </div>
                         <div className="detail-item">
                           <span>Chuyến bay</span>
@@ -266,11 +293,11 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                         </div>
                         <div className="h-item">
                           <span>Ghế</span>
-                          <strong>{passengerSeats[p] || foundBooking?.seat}</strong>
+                          <strong>{passengerSeats[idxStr] || p.seat || foundBooking?.seat}</strong>
                         </div>
                         <div className="h-item">
                           <span>Nhóm (Zone)</span>
-                          <strong>2</strong>
+                          <strong>{parseInt(idxStr) % 3 + 1}</strong>
                         </div>
                       </div>
                     </div>
@@ -284,7 +311,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                       </div>
                     </div>
                   </div>
-                ))}
+                )})}
               </div>
 
               <div style={{ textAlign: 'center', marginTop: '32px' }}>
@@ -346,6 +373,8 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
         }
         .form-control:focus { border-color: #2563eb; background: white; box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
         .form-group label { display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 8px; }
+        .error-message { background: #fef2f2; border: 1px solid #fecaca; color: #b91c1c; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; margin-top: 20px; animation: slideUp 0.3s ease; }
+        .error-message .material-icons-round { color: #dc2626; font-size: 20px; }
         .mt-8 { margin-top: 32px; }
         .mt-4 { margin-top: 16px; }
 

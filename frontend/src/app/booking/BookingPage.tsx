@@ -8,73 +8,81 @@ interface BookingPageProps {
   onNavigate?: (id: string) => void;
   initialFlight?: any;
   onCheckout?: (ticket: any) => void;
+  onAddBooking?: (booking: any) => void;
 }
 
-const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, onCheckout }) => {
-  const [view, setView] = useState<'list' | 'create'>(initialFlight ? 'create' : 'list');
+const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, onCheckout, onAddBooking }) => {
   const [flightData, setFlightData] = useState<any>(initialFlight || null);
-  const [editingBooking, setEditingBooking] = useState<any>(null);
-  const [viewingItem, setViewingItem] = useState<any>(null);
-  const [actionType, setActionType] = useState<'hold' | 'delete' | 'success' | null>(null);
+  const [actionType, setActionType] = useState<'hold' | 'success' | null>(null);
 
-  const [bookingsList, setBookingsList] = useState([
-    { id: 'BKG-8A2F9', customer: 'Nguyễn Văn Trường', phone: '0901234567', routeFrom: 'SGN', routeTo: 'HAN', flightId: 'VN-214', flightClass: 'Phổ thông', date: '12 Thg 10, 2023', time: '08:30 AM', total: '3,250,000', status: 'Đã xác nhận', badge: 'success', initials: 'NT' },
-    { id: 'BKG-7X1M4', customer: 'Trần Thị Lan', phone: '0987654321', routeFrom: 'DAD', routeTo: 'SGN', flightId: 'VJ-102', flightClass: 'Thương gia', date: '15 Thg 10, 2023', time: '14:00 PM', total: '5,100,000', status: 'Chờ xử lý', badge: 'warning', initials: 'TL' },
-    { id: 'BKG-2K9P0', customer: 'Lê Văn Đạt', phone: '0912345678', routeFrom: 'HAN', routeTo: 'PQC', flightId: 'QH-305', flightClass: 'Phổ thông', date: '10 Thg 10, 2023', time: '09:15 AM', total: '2,800,000', status: 'Đã hủy', badge: 'danger', initials: 'LĐ' },
-  ]);
-
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
+  const [contactInfo, setContactInfo] = useState({ name: '', phone: '', email: '' });
+  const [passengersList, setPassengersList] = useState([{ id: 1, name: '', type: 'Người lớn', seat: '' }]);
   const [bookingStep, setBookingStep] = useState(1);
   const [selectedFare, setSelectedFare] = useState('Economy');
-  const [selectedSeat, setSelectedSeat] = useState('12C');
   const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
+  const [editingSeatIndex, setEditingSeatIndex] = useState<number | null>(null);
 
   const handleHoldBooking = () => {
     const newBooking = {
-      id: `BKG-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-      customer: customerName || 'Khách hàng mới',
-      phone: customerPhone || 'Chưa cung cấp',
-      routeFrom: flightData?.from || 'SGN',
-      routeTo: flightData?.to || 'HAN',
-      flightId: flightData?.id || 'VN-204',
-      flightClass: selectedFare,
+      id: `BK-${Math.floor(100 + Math.random() * 900)}`,
+      pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),
+      customer: contactInfo.name || passengersList[0]?.name || 'Khách hàng mới',
+      phone: contactInfo.phone || 'Chưa cung cấp',
+      from: flightData?.from || 'SGN',
+      to: flightData?.to || 'HAN',
+      flight: flightData?.id || 'VN-204',
+      airline: flightData?.airline || 'Vietnam Airlines',
       date: 'Hôm nay',
       time: flightData?.departure || '08:00 AM',
-      total: ((flightData?.price || 1850000) * 1.1).toLocaleString('vi'),
-      status: 'Chờ xử lý',
-      badge: 'warning',
-      initials: (customerName || 'KH').substring(0, 2).toUpperCase()
+      total: (((flightData?.price || 1850000) + 50000) * passengersList.length).toLocaleString('vi'),
+      status: 'Chờ thanh toán',
+      badge: 'hold',
+      pax: passengersList.length,
+      passengersList: passengersList,
+      type: 'Một chiều',
+      timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
+      seat: passengersList[0]?.seat || '12C',
+      gate: '--',
+      terminal: 'T1'
     };
-    setBookingsList([newBooking, ...bookingsList]);
     setActionType('hold');
     setTimeout(() => {
       setActionType(null);
-      setView('list');
-      setCustomerName('');
-      setCustomerPhone('');
-      setBookingStep(1);
-    }, 2000);
+      if (onAddBooking) onAddBooking(newBooking);
+      if (onNavigate) onNavigate('tickets');
+    }, 1500);
   };
 
   const handleConfirmBooking = () => {
-    if (onCheckout) {
-      onCheckout({
-        id: `BKG-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
-        pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),
-        customer: customerName || 'Khách hàng mới',
-        routeFrom: flightData?.from || 'SGN',
-        routeTo: flightData?.to || 'HAN',
-        airportFrom: flightData?.from === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
-        airportTo: flightData?.to === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
-        date: 'Hôm nay',
-        total: ((flightData?.price || 1850000) * 1.1).toLocaleString('vi'),
-        gate: '--', terminal: 'T1', seat: selectedSeat, boarding: flightData?.departure || '08:00 AM',
-        badge: 'hold', status: 'Chờ thanh toán', timeLimit: new Date(Date.now() + 24*3600000).toISOString()
-      });
-    } else if (onNavigate) {
-      onNavigate('payments');
-    }
+    const newBooking = {
+      id: `BK-${Math.floor(100 + Math.random() * 900)}`,
+      pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),
+      customer: contactInfo.name || passengersList[0]?.name || 'Khách hàng mới',
+      phone: contactInfo.phone || 'Chưa cung cấp',
+      from: flightData?.from || 'SGN',
+      to: flightData?.to || 'HAN',
+      flight: flightData?.id || 'VN-204',
+      airline: flightData?.airline || 'Vietnam Airlines',
+      date: 'Hôm nay',
+      time: flightData?.departure || '08:00 AM',
+      total: (((flightData?.price || 1850000) + 50000) * passengersList.length).toLocaleString('vi'),
+      status: 'Chờ thanh toán',
+      badge: 'hold',
+      pax: passengersList.length,
+      passengersList: passengersList,
+      type: 'Một chiều',
+      timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
+      seat: passengersList[0]?.seat || '12C',
+      gate: '--',
+      terminal: 'T1'
+    };
+    setActionType('success');
+    setTimeout(() => {
+      setActionType(null);
+      if (onAddBooking) onAddBooking(newBooking);
+      if (onCheckout) onCheckout(newBooking);
+      if (onNavigate) onNavigate('payments');
+    }, 1500);
   };
 
   const renderBookingSteps = () => {
@@ -101,34 +109,84 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
       case 2:
         return (
           <div className="step-content">
-            <h3>Bước 2: Chọn chỗ ngồi</h3>
-            <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px dashed #cbd5e1' }}>
-              <div style={{ width: '64px', height: '64px', background: '#eff6ff', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', color: '#2563eb' }}>
-                <span className="material-icons-round" style={{ fontSize: '32px' }}>airline_seat_recline_normal</span>
+            <h3>Bước 2: Thông tin hành khách</h3>
+            
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <h4 style={{ margin: 0, fontSize: 14, color: '#1e293b' }}>Danh sách hành khách</h4>
+                <Button variant="outline" size="sm" onClick={() => setPassengersList([...passengersList, { id: Date.now(), name: '', type: 'Người lớn', seat: '' }])}>
+                  <span className="material-icons-round" style={{ fontSize: 16 }}>add</span> Thêm khách
+                </Button>
               </div>
-              <h4 style={{ margin: '0 0 8px', fontSize: '18px', color: '#0f172a' }}>Ghế hiện tại: {selectedSeat}</h4>
-              <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#64748b' }}>Bạn có thể thay đổi chỗ ngồi để có trải nghiệm thoải mái hơn.</p>
-              <Button onClick={() => setIsSeatMapOpen(true)}>Mở Sơ đồ Ghế</Button>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {passengersList.map((p, i) => (
+                  <div key={p.id} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                    <div className="field" style={{ flex: 1, margin: 0 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Hành khách {i + 1} (Họ Tên)</label>
+                      <input type="text" placeholder="NGUYEN VAN A" style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none' }} value={p.name} onChange={e => {
+                        const newList = [...passengersList];
+                        newList[i].name = e.target.value.toUpperCase();
+                        setPassengersList(newList);
+                      }} />
+                    </div>
+                    <div className="field" style={{ width: 130, margin: 0 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Độ tuổi</label>
+                      <select style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none', background: 'white' }} value={p.type} onChange={e => {
+                        const newList = [...passengersList];
+                        newList[i].type = e.target.value;
+                        setPassengersList(newList);
+                      }}>
+                        <option>Người lớn</option>
+                        <option>Trẻ em</option>
+                        <option>Em bé</option>
+                      </select>
+                    </div>
+                    {passengersList.length > 1 && (
+                      <button style={{ height: 38, width: 38, border: 'none', background: '#fef2f2', color: '#dc2626', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setPassengersList(passengersList.filter((_, idx) => idx !== i))}>
+                        <span className="material-icons-round" style={{ fontSize: 18 }}>delete</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <h4 style={{ margin: '0 0 16px', fontSize: 14, color: '#1e293b' }}>Thông tin liên hệ</h4>
+            <div className="form-grid-inner">
+              <div className="field full">
+                <label>Người liên hệ chính (In hoa không dấu)</label>
+                <input type="text" placeholder="NGUYEN VAN A" value={contactInfo.name} onChange={e => setContactInfo({...contactInfo, name: e.target.value.toUpperCase()})} />
+              </div>
+              <div className="field">
+                <label>Số điện thoại</label>
+                <input type="text" placeholder="090..." value={contactInfo.phone} onChange={e => setContactInfo({...contactInfo, phone: e.target.value})} />
+              </div>
+              <div className="field">
+                <label>Email</label>
+                <input type="email" placeholder="khach@email.com" value={contactInfo.email} onChange={e => setContactInfo({...contactInfo, email: e.target.value})} />
+              </div>
             </div>
           </div>
         );
       case 3:
         return (
           <div className="step-content">
-            <h3>Bước 3: Thông tin hành khách</h3>
-            <div className="form-grid-inner">
-              <div className="field full">
-                <label>Họ và Tên (In hoa không dấu)</label>
-                <input type="text" placeholder="NGUYEN VAN A" value={customerName} onChange={e => setCustomerName(e.target.value.toUpperCase())} />
-              </div>
-              <div className="field">
-                <label>Số điện thoại</label>
-                <input type="text" placeholder="090..." value={customerPhone} onChange={e => setCustomerPhone(e.target.value)} />
-              </div>
-              <div className="field">
-                <label>Email</label>
-                <input type="email" placeholder="khach@email.com" />
-              </div>
+            <h3>Bước 3: Chọn chỗ ngồi</h3>
+            <p style={{ margin: '0 0 24px', fontSize: '14px', color: '#64748b' }}>Chọn ghế riêng biệt cho từng hành khách. Chỉ chọn được ghế phù hợp với hạng vé đã chọn.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {passengersList.map((p, index) => (
+                <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', background: '#f8fafc', borderRadius: '12px', border: '1px solid #cbd5e1' }}>
+                  <div>
+                    <h4 style={{ margin: '0 0 4px', fontSize: '15px', color: '#0f172a' }}>{p.name || `Hành khách ${index + 1}`}</h4>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Ghế hiện tại: <strong style={{color: '#2563eb'}}>{p.seat || 'Chưa chọn'}</strong></p>
+                  </div>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    setEditingSeatIndex(index);
+                    setIsSeatMapOpen(true);
+                  }}>Chọn Ghế</Button>
+                </div>
+              ))}
             </div>
           </div>
         );
@@ -156,17 +214,6 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
             </div>
           </div>
         );
-      case 5:
-        return (
-          <div className="step-content">
-            <h3>Bước 5: Thanh toán</h3>
-            <div className="payment-methods-step">
-              <div className="pay-option-step active"><span className="material-icons-round">account_balance</span> Chuyển khoản ngân hàng</div>
-              <div className="pay-option-step"><span className="material-icons-round">credit_card</span> Thẻ quốc tế (Visa/Master)</div>
-              <div className="pay-option-step"><span className="material-icons-round">qr_code_2</span> Ví điện tử (MoMo, VNPay)</div>
-            </div>
-          </div>
-        );
       default: return null;
     }
   };
@@ -175,61 +222,16 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
     <AppLayout 
       activeItem="booking" 
       onNavigate={onNavigate || (() => {})}
-      breadcrumb={view === 'create' ? [{ label: 'Tìm chuyến bay', page: 'flights' }, { label: 'Đặt chỗ' }] : [{ label: 'Điều hành', page: 'dashboard' }, { label: 'Đặt chỗ' }]}
     >
       <div className="booking-page-content">
         
-        {view === 'list' ? (
-          <>
-            <div className="page-header-flex">
-              <div>
-                <h1>Quản lý Đặt chỗ</h1>
-                <p>Theo dõi và xử lý toàn bộ yêu cầu đặt chỗ của hành khách.</p>
-              </div>
-              <div className="action-buttons-list">
-                <Button onClick={() => setView('create')}><span className="material-icons-round">add</span> Tạo Booking Mới</Button>
-              </div>
-            </div>
-
-            <Card className="table-card" noPadding>
-              <table className="premium-table">
-                <thead>
-                  <tr>
-                    <th>MÃ BOOKING</th>
-                    <th>KHÁCH HÀNG</th>
-                    <th>CHUYẾN BAY</th>
-                    <th>GHẾ</th>
-                    <th>TỔNG TIỀN</th>
-                    <th>TRẠNG THÁI</th>
-                    <th>HÀNH ĐỘNG</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookingsList.map(b => (
-                    <tr key={b.id}>
-                      <td><code className="booking-code">{b.id}</code></td>
-                      <td><b>{b.customer}</b><p style={{margin:0, fontSize:11, color:'#64748b'}}>{b.phone}</p></td>
-                      <td>{b.flightId} • {b.routeFrom}-{b.routeTo}</td>
-                      <td>{b.id === 'BKG-8A2F9' ? '14A' : '--'}</td>
-                      <td>{b.total}đ</td>
-                      <td><span className={`badge badge-${b.badge}`}>{b.status}</span></td>
-                      <td>
-                        <button className="icon-btn-list" onClick={() => setViewingItem(b)}><span className="material-icons-round">visibility</span></button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
-          </>
-        ) : (
           <div className="create-booking-view">
              <div className="booking-steps-bar">
-                {[1,2,3,4,5].map(s => (
+                {[1,2,3,4].map(s => (
                   <div key={s} className={`step-item ${bookingStep === s ? 'active' : bookingStep > s ? 'completed' : ''}`}>
                     <div className="step-num">{bookingStep > s ? '✓' : s}</div>
-                    <span className="step-label">{['Hạng vé','Ghế','Thông tin','Dịch vụ','Thanh toán'][s-1]}</span>
-                    {s < 5 && <div className="step-line"></div>}
+                    <span className="step-label">{['Hạng vé','Thông tin','Ghế','Dịch vụ'][s-1]}</span>
+                    {s < 4 && <div className="step-line"></div>}
                   </div>
                 ))}
              </div>
@@ -240,10 +242,10 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                     {renderBookingSteps()}
                     <div className="step-actions">
                       {bookingStep > 1 && <Button variant="outline" onClick={() => setBookingStep(s => s - 1)}>Quay lại</Button>}
-                      {bookingStep < 5 ? (
+                      {bookingStep < 4 ? (
                         <Button onClick={() => setBookingStep(s => s + 1)}>Tiếp theo</Button>
                       ) : (
-                        <Button onClick={handleConfirmBooking}>XÁC NHẬN ĐẶT VÉ</Button>
+                        <Button onClick={handleConfirmBooking}>ĐẾN TRANG THANH TOÁN</Button>
                       )}
                     </div>
                   </Card>
@@ -265,71 +267,63 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                     </div>
                     <div className="divider-sum"></div>
                     <div className="summary-list">
-                      <div className="row-sum"><span>Giá vé ({selectedFare})</span><b>{(flightData?.price || 1850000).toLocaleString('vi')}đ</b></div>
-                      <div className="row-sum"><span>Chỗ ngồi ({selectedSeat})</span><b>0đ</b></div>
-                      <div className="row-sum"><span>Phí phục vụ</span><b>50.000đ</b></div>
+                      <div className="row-sum"><span>Giá vé ({selectedFare}) x {passengersList.length}</span><b>{((flightData?.price || 1850000) * passengersList.length).toLocaleString('vi')}đ</b></div>
+                      <div className="row-sum"><span>Chỗ ngồi ({passengersList.map(p => p.seat || '--').join(', ')})</span><b>0đ</b></div>
+                      <div className="row-sum"><span>Phí phục vụ x {passengersList.length}</span><b>{(50000 * passengersList.length).toLocaleString('vi')}đ</b></div>
                     </div>
                     <div className="divider-sum"></div>
                     <div className="total-box-sum">
                       <p>TỔNG CỘNG</p>
-                      <h2>{((flightData?.price || 1850000) + 50000).toLocaleString('vi')} đ</h2>
+                      <h2>{(((flightData?.price || 1850000) + 50000) * passengersList.length).toLocaleString('vi')} đ</h2>
                     </div>
                     <Button fullWidth variant="outline" onClick={handleHoldBooking}>GIỮ CHỖ TRƯỚC</Button>
                   </Card>
                 </div>
-             </div>
-          </div>
-        )}
+              </div>
+           </div>
 
         {/* ── MODALS ── */}
-        {viewingItem && (
-          <div className="modal-overlay-b" onClick={() => setViewingItem(null)}>
-            <div className="modal-content-b" onClick={e => e.stopPropagation()}>
-               <div className="modal-header-b">
-                  <h3>Chi tiết Đặt chỗ</h3>
-                  <button onClick={() => setViewingItem(null)}><span className="material-icons-round">close</span></button>
-               </div>
-               <div className="modal-body-list-b">
-                  <div className="m-item-b"><span>Mã Booking:</span><b>{viewingItem.id}</b></div>
-                  <div className="m-item-b"><span>Hành khách:</span><b>{viewingItem.customer}</b></div>
-                  <div className="m-item-b"><span>Số điện thoại:</span><b>{viewingItem.phone}</b></div>
-                  <div className="m-item-b"><span>Hành trình:</span><b>{viewingItem.routeFrom} ➔ {viewingItem.routeTo}</b></div>
-                  <div className="m-item-b"><span>Chuyến bay:</span><b>{viewingItem.flightId}</b></div>
-                  <div className="m-item-b"><span>Thời gian:</span><b>{viewingItem.date} {viewingItem.time}</b></div>
-                  <div className="m-item-b"><span>Trạng thái:</span><span className={`badge badge-${viewingItem.badge}`}>{viewingItem.status}</span></div>
-               </div>
-               <div className="modal-footer-b">
-                  <Button variant="outline" onClick={() => setViewingItem(null)}>Đóng</Button>
-                  <Button onClick={() => setViewingItem(null)}>In vé</Button>
-               </div>
-            </div>
-          </div>
-        )}
 
         {actionType && (
           <div className="modal-overlay-b">
             <div className="modal-feedback-b">
-               <div className="icon-circle-b green">
-                  <span className="material-icons-round">check_circle</span>
-               </div>
-               <h3>Thành công!</h3>
-               <p>Yêu cầu đã được hệ thống xử lý.</p>
-               <div className="f-actions-b">
-                  <Button onClick={() => setActionType(null)}>Đóng</Button>
-               </div>
+               {actionType === 'hold' ? (
+                 <>
+                   <div className="icon-circle-b green">
+                      <span className="material-icons-round">check_circle</span>
+                   </div>
+                   <h3>Giữ chỗ thành công!</h3>
+                   <p>Hệ thống đã lưu lại booking. Vui lòng thanh toán trước thời hạn.</p>
+                 </>
+               ) : (
+                 <>
+                   <div className="icon-circle-b" style={{ background: '#eff6ff', color: '#2563eb' }}>
+                      <span className="material-icons-round" style={{ animation: 'spin 1s linear infinite' }}>autorenew</span>
+                   </div>
+                   <h3>Đang chuyển hướng...</h3>
+                   <p>Vui lòng đợi trong giây lát để đến trang thanh toán.</p>
+                 </>
+               )}
             </div>
           </div>
         )}
 
-        {isSeatMapOpen && (
+        {isSeatMapOpen && editingSeatIndex !== null && (
           <SeatMap 
             flightNumber={flightData?.id || 'VN-214'}
-            initialSelectedSeat={selectedSeat}
+            allowedClass={selectedFare}
+            initialSelectedSeat={passengersList[editingSeatIndex].seat}
             onConfirm={(seat) => {
-              setSelectedSeat(seat);
+              const newList = [...passengersList];
+              newList[editingSeatIndex].seat = seat;
+              setPassengersList(newList);
               setIsSeatMapOpen(false);
+              setEditingSeatIndex(null);
             }}
-            onCancel={() => setIsSeatMapOpen(false)}
+            onCancel={() => {
+              setIsSeatMapOpen(false);
+              setEditingSeatIndex(null);
+            }}
           />
         )}
 
@@ -426,6 +420,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
         .icon-circle-b.green { background: #dcfce7; color: #16a34a; }
         .icon-circle-b span { font-size: 32px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>
     </AppLayout>
   );

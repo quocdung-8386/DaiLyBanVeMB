@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast } from '../../components/AppLayout';
 
 interface ReportsPageProps {
   onNavigate?: (id: string) => void;
@@ -16,7 +16,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
     setIsExporting(true);
     setTimeout(() => {
       setIsExporting(false);
-      alert('Đã xuất báo cáo PDF thành công!');
+      showToast('Đã xuất báo cáo PDF thành công!', 'success');
     }, 1500);
   };
 
@@ -24,7 +24,7 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
     setIsSharing(true);
     setTimeout(() => {
       setIsSharing(false);
-      alert('Link báo cáo đã được sao chép vào bộ nhớ tạm!');
+      showToast('Link báo cáo đã được sao chép vào bộ nhớ tạm!', 'success');
     }, 800);
   };
 

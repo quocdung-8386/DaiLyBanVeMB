@@ -9,9 +9,53 @@ interface AppLayoutProps {
   children: React.ReactNode;
 }
 
+export const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('show-toast', { detail: { message, type } }));
+  }
+};
+
+const ToastContainer = () => {
+  const [toasts, setToasts] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const handleToast = (e: any) => {
+      const newToast = { id: Date.now(), ...e.detail };
+      setToasts(prev => [...prev, newToast]);
+      setTimeout(() => setToasts(prev => prev.filter((t: any) => t.id !== newToast.id)), 3000);
+    };
+    window.addEventListener('show-toast', handleToast);
+    return () => window.removeEventListener('show-toast', handleToast);
+  }, []);
+
+  return (
+    <div className="toast-container">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast toast-${t.type}`}>
+           <span className="material-icons-round">
+              {t.type === 'success' ? 'check_circle' : t.type === 'error' ? 'error' : t.type === 'warning' ? 'warning' : 'info'}
+           </span>
+           {t.message}
+        </div>
+      ))}
+      <style>{`
+         .toast-container { position: fixed; top: 24px; right: 24px; z-index: 9999; display: flex; flex-direction: column; gap: 12px; pointer-events: none; }
+         .toast { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-radius: 12px; font-size: 14px; font-weight: 700; color: white; animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1), fadeOut 0.3s ease 2.7s forwards; box-shadow: 0 10px 25px rgba(0,0,0,0.15); min-width: 300px; }
+         .toast-success { background: #10b981; }
+         .toast-error { background: #ef4444; }
+         .toast-info { background: #3b82f6; }
+         .toast-warning { background: #f59e0b; }
+         @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+         @keyframes fadeOut { to { opacity: 0; transform: translateY(-10px); } }
+      `}</style>
+    </div>
+  );
+};
+
 const AppLayout: React.FC<AppLayoutProps> = ({ activeItem, onNavigate, breadcrumb, children }) => {
   return (
     <div className="layout">
+      <ToastContainer />
       <Sidebar activeItem={activeItem} onNavigate={onNavigate} />
       <div className="main-container">
         <Header onNavigate={onNavigate} />

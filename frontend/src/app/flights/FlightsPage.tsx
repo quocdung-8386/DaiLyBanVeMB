@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast } from '../../components/AppLayout';
 import DatePicker from '../../components/DatePicker';
 
 interface FlightsPageProps {
@@ -10,11 +10,11 @@ interface FlightsPageProps {
 }
 
 const flightData = [
-  { id: 1, code: 'QH', name: 'Bamboo Airways', flight: 'QH-202', aircraft: 'Boeing 787', dep: '11:00', arr: '13:05', from: 'HAN', to: 'SGN', dur: '2h 05m', stops: 0, price: 1950000, seatsSold: 168, cap: 180, status: 'Đang bán vé', badge: 'Bay nhanh nhất', carry: '7kg', checked: '20kg' },
-  { id: 2, code: 'VN', name: 'Vietnam Airlines', flight: 'VN-214', aircraft: 'Airbus A321', dep: '14:00', arr: '16:15', from: 'HAN', to: 'SGN', dur: '2h 15m', stops: 0, price: 2150000, seatsSold: 135, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg' },
-  { id: 3, code: 'VJ', name: 'VietJet Air', flight: 'VJ-123', aircraft: 'Airbus A320', dep: '06:30', arr: '08:40', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1250000, seatsSold: 217, cap: 220, status: 'Đang bán vé', badge: 'Tiết kiệm nhất', carry: '7kg', checked: '0kg' },
-  { id: 4, code: 'VN', name: 'Vietnam Airlines', flight: 'VN-380', aircraft: 'Boeing 787', dep: '19:00', arr: '21:10', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1890000, seatsSold: 152, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg' },
-  { id: 5, code: 'QH', name: 'Bamboo Airways', flight: 'QH-204', aircraft: 'Airbus A320', dep: '08:15', arr: '10:25', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1750000, seatsSold: 180, cap: 180, status: 'Đã đóng chuyến', carry: '7kg', checked: '20kg' },
+  { id: 1, code: 'QH', name: 'Bamboo Airways', flight: 'QH321', aircraft: 'Airbus A320', dep: '10:00', arr: '11:20', from: 'HAN', to: 'DAD', dur: '1h 20m', stops: 0, price: 2150000, seatsSold: 168, cap: 180, status: 'Đang bán vé', badge: 'Chuyến bay phổ biến', carry: '7kg', checked: '20kg' },
+  { id: 2, code: 'VN', name: 'Vietnam Airlines', flight: 'VN123', aircraft: 'Airbus A321', dep: '08:30', arr: '10:45', from: 'SGN', to: 'HAN', dur: '2h 15m', stops: 0, price: 2150000, seatsSold: 135, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg' },
+  { id: 3, code: 'VJ', name: 'VietJet Air', flight: 'VJ456', aircraft: 'Airbus A320', dep: '14:15', arr: '15:35', from: 'DAD', to: 'SGN', dur: '1h 20m', stops: 0, price: 1250000, seatsSold: 217, cap: 220, status: 'Đang bán vé', badge: 'Tiết kiệm nhất', carry: '7kg', checked: '0kg' },
+  { id: 4, code: 'VN', name: 'Vietnam Airlines', flight: 'VN204', aircraft: 'Boeing 787', dep: '19:00', arr: '21:10', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1890000, seatsSold: 152, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg' },
+  { id: 5, code: 'QH', name: 'Bamboo Airways', flight: 'QH204', aircraft: 'Airbus A320', dep: '08:15', arr: '10:25', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1750000, seatsSold: 180, cap: 180, status: 'Đã đóng chuyến', carry: '7kg', checked: '20kg' },
 ];
 
 const airlineStyle: Record<string,{bg:string,color:string}> = {
@@ -627,7 +627,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight })
 
                 <div className="pa-footer">
                    <button className="btn-pa-cancel" onClick={() => { setShowAddModal(false); setEditingFlight(null); }}>Hủy bỏ</button>
-                   <button className="btn-pa-submit" onClick={() => { alert(editingFlight ? 'Cập nhật thành công!' : 'Thêm chuyến bay thành công!'); setShowAddModal(false); setEditingFlight(null); }}>
+                   <button className="btn-pa-submit" onClick={() => { showToast(editingFlight ? 'Cập nhật thành công!' : 'Thêm chuyến bay thành công!', 'success'); setShowAddModal(false); setEditingFlight(null); }}>
                       {editingFlight ? 'CẬP NHẬT CHUYẾN BAY' : 'XÁC NHẬN THÊM MỚI'}
                       <span className="material-icons-round">check_circle</span>
                    </button>
@@ -650,7 +650,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight })
              </div>
              
              <div className="confirm-footer-vertical">
-                <button className="btn-danger-large" onClick={() => { alert('Đã hủy chuyến bay thành công!'); setDeletingFlight(null); }}>
+                <button className="btn-danger-large" onClick={() => { showToast('Đã hủy chuyến bay thành công!', 'success'); setDeletingFlight(null); }}>
                    XÁC NHẬN HỦY CHUYẾN BAY
                 </button>
                 <button className="btn-ghost-large" onClick={() => setDeletingFlight(null)}>QUAY LẠI</button>

@@ -9,6 +9,7 @@ interface TicketsPageProps {
   onCheckout?: (ticket: any) => void;
   bookings: any[];
   onUpdateStatus: (id: string, status: string, badge: string) => void;
+  onDeleteBooking?: (id: string) => void;
 }
 
 const passengers: Record<string, { name: string; seat: string; dob: string; passport: string; tier: string; eTicket: string }[]> = {
@@ -77,17 +78,44 @@ const CountdownTimer: React.FC<{ limit: string | null }> = ({ limit }) => {
   );
 };
 
-const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, bookings, onUpdateStatus }) => {
+const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, bookings, onUpdateStatus, onDeleteBooking }) => {
   const [bookingsData, setBookingsData] = useState(bookings);
   
   React.useEffect(() => {
     setBookingsData(bookings);
+    const updatedPax = { ...passengersData };
+    let hasNew = false;
+    bookings.forEach(b => {
+      if (!updatedPax[b.id]) {
+         updatedPax[b.id] = b.passengersList && b.passengersList.length > 0 
+           ? b.passengersList.map((p: any, idx: number) => ({
+               name: p.name || `HÀNH KHÁCH ${idx+1}`,
+               seat: p.seat || (idx === 0 ? (b.seat || '12A') : `12${String.fromCharCode(66+idx)}`),
+               dob: '--/--/----',
+               passport: '--',
+               tier: 'Member',
+               eTicket: b.badge === 'success' ? `738-${Math.floor(Math.random()*1000000000) + idx}` : 'Chưa xuất'
+             }))
+           : [{
+               name: b.customer || 'HÀNH KHÁCH MỚI',
+               seat: b.seat || '12A',
+               dob: '--/--/----',
+               passport: '--',
+               tier: 'Member',
+               eTicket: b.badge === 'success' ? `738-${Math.floor(Math.random()*1000000000)}` : 'Chưa xuất'
+             }];
+         hasNew = true;
+      }
+    });
+    if (hasNew) {
+      setPassengersData(updatedPax);
+    }
   }, [bookings]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAirline, setFilterAirline] = useState('all');
   const [search, setSearch] = useState('');
-  const [actionType, setActionType] = useState<'issue' | 'void' | 'refund' | null>(null);
+  const [actionType, setActionType] = useState<'issue' | 'void' | 'refund' | 'delete' | null>(null);
   const [isAddPaxModalOpen, setIsAddPaxModalOpen] = useState(false);
   const [newPax, setNewPax] = useState({ name: '', seat: '', type: 'Người lớn' });
   const [passengersData, setPassengersData] = useState(passengers);
@@ -190,10 +218,10 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
               {/* Stats bar */}
               <div style={{ display: 'grid', gridTemplateColumns: selectedId ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
                 {[
-                  { label: 'Tổng Booking', value: '128', icon: 'receipt_long', color: '#2563eb', bg: '#eff6ff' },
-                  { label: 'Đang hiệu lực', value: '84', icon: 'check_circle', color: '#16a34a', bg: '#dcfce7' },
-                  { label: 'Đã hủy', value: '23', icon: 'cancel', color: '#dc2626', bg: '#fef2f2' },
-                  { label: 'Tổng hành khách', value: '312', icon: 'groups', color: '#7c3aed', bg: '#f5f3ff' },
+                  { label: 'Tổng Booking', value: bookingsData.length.toString(), icon: 'receipt_long', color: '#2563eb', bg: '#eff6ff' },
+                  { label: 'Đang hiệu lực', value: bookingsData.filter(b => b.badge === 'success' || b.badge === 'hold').length.toString(), icon: 'check_circle', color: '#16a34a', bg: '#dcfce7' },
+                  { label: 'Đã hủy / Void', value: bookingsData.filter(b => b.badge === 'danger' || b.badge === 'default').length.toString(), icon: 'cancel', color: '#dc2626', bg: '#fef2f2' },
+                  { label: 'Tổng hành khách', value: bookingsData.reduce((acc, b) => acc + (passengersData[b.id]?.length || b.pax || 1), 0).toString(), icon: 'groups', color: '#7c3aed', bg: '#f5f3ff' },
                 ].map((s, i) => (
                   <div key={i} style={{ background: 'white', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', border: '1px solid #f1f5f9' }}>
                     <div style={{ width: 40, height: 40, borderRadius: 10, background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -276,6 +304,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                         <div>
                           <p style={{ margin: 0, fontSize: 12, color: '#94a3b8', fontWeight: 600 }}>MÃ BOOKING</p>
                           <p style={{ margin: 0, fontSize: 15, fontWeight: 800, color: '#0f172a', fontFamily: 'monospace' }}>{t.id}</p>
+                          {t.customer && <p style={{ margin: 0, fontSize: 11, color: '#64748b', fontWeight: 600 }}>{t.customer}</p>}
                         </div>
                         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '3px 10px' }}>
                           <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#1d4ed8', fontSize: 13 }}>PNR: {t.pnr}</span>
@@ -520,6 +549,13 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                     VÉ ĐÃ {selected?.status?.toUpperCase()}
                   </button>
                 )}
+                <button 
+                  onClick={() => setActionType('delete')}
+                  style={{ flex: '0 0 auto', padding: '10px 14px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 8, color: '#dc2626', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  title="Xóa booking vĩnh viễn"
+                >
+                  <span className="material-icons-round" style={{ fontSize: 18 }}>delete_forever</span>
+                </button>
               </div>
             </div>
           )}
@@ -530,18 +566,18 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
         <div className="modal-overlay" onClick={() => setActionType(null)}>
           <div className="modal-card" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>{actionType === 'issue' ? 'Xuất vé máy bay' : actionType === 'void' ? 'Hủy vé ngay lập tức (Void)' : 'Yêu cầu hoàn vé (Request Refund)'}</h3>
+              <h3>{actionType === 'issue' ? 'Xuất vé máy bay' : actionType === 'void' ? 'Hủy vé ngay lập tức (Void)' : actionType === 'delete' ? 'Xóa Booking vĩnh viễn' : 'Yêu cầu hoàn vé (Request Refund)'}</h3>
               <button className="close-btn" onClick={() => setActionType(null)}>
                 <span className="material-icons-round">close</span>
               </button>
             </div>
             <div className="modal-body">
               <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                <div style={{ width: 64, height: 64, borderRadius: '50%', background: actionType === 'refund' || actionType === 'void' ? '#fef2f2' : '#eff6ff', color: actionType === 'refund' || actionType === 'void' ? '#dc2626' : '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>
-                  <span className="material-icons-round">{actionType === 'issue' ? 'receipt_long' : actionType === 'void' ? 'dangerous' : 'assignment_return'}</span>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: actionType === 'refund' || actionType === 'void' || actionType === 'delete' ? '#fef2f2' : '#eff6ff', color: actionType === 'refund' || actionType === 'void' || actionType === 'delete' ? '#dc2626' : '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: 32 }}>
+                  <span className="material-icons-round">{actionType === 'issue' ? 'receipt_long' : actionType === 'void' ? 'dangerous' : actionType === 'delete' ? 'delete_forever' : 'assignment_return'}</span>
                 </div>
                 <p style={{ fontWeight: 700, color: '#1e293b', marginBottom: 8 }}>Xác nhận thực hiện thao tác?</p>
-                <p style={{ fontSize: 14, color: '#64748b' }}>Hệ thống sẽ ghi nhận {actionType === 'issue' ? 'xuất vé' : actionType === 'void' ? 'Void vé' : 'yêu cầu hoàn vé'} cho mã booking <strong>{selected?.pnr}</strong>.</p>
+                <p style={{ fontSize: 14, color: '#64748b' }}>Hệ thống sẽ ghi nhận {actionType === 'issue' ? 'xuất vé' : actionType === 'void' ? 'Void vé' : actionType === 'delete' ? 'xóa hoàn toàn' : 'yêu cầu hoàn vé'} cho mã booking <strong>{selected?.pnr}</strong>.</p>
               </div>
             </div>
             <div className="modal-footer" style={{ gap: 12 }}>
@@ -569,6 +605,10 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                     onUpdateStatus(selectedId!, 'Đã Void', 'default');
                   } else if (actionType === 'refund') {
                     onUpdateStatus(selectedId!, 'Yêu cầu hoàn', 'warning');
+                  } else if (actionType === 'delete') {
+                    if (onDeleteBooking) onDeleteBooking(selectedId!);
+                    setBookingsData(prev => prev.filter(b => b.id !== selectedId));
+                    setSelectedId(null);
                   }
                   showToast('Thao tác đã được hệ thống ghi nhận thành công!', 'success');
                   setActionType(null); 

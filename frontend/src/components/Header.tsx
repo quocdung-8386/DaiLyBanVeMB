@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { showToast } from './AppLayout';
 
 interface HeaderProps {
   title?: string;
@@ -57,14 +58,14 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
           <div className="search-dropdown">
             <div className="search-section">
               <h4>GỢI Ý KẾT QUẢ CHO "{searchQuery}"</h4>
-              <div className="search-result-item" onClick={() => { alert('Mở chi tiết mã vé VN123'); setShowSearch(false); }}>
+              <div className="search-result-item" onClick={() => { showToast('Mở chi tiết mã vé VN123', 'info'); setShowSearch(false); }}>
                 <span className="material-icons-round text-primary">confirmation_number</span>
                 <div className="s-res-info">
                   <p className="s-res-title">Vé máy bay VN123</p>
                   <p className="s-res-desc">Hà Nội - TP. Hồ Chí Minh (24/10/2023)</p>
                 </div>
               </div>
-              <div className="search-result-item" onClick={() => { alert('Mở thông tin khách hàng'); setShowSearch(false); }}>
+              <div className="search-result-item" onClick={() => { showToast('Mở thông tin khách hàng', 'info'); setShowSearch(false); }}>
                 <span className="material-icons-round text-success">person</span>
                 <div className="s-res-info">
                   <p className="s-res-title">Khách hàng: Nguyễn Văn {searchQuery}</p>
@@ -72,7 +73,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
                 </div>
               </div>
             </div>
-            <div className="search-footer" onClick={() => alert('Đang tìm tất cả...')}>
+            <div className="search-footer" onClick={() => showToast('Đang tìm tất cả...', 'info')}>
               Xem tất cả kết quả
             </div>
           </div>
@@ -121,7 +122,7 @@ const Header: React.FC<HeaderProps> = ({ onNavigate }) => {
         </div>
 
         {/* Help */}
-        <button className="header-icon-btn" title="Trợ giúp" onClick={() => alert('Trung tâm trợ giúp Skyward Portal đang được cập nhật.')}>
+        <button className="header-icon-btn" title="Trợ giúp" onClick={() => showToast('Trung tâm trợ giúp Skyward Portal đang được cập nhật.', 'info')}>
           <span className="material-icons-round">help_outline</span>
         </button>
       </div>

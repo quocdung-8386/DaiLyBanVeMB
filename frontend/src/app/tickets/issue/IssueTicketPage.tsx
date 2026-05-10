@@ -1,6 +1,7 @@
 import React from 'react';
 import Sidebar from '../../../components/Sidebar';
 import Header from '../../../components/Header';
+import { showToast } from '../../../components/AppLayout';
 import Card from '../../../components/Card';
 import Button from '../../../components/Button';
 
@@ -137,7 +138,7 @@ const IssueTicketPage: React.FC<IssueTicketPageProps> = ({ onNavigate, ticketDat
                   </div>
                 </div>
                 <div className="summary-actions">
-                  <Button className="w-full" onClick={() => { alert('Vé đã được xuất thành công!'); onNavigate?.('tickets'); }}>
+                  <Button className="w-full" onClick={() => { showToast('Vé đã được xuất thành công!', 'success'); onNavigate?.('tickets'); }}>
                     <span className="material-icons-round">receipt_long</span>
                     Xác nhận Xuất vé
                   </Button>

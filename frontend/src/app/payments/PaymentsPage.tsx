@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast } from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import type { BookingData } from '../page';
@@ -17,22 +17,26 @@ interface PaymentsPageProps {
   bookings?: any[];
 }
 
+const getAirportName = (code?: string) => {
+  if (!code) return 'N/A';
+  const map: Record<string, string> = {
+    'SGN': 'Tân Sơn Nhất',
+    'HAN': 'Nội Bài',
+    'DAD': 'Đà Nẵng',
+    'PQC': 'Phú Quốc',
+    'CXR': 'Cam Ranh',
+    'HPH': 'Cát Bi',
+    'VCA': 'Trà Nóc'
+  };
+  return map[code] || 'Sân bay';
+};
+
 const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkout', setView, ticketData, onClose, onPaymentSuccess, onUpdateStatus, bookings = [] }) => {
   const [paymentMode, setPaymentMode] = useState<'pos' | 'remote'>('pos');
   const [posMethod, setPosMethod] = useState<'cash' | 'transfer' | 'card' | 'balance'>('cash');
   const [localTicket, setLocalTicket] = useState<BookingData | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchError, setSearchError] = useState('');
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
-    visible: false,
-    message: '',
-    type: 'success',
-  });
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
-  };
 
   const isModal = !!onClose;
   const currentTicket = ticketData || localTicket;
@@ -44,11 +48,21 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
     }
   }, [currentTicket]);
 
+  const paxList = React.useMemo(() => {
+    if (!currentTicket) return [];
+    const pList = (currentTicket as any).passengersList || [];
+    return pList.length > 0
+      ? pList
+      : Array.from({ length: currentTicket.pax || 1 }).map((_, i) => ({
+        name: i === 0 ? currentTicket.customer : `HÀNH KHÁCH ${i + 1}`,
+        seat: i === 0 ? (currentTicket.seat || '12A') : `12${String.fromCharCode(66 + i)}`
+      }));
+  }, [currentTicket]);
 
   const handleSearch = () => {
     if (!searchQuery) return;
     const query = searchQuery.trim().toUpperCase();
-    
+
     // Search in the global bookings passed via props
     const found = bookings.find(t => t.pnr.toUpperCase() === query || t.id.toUpperCase() === query);
 
@@ -116,14 +130,14 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                   <div className="quick-actions mt-xl">
                     <p className="text-xs font-bold text-muted mb-md">TRUY CẬP NHANH</p>
                     <div className="quick-grid">
-                       <button className="q-item" onClick={() => { setSearchQuery('HOLD01'); handleSearch(); }}>
-                         <span className="material-icons-round">timer</span>
-                         <span>Booking đang giữ chỗ</span>
-                       </button>
-                       <button className="q-item" onClick={() => onNavigate?.('payment_history')}>
-                         <span className="material-icons-round">history</span>
-                         <span>Lịch sử thanh toán</span>
-                       </button>
+                      <button className="q-item" onClick={() => { setSearchQuery('HOLD01'); handleSearch(); }}>
+                        <span className="material-icons-round">timer</span>
+                        <span>Booking đang giữ chỗ</span>
+                      </button>
+                      <button className="q-item" onClick={() => onNavigate?.('payment_history')}>
+                        <span className="material-icons-round">history</span>
+                        <span>Lịch sử thanh toán</span>
+                      </button>
                     </div>
                   </div>
                 </Card>
@@ -170,7 +184,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                       </div>
                       <div>
                         <p className="label">SÂN BAY CẤT CÁNH</p>
-                        <p className="val font-medium">{currentTicket?.airportFrom ?? 'N/A'} ({currentTicket?.from})</p>
+                        <p className="val font-medium">{currentTicket?.airportFrom || getAirportName(currentTicket?.from)} ({currentTicket?.from})</p>
                       </div>
                       <div className="text-right">
                         <p className="label">CỔNG SOÁT VÉ / NHÀ GA</p>
@@ -310,7 +324,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         <label className="text-sm font-semibold mb-xs" style={{ display: 'block' }}>Số tiền thu thực tế (VNĐ)</label>
                         <input type="text" className="input-field amount-input" value={amountCollected} onChange={(e) => setAmountCollected(e.target.value)} />
                       </div>
-                      <Button className="w-full mb-sm btn-primary-alt" onClick={() => { 
+                      <Button className="w-full mb-sm btn-primary-alt" onClick={() => {
                         if (setView) setView('success');
                         const ticketId = currentTicket?.id;
                         if (ticketId) {
@@ -322,8 +336,8 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         <span className="material-icons-round">done_all</span>
                         Xác nhận thu tiền
                       </Button>
-                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => { 
-                        if (onClose) onClose(); 
+                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => {
+                        if (onClose) onClose();
                         else {
                           setLocalTicket(null);
                           setSearchQuery('');
@@ -350,9 +364,9 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
               <p>Booking <strong>{currentTicket?.pnr ?? 'N/A'}</strong> đã được thanh toán và vé đã được xuất.</p>
               <div className="flex-row gap-sm mt-md justify-center">
                 <Button variant="outline" onClick={() => { if (onClose) onClose(); onNavigate && onNavigate('payment_history'); }}>Xem lịch sử</Button>
-                <Button variant="outline" onClick={() => alert('Đang tạo hóa đơn điện tử (E-Invoice)...')}>
-                   <span className="material-icons-round">receipt_long</span>
-                   Xuất HĐĐT
+                <Button variant="outline" onClick={() => showToast('Đang tạo hóa đơn điện tử (E-Invoice)...', 'info')}>
+                  <span className="material-icons-round">receipt_long</span>
+                  Xuất HĐĐT
                 </Button>
                 <Button className="btn-primary-alt" onClick={() => window.print()}>
                   <span className="material-icons-round">print</span>
@@ -362,73 +376,75 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
             </div>
 
             <div className="tickets-display">
-              <h3>Boarding Pass — {currentTicket?.customer ?? 'Hành khách'}</h3>
+              <h3>Boarding Passes — {currentTicket?.pnr ?? 'N/A'}</h3>
               <div className="tickets-grid mt-md">
-                <Card className="issued-ticket-card">
-                  <div className="it-header bg-primary">
-                    <div className="flex-row justify-between">
-                      <span className="airline-logo bg-white text-primary font-bold">VN</span>
-                      <span className="text-white font-monospace">PNR: {currentTicket?.pnr ?? 'N/A'}</span>
+                {paxList.map((p: any, idx: number) => (
+                  <Card key={idx} className="issued-ticket-card">
+                    <div className="it-header bg-primary">
+                      <div className="flex-row justify-between">
+                        <span className="airline-logo bg-white text-primary font-bold">VN</span>
+                        <span className="text-white font-monospace">PNR: {currentTicket?.pnr ?? 'N/A'}</span>
+                      </div>
+                      <h2 className="text-white mt-md">BOARDING PASS</h2>
                     </div>
-                    <h2 className="text-white mt-md">BOARDING PASS</h2>
-                  </div>
-                  <div className="it-body">
-                    <div className="it-route mb-md">
-                      <div className="loc">
-                        <h2>{currentTicket?.from ?? '---'}</h2>
-                        <p>{currentTicket?.airportFrom ?? 'N/A'}</p>
+                    <div className="it-body">
+                      <div className="it-route mb-md">
+                        <div className="loc">
+                          <h2>{currentTicket?.from ?? '---'}</h2>
+                          <p>{currentTicket?.airportFrom || getAirportName(currentTicket?.from)}</p>
+                        </div>
+                        <div className="dur">
+                          <span className="material-icons-round text-primary">flight_takeoff</span>
+                          <p>Bay thẳng</p>
+                        </div>
+                        <div className="loc text-right">
+                          <h2>{currentTicket?.to ?? '---'}</h2>
+                          <p>{currentTicket?.airportTo || getAirportName(currentTicket?.to)}</p>
+                        </div>
                       </div>
-                      <div className="dur">
-                        <span className="material-icons-round text-primary">flight_takeoff</span>
-                        <p>Bay thẳng</p>
-                      </div>
-                      <div className="loc text-right">
-                        <h2>{currentTicket?.to ?? '---'}</h2>
-                        <p>{currentTicket?.airportTo ?? 'N/A'}</p>
+                      <div className="it-info-grid">
+                        <div>
+                          <p className="label">Hành khách</p>
+                          <p className="val">{p.name?.toUpperCase() || currentTicket?.customer?.toUpperCase() || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="label">Ngày bay</p>
+                          <p className="val">{currentTicket?.date?.split(' ')[0] ?? 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="label">Giờ khởi hành</p>
+                          <p className="val">{currentTicket?.date?.split(' ')[1] ?? 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="label">Ghế (Seat)</p>
+                          <p className="val font-bold">{p.seat || currentTicket?.seat || 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="label">Cổng soát vé</p>
+                          <p className="val font-bold">{currentTicket?.gate ?? 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="label">Nhà ga</p>
+                          <p className="val">{currentTicket?.terminal ?? 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="label">Lên máy bay</p>
+                          <p className="val font-bold">{currentTicket?.boarding ?? 'N/A'}</p>
+                        </div>
+                        <div>
+                          <p className="label">Mã vé (Ticket No.)</p>
+                          <p className="val">{currentTicket?.id ? `${currentTicket.id}-${idx + 1}` : 'N/A'}</p>
+                        </div>
                       </div>
                     </div>
-                    <div className="it-info-grid">
-                      <div>
-                        <p className="label">Hành khách</p>
-                        <p className="val">{currentTicket?.customer?.toUpperCase() ?? 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="label">Ngày bay</p>
-                        <p className="val">{currentTicket?.date?.split(' ')[0] ?? 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="label">Giờ khởi hành</p>
-                        <p className="val">{currentTicket?.date?.split(' ')[1] ?? 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="label">Ghế (Seat)</p>
-                        <p className="val font-bold">{currentTicket?.seat ?? 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="label">Cổng soát vé</p>
-                        <p className="val font-bold">{currentTicket?.gate ?? 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="label">Nhà ga</p>
-                        <p className="val">{currentTicket?.terminal ?? 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="label">Lên máy bay</p>
-                        <p className="val font-bold">{currentTicket?.boarding ?? 'N/A'}</p>
-                      </div>
-                      <div>
-                        <p className="label">Mã vé (Ticket No.)</p>
-                        <p className="val">{currentTicket?.id ?? 'N/A'}</p>
-                      </div>
+                    <div className="it-footer">
+                      <Button variant="outline" size="sm" className="w-full" onClick={() => window.print()}>
+                        <span className="material-icons-round">print</span>
+                        In vé máy bay
+                      </Button>
                     </div>
-                  </div>
-                  <div className="it-footer">
-                    <Button variant="outline" size="sm" className="w-full" onClick={() => window.print()}>
-                      <span className="material-icons-round">print</span>
-                      In vé máy bay
-                    </Button>
-                  </div>
-                </Card>
+                  </Card>
+                ))}
               </div>
             </div>
           </div>
@@ -731,23 +747,17 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
   );
 
   return isModal ? content : (
-    <AppLayout 
-      activeItem="payments" 
-      onNavigate={onNavigate || (() => {})}
+    <AppLayout
+      activeItem="payments"
+      onNavigate={onNavigate || (() => { })}
       breadcrumb={[
         { label: 'Lịch sử giao dịch', page: 'payments' },
         currentTicket ? { label: `Xác nhận: ${currentTicket.pnr}` } : { label: 'Tra cứu' }
       ]}
     >
-        {toast.visible && (
-          <div className={`toast-notification ${toast.type}`}>
-            <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
-            <span>{toast.message}</span>
-            <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
-          </div>
-        )}
-      </AppLayout>
-    );
-  };
+      {content}
+    </AppLayout>
+  );
+};
 
 export default PaymentsPage;

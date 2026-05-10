@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from '../../../components/Sidebar';
 import Header from '../../../components/Header';
+import { showToast } from '../../../components/AppLayout';
 import Card from '../../../components/Card';
 import Button from '../../../components/Button';
 
@@ -123,7 +124,7 @@ const CancelTicketPage: React.FC<CancelTicketPageProps> = ({ onNavigate, ticketD
                   <p className="refund-note">Tiền sẽ được hoàn về phương thức thanh toán ban đầu của khách hàng.</p>
                 </div>
                 <div className="summary-actions">
-                  <Button className="w-full btn-danger" onClick={() => { alert('Yêu cầu hoàn vé đã được xử lý!'); onNavigate?.('tickets'); }}>
+                  <Button className="w-full btn-danger" onClick={() => { showToast('Yêu cầu hoàn vé đã được xử lý!', 'success'); onNavigate?.('tickets'); }}>
                     <span className="material-icons-round">assignment_return</span>
                     Xác nhận Hoàn vé
                   </Button>
