@@ -58,9 +58,15 @@ export default function Home() {
 
   // Global Bookings State
   const [globalBookings, setGlobalBookings] = useState<BookingData[]>([
-    { id: 'BK-001', pnr: 'G7X9PQ', customer: 'Nguyễn Văn An', flight: 'VN123', airline: 'Vietnam Airlines', from: 'SGN', to: 'HAN', airportFrom: 'Tân Sơn Nhất', airportTo: 'Nội Bài', date: '24/10/2023', time: '08:30', total: '6,500,000', status: 'Đã xuất vé', badge: 'success', pax: 2, type: 'Khứ hồi', timeLimit: null, gate: 'B12', terminal: 'T1', seat: '14A', boarding: '08:00' },
-    { id: 'BK-002', pnr: 'A2B4C6', customer: 'Trần Thị Bé', flight: 'VJ456', airline: 'Vietjet Air', from: 'DAD', to: 'SGN', airportFrom: 'Đà Nẵng', airportTo: 'Tân Sơn Nhất', date: '25/10/2023', time: '14:15', total: '1,890,000', status: 'Đã hủy', badge: 'danger', pax: 1, type: 'Một chiều', timeLimit: null, gate: '--', terminal: 'T1', seat: '22C', boarding: '13:45' },
     { id: 'BK-005', pnr: 'HOLD01', customer: 'Nguyễn Quốc Dũng', flight: 'QH321', airline: 'Bamboo Airways', from: 'HAN', to: 'DAD', airportFrom: 'Nội Bài', airportTo: 'Đà Nẵng', date: '10/05/2026', time: '10:00', total: '2,150,000', status: 'Chờ thanh toán', badge: 'hold', pax: 1, type: 'Một chiều', timeLimit: '2026-05-10T18:00:00', gate: '--', terminal: 'T1', seat: '12A', boarding: '09:30' },
+  ]);
+
+  const [globalFlights, setGlobalFlights] = useState([
+    { id: 1, code: 'QH', name: 'Bamboo Airways', flight: 'QH321', aircraft: 'Airbus A320', dep: '10:00', arr: '11:20', from: 'HAN', to: 'DAD', dur: '1h 20m', stops: 0, price: 2150000, seatsSold: 168, cap: 180, status: 'Đang bán vé', badge: 'Chuyến bay phổ biến', carry: '7kg', checked: '20kg', gate: '--' },
+    { id: 2, code: 'VN', name: 'Vietnam Airlines', flight: 'VN123', aircraft: 'Airbus A321', dep: '08:30', arr: '10:45', from: 'SGN', to: 'HAN', dur: '2h 15m', stops: 0, price: 2150000, seatsSold: 135, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg', gate: 'B12' },
+    { id: 3, code: 'VJ', name: 'VietJet Air', flight: 'VJ456', aircraft: 'Airbus A320', dep: '14:15', arr: '15:35', from: 'DAD', to: 'SGN', dur: '1h 20m', stops: 0, price: 1250000, seatsSold: 217, cap: 220, status: 'Đang bán vé', badge: 'Tiết kiệm nhất', carry: '7kg', checked: '0kg', gate: '--' },
+    { id: 4, code: 'VN', name: 'Vietnam Airlines', flight: 'VN204', aircraft: 'Boeing 787', dep: '19:00', arr: '21:10', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1890000, seatsSold: 152, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg', gate: '04' },
+    { id: 5, code: 'QH', name: 'Bamboo Airways', flight: 'QH204', aircraft: 'Airbus A320', dep: '08:15', arr: '10:25', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1750000, seatsSold: 180, cap: 180, status: 'Đã đóng chuyến', carry: '7kg', checked: '20kg', gate: '--' },
   ]);
 
   // Auto-expiry logic for Hold bookings
@@ -92,6 +98,10 @@ export default function Home() {
     setGlobalBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
   };
 
+  const updateFlightInfo = (flightCode: string, aircraft: string, gate: string) => {
+    setGlobalFlights(prev => prev.map(f => f.flight === flightCode ? { ...f, aircraft, gate } : f));
+  };
+
   const handleGoToCheckout = (ticket: any) => {
     setSelectedTicketData(ticket);
     setPaymentView('checkout');
@@ -110,7 +120,7 @@ export default function Home() {
       case 'dashboard':
         return <Dashboard onNavigate={setCurrentPage} bookings={globalBookings} />;
       case 'flights':
-        return <FlightsPage onNavigate={setCurrentPage} onSelectFlight={setSelectedFlightData} />;
+        return <FlightsPage onNavigate={setCurrentPage} onSelectFlight={setSelectedFlightData} flights={globalFlights} onUpdateFlights={setGlobalFlights} />;
       case 'booking':
       case 'create_booking':
         return (
@@ -119,6 +129,7 @@ export default function Home() {
             initialFlight={selectedFlightData}
             onCheckout={handleGoToCheckout}
             onAddBooking={addBooking}
+            flights={globalFlights}
           />
         );
       case 'tickets':
@@ -176,7 +187,7 @@ export default function Home() {
       case 'checkin':
         return <CheckinPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateBooking={updateBooking} />;
       case 'gate-management':
-        return <GateManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} />;
+        return <GateManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} onUpdateBooking={updateBooking} onUpdateFlightInfo={updateFlightInfo} />;
       default:
         return <Dashboard onNavigate={setCurrentPage} />;
     }

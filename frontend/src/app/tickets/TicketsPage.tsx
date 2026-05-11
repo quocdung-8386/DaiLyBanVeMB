@@ -12,24 +12,33 @@ interface TicketsPageProps {
   onDeleteBooking?: (id: string) => void;
 }
 
-const passengers: Record<string, { name: string; seat: string; dob: string; passport: string; tier: string; eTicket: string }[]> = {
+const passengers: Record<string, { 
+  name: string; 
+  seat: string; 
+  dob: string; 
+  passport: string; 
+  tier: string; 
+  eTicket: string;
+  baggage?: { weight: number; price: number };
+  meal?: { selected: boolean; type: string; price: number };
+}[]> = {
   'BK-001': [
-    { name: 'Nguyễn Văn An', seat: '14A', dob: '15/03/1990', passport: 'B1234567', tier: 'Gold', eTicket: '738-1234567890' },
-    { name: 'Nguyễn Thị Lan', seat: '14B', dob: '22/07/1992', passport: 'B1234568', tier: 'Silver', eTicket: '738-1234567891' },
+    { name: 'Nguyễn Văn An', seat: '14A', dob: '15/03/1990', passport: 'B1234567', tier: 'Gold', eTicket: '738-1234567890', baggage: { weight: 20, price: 0 }, meal: { selected: true, type: 'Asian Meal', price: 0 } },
+    { name: 'Nguyễn Thị Lan', seat: '14B', dob: '22/07/1992', passport: 'B1234568', tier: 'Silver', eTicket: '738-1234567891', baggage: { weight: 0, price: 0 }, meal: { selected: false, type: '', price: 0 } },
   ],
   'BK-002': [
-    { name: 'Trần Thị Bé', seat: '22C', dob: '01/01/1985', passport: 'C9876543', tier: 'Platinum', eTicket: '975-9876543210' },
+    { name: 'Trần Thị Bé', seat: '22C', dob: '01/01/1985', passport: 'C9876543', tier: 'Platinum', eTicket: '975-9876543210', baggage: { weight: 30, price: 0 }, meal: { selected: true, type: 'Western Meal', price: 0 } },
   ],
   'BK-003': [
-    { name: 'Lê Hữu Đạt', seat: '8B', dob: '10/11/1995', passport: 'D1112223', tier: 'Member', eTicket: '738-5555666670' },
-    { name: 'Lê Thị Hoa', seat: '8C', dob: '05/06/1997', passport: 'D1112224', tier: 'Member', eTicket: '738-5555666671' },
-    { name: 'Lê Văn Bình', seat: '8D', dob: '30/09/1988', passport: 'D1112225', tier: 'Silver', eTicket: '738-5555666672' },
+    { name: 'Lê Hữu Đạt', seat: '8B', dob: '10/11/1995', passport: 'D1112223', tier: 'Member', eTicket: '738-5555666670', baggage: { weight: 20, price: 0 }, meal: { selected: false, type: '', price: 0 } },
+    { name: 'Lê Thị Hoa', seat: '8C', dob: '05/06/1997', passport: 'D1112224', tier: 'Member', eTicket: '738-5555666671', baggage: { weight: 20, price: 0 }, meal: { selected: false, type: '', price: 0 } },
+    { name: 'Lê Văn Bình', seat: '8D', dob: '30/09/1988', passport: 'D1112225', tier: 'Silver', eTicket: '738-5555666672', baggage: { weight: 20, price: 0 }, meal: { selected: true, type: 'Asian Meal', price: 0 } },
   ],
   'BK-004': [
-    { name: 'Phạm Tuấn Khải', seat: '31F', dob: '20/02/1980', passport: 'E5556667', tier: 'Gold', eTicket: '976-1111222233' },
+    { name: 'Phạm Tuấn Khải', seat: '31F', dob: '20/02/1980', passport: 'E5556667', tier: 'Gold', eTicket: '976-1111222233', baggage: { weight: 15, price: 0 }, meal: { selected: false, type: '', price: 0 } },
   ],
   'BK-005': [
-    { name: 'Nguyễn Quốc Dũng', seat: '12A', dob: '08/05/1990', passport: 'B83868386', tier: 'Platinum', eTicket: 'Chưa xuất' },
+    { name: 'Nguyễn Quốc Dũng', seat: '12A', dob: '08/05/1990', passport: 'B83868386', tier: 'Platinum', eTicket: 'Chưa xuất', baggage: { weight: 0, price: 0 }, meal: { selected: false, type: '', price: 0 } },
   ],
 };
 
@@ -80,46 +89,21 @@ const CountdownTimer: React.FC<{ limit: string | null }> = ({ limit }) => {
 
 const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, bookings, onUpdateStatus, onDeleteBooking }) => {
   const [bookingsData, setBookingsData] = useState(bookings);
-  
-  React.useEffect(() => {
-    setBookingsData(bookings);
-    const updatedPax = { ...passengersData };
-    let hasNew = false;
-    bookings.forEach(b => {
-      if (!updatedPax[b.id]) {
-         updatedPax[b.id] = b.passengersList && b.passengersList.length > 0 
-           ? b.passengersList.map((p: any, idx: number) => ({
-               name: p.name || `HÀNH KHÁCH ${idx+1}`,
-               seat: p.seat || (idx === 0 ? (b.seat || '12A') : `12${String.fromCharCode(66+idx)}`),
-               dob: '--/--/----',
-               passport: '--',
-               tier: 'Member',
-               eTicket: b.badge === 'success' ? `738-${Math.floor(Math.random()*1000000000) + idx}` : 'Chưa xuất'
-             }))
-           : [{
-               name: b.customer || 'HÀNH KHÁCH MỚI',
-               seat: b.seat || '12A',
-               dob: '--/--/----',
-               passport: '--',
-               tier: 'Member',
-               eTicket: b.badge === 'success' ? `738-${Math.floor(Math.random()*1000000000)}` : 'Chưa xuất'
-             }];
-         hasNew = true;
-      }
-    });
-    if (hasNew) {
-      setPassengersData(updatedPax);
-    }
-  }, [bookings]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAirline, setFilterAirline] = useState('all');
   const [search, setSearch] = useState('');
   const [actionType, setActionType] = useState<'issue' | 'void' | 'refund' | 'delete' | null>(null);
   const [isAddPaxModalOpen, setIsAddPaxModalOpen] = useState(false);
-  const [newPax, setNewPax] = useState({ name: '', seat: '', type: 'Người lớn' });
+  const [newPax, setNewPax] = useState({ 
+    name: '', 
+    seat: '', 
+    type: 'Người lớn',
+    baggage: 0,
+    mealType: 'none'
+  });
   const [passengersData, setPassengersData] = useState(passengers);
-  const [viewingTicket, setViewingTicket] = useState<any>(null);
+  const [viewingTicketRef, setViewingTicketRef] = useState<{bookingId: string, paxIndex: number} | null>(null);
   const [viewMode, setViewMode] = useState<'passengers' | 'history'>('passengers');
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
@@ -128,22 +112,93 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
     type: 'success',
   });
 
+  const getAirportName = (code: string) => ({ 'SGN': 'Tân Sơn Nhất', 'HAN': 'Nội Bài', 'DAD': 'Đà Nẵng', 'PQC': 'Phú Quốc', 'HPH': 'Cát Bi' }[code] || code);
+
+  React.useEffect(() => {
+    setBookingsData(bookings);
+    setPassengersData(prev => {
+      const updatedPax = { ...prev };
+      let hasChange = false;
+      bookings.forEach((b: any) => {
+        if (!updatedPax[b.id]) {
+           updatedPax[b.id] = b.passengersList && b.passengersList.length > 0 
+             ? b.passengersList.map((p: any, idx: number) => ({
+                 name: p.name || `HÀNH KHÁCH ${idx+1}`,
+                 seat: p.seat || (idx === 0 ? (b.seat || '12A') : `12${String.fromCharCode(66+idx)}`),
+                 dob: '--/--/----',
+                 passport: '--',
+                 tier: 'Member',
+                 baggage: b.extraServices?.baggage?.[idx] || { weight: 0, price: 0 },
+                 meal: b.extraServices?.meals?.[idx] || { selected: false, type: '', price: 0 },
+                 eTicket: b.badge === 'success' ? `738-${Math.floor(Math.random()*1000000000) + idx}` : 'Chưa xuất'
+               }))
+             : [{
+                 name: b.customer || 'HÀNH KHÁCH MỚI',
+                 seat: b.seat || '12A',
+                 dob: '--/--/----',
+                 passport: '--',
+                 tier: 'Member',
+                 baggage: b.extraServices?.baggage?.[0] || { weight: 0, price: 0 },
+                 meal: b.extraServices?.meals?.[0] || { selected: false, type: '', price: 0 },
+                 eTicket: b.badge === 'success' ? `738-${Math.floor(Math.random()*1000000000)}` : 'Chưa xuất'
+               }];
+           hasChange = true;
+        } else {
+           const currentPaxList = updatedPax[b.id];
+           const needsTicket = b.badge === 'success' && currentPaxList.some(p => p.eTicket === 'Chưa xuất');
+           
+           if (needsTicket) {
+             updatedPax[b.id] = currentPaxList.map((p, idx) => ({
+               ...p,
+               eTicket: p.eTicket === 'Chưa xuất' ? `738-${Math.floor(Math.random()*1000000000) + idx}` : p.eTicket
+             }));
+             hasChange = true;
+           }
+        }
+      });
+      return hasChange ? updatedPax : prev;
+    });
+  }, [bookings]);
+
+  const activeViewingTicket = React.useMemo(() => {
+    if (!viewingTicketRef) return null;
+    const booking = bookingsData.find(b => b.id === viewingTicketRef.bookingId);
+    if (!booking) return null;
+    const paxList = passengersData[booking.id] || [];
+    const passenger = paxList[viewingTicketRef.paxIndex];
+    if (!passenger) return null;
+
+    return {
+      name: passenger.name,
+      ticket: booking,
+      baggage: passenger.baggage || { weight: 0 },
+      meal: passenger.meal || { selected: false }
+    };
+  }, [viewingTicketRef, bookingsData, passengersData]);
+
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ visible: true, message, type });
     setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
   };
-
-
 
   const handleAddPax = () => {
     if (!selectedId || !newPax.name) return;
     const currentPax = passengersData[selectedId] || [];
     setPassengersData({
       ...passengersData,
-      [selectedId]: [...currentPax, { name: newPax.name.toUpperCase(), seat: newPax.seat || '--', dob: '--', passport: '--', tier: 'Member', eTicket: 'Chưa xuất' }]
+      [selectedId]: [...currentPax, { 
+        name: newPax.name.toUpperCase(), 
+        seat: newPax.seat || '--', 
+        dob: '--/--/----', 
+        passport: '--', 
+        tier: 'Member', 
+        eTicket: 'Chưa xuất',
+        baggage: { weight: newPax.baggage, price: 0 },
+        meal: { selected: newPax.mealType !== 'none', type: newPax.mealType, price: 0 }
+      }]
     });
     setIsAddPaxModalOpen(false);
-    setNewPax({ name: '', seat: '', type: 'Người lớn' });
+    setNewPax({ name: '', seat: '', type: 'Người lớn', baggage: 0, mealType: 'none' });
   };
 
   const filtered = bookingsData.filter(t => {
@@ -386,7 +441,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                       <span className="material-icons-round" style={{ fontSize: 20, color: 'white', transform: 'rotate(45deg)' }}>flight</span>
                       <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.3)' }} />
                     </div>
-                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{selected.flight} · {selected.airline}</span>
+                    <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{selected.flight} · {selected.aircraft || 'A321'} · {selected.airline}</span>
                   </div>
                   <span style={{ fontSize: 26, fontWeight: 900, color: 'white', fontFamily: 'monospace' }}>{selected.to}</span>
                 </div>
@@ -439,6 +494,9 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                 {paxList.map((p, i) => {
                   const tc = tierColors[p.tier] ?? tierColors.Member;
                   const initials = p.name.split(' ').map((w: string) => w[0]).slice(-2).join('').toUpperCase();
+                  const hasBaggage = (p.baggage?.weight || 0) > 0;
+                  const isMealSelected = !!p.meal?.selected;
+
                   return (
                     <div key={i} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '14px 16px', display: 'flex', alignItems: 'flex-start', gap: 14, transition: 'all 0.2s' }}>
                       {/* Avatar */}
@@ -458,17 +516,47 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                             <span className="material-icons-round" style={{ fontSize: 13 }}>airline_seat_recline_normal</span> Ghế {p.seat}
                           </span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span className="material-icons-round" style={{ fontSize: 13 }}>meeting_room</span> Cửa {selected.gate || '--'}
+                          </span>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span className="material-icons-round" style={{ fontSize: 13 }}>perm_identity</span> {p.passport}
                           </span>
                           <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                             <span className="material-icons-round" style={{ fontSize: 13 }}>cake</span> {p.dob}
                           </span>
                         </div>
+                        <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                          <div style={{ 
+                            display: 'flex', alignItems: 'center', gap: 6, 
+                            fontSize: 11, fontWeight: 700,
+                            padding: '4px 10px', borderRadius: 8,
+                            background: hasBaggage ? '#eff6ff' : '#f8fafc',
+                            color: hasBaggage ? '#2563eb' : '#94a3b8',
+                            border: `1px solid ${hasBaggage ? '#dbeafe' : '#e2e8f0'}`
+                          }}>
+                             <span className="material-icons-round" style={{ fontSize: 16 }}>luggage</span> 
+                             {hasBaggage ? `${p.baggage?.weight}kg` : 'No Baggage'}
+                          </div>
+                          
+                          {isMealSelected && (
+                            <div style={{ 
+                              display: 'flex', alignItems: 'center', gap: 6, 
+                              fontSize: 11, fontWeight: 700,
+                              padding: '4px 10px', borderRadius: 8,
+                              background: '#fff7ed',
+                              color: '#ea580c',
+                              border: '1px solid #ffedd5'
+                            }}>
+                               <span className="material-icons-round" style={{ fontSize: 16 }}>restaurant</span> 
+                               {p.meal?.type}
+                            </div>
+                          )}
+                        </div>
                       </div>
                       <div style={{ display: 'flex', gap: 4 }}>
                         <button 
                           title="Xem hồ sơ" 
-                          onClick={() => setViewingTicket({ ...p, ticket: selected })}
+                          onClick={() => setViewingTicketRef({ bookingId: selected.id, paxIndex: i })}
                           style={{ background: '#eff6ff', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#2563eb' }}
                         >
                           <span className="material-icons-round" style={{ fontSize: 16 }}>visibility</span>
@@ -622,8 +710,8 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
       )}
 
       {/* Viewing Ticket Modal */}
-      {viewingTicket && (
-        <div className="modal-overlay" onClick={() => setViewingTicket(null)}>
+      {activeViewingTicket && (
+        <div className="modal-overlay" onClick={() => setViewingTicketRef(null)}>
           <div className="modal-card boarding-pass-modal" onClick={e => e.stopPropagation()}>
             <div className="modal-header pass-header">
               <div className="pass-logo">
@@ -637,38 +725,40 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                  <div className="pass-row">
                     <div className="pass-col">
                        <label>PASSENGER NAME</label>
-                       <b>{viewingTicket.name}</b>
+                       <b>{activeViewingTicket.name}</b>
                     </div>
                     <div className="pass-col" style={{textAlign:'right'}}>
-                       <label>FLIGHT</label>
-                       <b>{viewingTicket.ticket.flight}</b>
+                       <label>FLIGHT / AIRCRAFT</label>
+                       <b>{activeViewingTicket.ticket.flight} / {activeViewingTicket.ticket.aircraft || 'A321'}</b>
                     </div>
                  </div>
                  <div className="pass-row mt-md">
                     <div className="pass-col">
                        <label>FROM</label>
-                       <h2 className="city-code">{viewingTicket.ticket.from}</h2>
+                       <h2 className="city-code">{activeViewingTicket.ticket.from}</h2>
+                       <span style={{ fontSize: 10, color: '#94a3b8' }}>{getAirportName(activeViewingTicket.ticket.from)}</span>
                     </div>
                     <div className="pass-airplane">
-                       <span className="material-icons-round">flight_takeoff</span>
+                       <span className="material-icons-round">flight</span>
                     </div>
                     <div className="pass-col" style={{textAlign:'right'}}>
                        <label>TO</label>
-                       <h2 className="city-code">{viewingTicket.ticket.to}</h2>
+                       <h2 className="city-code">{activeViewingTicket.ticket.to}</h2>
+                       <span style={{ fontSize: 10, color: '#94a3b8' }}>{getAirportName(activeViewingTicket.ticket.to)}</span>
                     </div>
                  </div>
                  <div className="pass-grid-4 mt-lg">
-                    <div className="pass-col"><label>DATE</label><b>{viewingTicket.ticket.date}</b></div>
-                    <div className="pass-col"><label>BOARDING</label><b>{viewingTicket.ticket.time}</b></div>
-                    <div className="pass-col"><label>GATE</label><b>B12</b></div>
-                    <div className="pass-col"><label>SEAT</label><b className="seat-highlight">{viewingTicket.seat}</b></div>
+                    <div className="pass-col"><label>DATE</label><b>{activeViewingTicket.ticket.date}</b></div>
+                    <div className="pass-col"><label>BOARDING</label><b>{activeViewingTicket.ticket.time}</b></div>
+                    <div className="pass-col"><label>GATE</label><b>{activeViewingTicket.ticket.gate || '--'}</b></div>
+                    <div className="pass-col"><label>SEAT</label><b className="seat-highlight">{passengersData[activeViewingTicket.ticket.id]?.[viewingTicketRef?.paxIndex || 0]?.seat}</b></div>
                  </div>
               </div>
               <div className="pass-barcode-section">
                  <div className="qr-placeholder">
                     <span className="material-icons-round">qr_code_2</span>
                  </div>
-                 <p className="pnr-text">PNR: {viewingTicket.ticket.pnr}</p>
+                 <p className="pnr-text">PNR: {activeViewingTicket.ticket.pnr}</p>
               </div>
             </div>
             <div className="pass-details-footer">
@@ -680,12 +770,13 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                   </div>
                </div>
                <div className="detail-sec">
-                  <h4><span className="material-icons-round">luggage</span> Thông tin hành lý</h4>
-                  <p>Hành lý xách tay: 7kg | Hành lý ký gửi: 20kg</p>
+                  <h4><span className="material-icons-round">luggage</span> Thông tin hành lý & Dịch vụ</h4>
+                  <p>Hành lý xách tay: 7kg | Hành lý ký gửi: {activeViewingTicket.baggage?.weight || 0}kg</p>
+                  {activeViewingTicket.meal?.selected && <p style={{marginTop: 4}}>Suất ăn: {activeViewingTicket.meal.type}</p>}
                </div>
             </div>
             <div className="modal-footer" style={{ gap: 12 }}>
-               <Button variant="outline" onClick={() => setViewingTicket(null)}>Đóng</Button>
+               <Button variant="outline" onClick={() => setViewingTicketRef(null)}>Đóng</Button>
                <Button onClick={() => window.print()}><span className="material-icons-round">print</span> In Boarding Pass</Button>
             </div>
           </div>
@@ -729,6 +820,36 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                     placeholder="12A"
                     style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none' }}
                   />
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>HÀNH LÝ KÝ GỬI</label>
+                  <select 
+                    value={newPax.baggage}
+                    onChange={e => setNewPax({...newPax, baggage: parseInt(e.target.value)})}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none' }}
+                  >
+                    <option value={0}>Không mua thêm</option>
+                    <option value={15}>15 kg</option>
+                    <option value={20}>20 kg</option>
+                    <option value={25}>25 kg</option>
+                    <option value={30}>30 kg</option>
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 4 }}>SUẤT ĂN</label>
+                  <select 
+                    value={newPax.mealType}
+                    onChange={e => setNewPax({...newPax, mealType: e.target.value})}
+                    style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: 8, outline: 'none' }}
+                  >
+                    <option value="none">Không yêu cầu</option>
+                    <option value="Asian Meal">Cơm thịt kho</option>
+                    <option value="Western Meal">Mỳ Ý bò bằm</option>
+                    <option value="Vegetarian">Suất ăn chay</option>
+                  </select>
                 </div>
               </div>
             </div>

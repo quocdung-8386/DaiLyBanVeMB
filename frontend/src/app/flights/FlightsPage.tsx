@@ -7,21 +7,15 @@ import DatePicker from '../../components/DatePicker';
 interface FlightsPageProps {
   onNavigate?: (id: string) => void;
   onSelectFlight?: (flight: any) => void;
+  flights: any[];
+  onUpdateFlights?: (flights: any[]) => void;
 }
-
-const flightData = [
-  { id: 1, code: 'QH', name: 'Bamboo Airways', flight: 'QH321', aircraft: 'Airbus A320', dep: '10:00', arr: '11:20', from: 'HAN', to: 'DAD', dur: '1h 20m', stops: 0, price: 2150000, seatsSold: 168, cap: 180, status: 'Đang bán vé', badge: 'Chuyến bay phổ biến', carry: '7kg', checked: '20kg' },
-  { id: 2, code: 'VN', name: 'Vietnam Airlines', flight: 'VN123', aircraft: 'Airbus A321', dep: '08:30', arr: '10:45', from: 'SGN', to: 'HAN', dur: '2h 15m', stops: 0, price: 2150000, seatsSold: 135, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg' },
-  { id: 3, code: 'VJ', name: 'VietJet Air', flight: 'VJ456', aircraft: 'Airbus A320', dep: '14:15', arr: '15:35', from: 'DAD', to: 'SGN', dur: '1h 20m', stops: 0, price: 1250000, seatsSold: 217, cap: 220, status: 'Đang bán vé', badge: 'Tiết kiệm nhất', carry: '7kg', checked: '0kg' },
-  { id: 4, code: 'VN', name: 'Vietnam Airlines', flight: 'VN204', aircraft: 'Boeing 787', dep: '19:00', arr: '21:10', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1890000, seatsSold: 152, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg' },
-  { id: 5, code: 'QH', name: 'Bamboo Airways', flight: 'QH204', aircraft: 'Airbus A320', dep: '08:15', arr: '10:25', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1750000, seatsSold: 180, cap: 180, status: 'Đã đóng chuyến', carry: '7kg', checked: '20kg' },
-];
 
 const airlineStyle: Record<string,{bg:string,color:string}> = {
   VN: { bg:'#005a8c', color:'white' }, VJ: { bg:'#ed1b24', color:'white' }, QH: { bg:'#00a563', color:'white' }
 };
 
-const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight }) => {
+const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, flights, onUpdateFlights }) => {
   const [stops, setStops] = useState<string[]>(['0']);
   const [airlines, setAirlines] = useState<string[]>(['VN', 'VJ', 'QH']);
   const [viewingFlight, setViewingFlight] = useState<any | null>(null);
@@ -54,7 +48,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight })
   const toggleStop = (val: string) => setStops(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
   const toggleAirline = (val: string) => setAirlines(prev => prev.includes(val) ? prev.filter(x => x !== val) : [...prev, val]);
 
-  const handleSelectFlight = (f: typeof flightData[0]) => {
+  const handleSelectFlight = (f: any) => {
     if (onSelectFlight) {
       onSelectFlight({
         id: f.flight,
@@ -67,7 +61,9 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight })
         to: f.to,
         duration: f.dur,
         price: f.price,
-        cls: 'Phổ thông'
+        cls: 'Phổ thông',
+        gate: f.gate,
+        aircraft: f.aircraft
       });
     }
     if (onNavigate) {
@@ -75,7 +71,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight })
     }
   };
 
-  const filteredFlights = flightData
+  const filteredFlights = (flights || [])
     .filter(f => airlines.includes(f.code))
     .filter(f => stops.includes(String(f.stops)))
     .sort((a, b) => {

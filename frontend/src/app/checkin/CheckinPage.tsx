@@ -197,23 +197,41 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                 <div className="extra-card">
                   <span className="material-icons-round icon">luggage</span>
                   <h4>Hành lý ký gửi</h4>
-                  <p>Mua trước hành lý trực tuyến để tiết kiệm tới 50% so với mua tại sân bay.</p>
-                  <Button variant="outline" size="sm" className="mt-4">Thêm Hành lý</Button>
+                  {selectedPassengers.map(idxStr => {
+                    const idx = parseInt(idxStr);
+                    const p = paxList[idx];
+                    const baggage = foundBooking?.extraServices?.baggage?.[idx] || { weight: 0 };
+                    return (
+                      <div key={idxStr} style={{ fontSize: '11px', color: '#475569', marginBottom: '4px' }}>
+                        {p.name}: <strong>{baggage.weight > 0 ? `${baggage.weight}kg` : 'Chưa có'}</strong>
+                      </div>
+                    );
+                  })}
+                  <Button variant="outline" size="sm" className="mt-4">Mua thêm</Button>
                 </div>
                 <div className="extra-card">
                   <span className="material-icons-round icon">event_seat</span>
                   <h4>Thay đổi chỗ ngồi</h4>
-                  <p>Bạn muốn ngồi gần cửa sổ hoặc có thêm chỗ để chân? Chọn ghế ngay bây giờ.</p>
+                  <p>Bạn muốn ngồi gần cửa sổ hoặc có thêm chỗ để chân?</p>
                   <Button variant="outline" size="sm" className="mt-4" onClick={() => {
-                    setEditingPassengerSeat('p1'); // Default editing first selected passenger for demo
+                    setEditingPassengerSeat(selectedPassengers[0]);
                     setIsSeatMapOpen(true);
                   }}>Đổi Ghế</Button>
                 </div>
                 <div className="extra-card">
                   <span className="material-icons-round icon">restaurant</span>
                   <h4>Suất ăn trên máy bay</h4>
-                  <p>Đặt trước suất ăn yêu thích của bạn cho chuyến bay.</p>
-                  <Button variant="outline" size="sm" className="mt-4">Xem Thực đơn</Button>
+                  {selectedPassengers.map(idxStr => {
+                    const idx = parseInt(idxStr);
+                    const p = paxList[idx];
+                    const meal = foundBooking?.extraServices?.meals?.[idx];
+                    return (
+                      <div key={idxStr} style={{ fontSize: '11px', color: '#475569', marginBottom: '4px' }}>
+                        {p.name}: <strong>{meal?.selected ? meal.type : 'Mặc định'}</strong>
+                      </div>
+                    );
+                  })}
+                  <Button variant="outline" size="sm" className="mt-4">Đổi món</Button>
                 </div>
               </div>
 
@@ -228,7 +246,14 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                 <Button variant="outline" onClick={() => setStep('passengers')}>Quay lại</Button>
                 <Button onClick={() => {
                   if (foundBooking && onUpdateBooking) {
-                    onUpdateBooking({ ...foundBooking, status: 'Đã Check-in', badge: 'success' });
+                    const updatedBooking = { 
+                      ...foundBooking, 
+                      status: 'Đã Check-in', 
+                      badge: 'success',
+                      gate: (foundBooking.gate === '--' || !foundBooking.gate) ? '04' : foundBooking.gate,
+                      aircraft: foundBooking.aircraft || 'Airbus A321'
+                    };
+                    onUpdateBooking(updatedBooking);
                   }
                   setStep('boarding_pass');
                 }}>Hoàn tất Check-in</Button>
@@ -274,7 +299,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                         </div>
                         <div className="detail-item">
                           <span>Chuyến bay</span>
-                          <strong>{foundBooking?.flight}</strong>
+                          <strong>{foundBooking?.flight} / {foundBooking?.aircraft || 'A321'}</strong>
                         </div>
                         <div className="detail-item">
                           <span>Ngày</span>
@@ -285,7 +310,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                       <div className="bp-highlights">
                         <div className="h-item">
                           <span>Cửa (Gate)</span>
-                          <strong>{foundBooking?.gate !== '--' ? foundBooking?.gate : '04'}</strong>
+                          <strong>{foundBooking?.gate || '--'}</strong>
                         </div>
                         <div className="h-item">
                           <span>Giờ lên tàu</span>
@@ -296,8 +321,8 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
                           <strong>{passengerSeats[idxStr] || p.seat || foundBooking?.seat}</strong>
                         </div>
                         <div className="h-item">
-                          <span>Nhóm (Zone)</span>
-                          <strong>{parseInt(idxStr) % 3 + 1}</strong>
+                          <span>Hành lý</span>
+                          <strong>{foundBooking?.extraServices?.baggage?.[parseInt(idxStr)]?.weight || 0}kg</strong>
                         </div>
                       </div>
                     </div>

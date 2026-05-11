@@ -176,7 +176,10 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                       </div>
                       <div>
                         <p className="label">KHÁCH HÀNG</p>
-                        <p className="val font-medium">{currentTicket?.customer ?? 'N/A'}</p>
+                        <p className="val font-medium">
+                          {currentTicket?.customer ?? 'N/A'} 
+                          {paxList.length > 1 && <span style={{fontSize: 12, color: '#64748b', marginLeft: 4}}>(+{paxList.length - 1} khách khác)</span>}
+                        </p>
                       </div>
                       <div className="text-right">
                         <p className="label">NGÀY BAY</p>
@@ -190,6 +193,21 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         <p className="label">CỔNG SOÁT VÉ / NHÀ GA</p>
                         <p className="val font-medium">{currentTicket?.gate ?? 'N/A'} / {currentTicket?.terminal ?? 'N/A'}</p>
                       </div>
+
+                      {paxList.length > 0 && (
+                        <div style={{ gridColumn: 'span 2', background: '#f8fafc', padding: 12, borderRadius: 8, border: '1px solid #f1f5f9', marginTop: 10 }}>
+                           <p className="label" style={{ marginBottom: 8 }}>DANH SÁCH HÀNH KHÁCH</p>
+                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                              {paxList.map((p: any, i: number) => (
+                                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: 'white', padding: '4px 10px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                                    <span className="material-icons-round" style={{ fontSize: 14, color: '#2563eb' }}>person</span>
+                                    <b>{p.name?.toUpperCase()}</b>
+                                    <span style={{ color: '#64748b' }}>({p.seat})</span>
+                                 </div>
+                              ))}
+                           </div>
+                        </div>
+                      )}
                     </div>
                   </Card>
 
@@ -303,7 +321,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                     </div>
                     <div className="summary-body">
                       <div className="summary-row">
-                        <span>Giá vé Net (Hãng thu)</span>
+                        <span>Giá vé Net ({paxList.length} khách)</span>
                         <span>{currentTicket?.total ?? 'N/A'} đ</span>
                       </div>
                       <div className="summary-row">

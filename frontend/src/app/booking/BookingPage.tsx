@@ -9,9 +9,10 @@ interface BookingPageProps {
   initialFlight?: any;
   onCheckout?: (ticket: any) => void;
   onAddBooking?: (booking: any) => void;
+  flights?: any[];
 }
 
-const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, onCheckout, onAddBooking }) => {
+const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, onCheckout, onAddBooking, flights }) => {
   const [flightData, setFlightData] = useState<any>(initialFlight || null);
   const [actionType, setActionType] = useState<'hold' | 'success' | null>(null);
 
@@ -21,6 +22,31 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
   const [selectedFare, setSelectedFare] = useState('Economy');
   const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
   const [editingSeatIndex, setEditingSeatIndex] = useState<number | null>(null);
+
+  // Extra services state
+  const [extraServices, setExtraServices] = useState({
+    baggage: passengersList.map(() => ({ weight: 0, price: 0 })),
+    meals: passengersList.map(() => ({ selected: false, type: '', price: 0 })),
+  });
+
+  const getBaseFare = () => {
+    const base = flightData?.price || 1850000;
+    if (selectedFare === 'Business') return base * 2.5;
+    if (selectedFare === 'First Class') return base * 4.5;
+    return base;
+  };
+
+  const getExtraServicesTotal = () => {
+    const baggageTotal = extraServices.baggage.reduce((sum, item) => sum + item.price, 0);
+    const mealsTotal = extraServices.meals.reduce((sum, item) => sum + (item.selected ? item.price : 0), 0);
+    return baggageTotal + mealsTotal;
+  };
+
+  const calculateGrandTotal = () => {
+    const baseFareTotal = getBaseFare() * passengersList.length;
+    const feesTotal = 50000 * passengersList.length;
+    return baseFareTotal + feesTotal + getExtraServicesTotal();
+  };
 
   const handleHoldBooking = () => {
     const newBooking = {
@@ -34,15 +60,17 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
       airline: flightData?.airline || 'Vietnam Airlines',
       date: 'Hôm nay',
       time: flightData?.departure || '08:00 AM',
-      total: (((flightData?.price || 1850000) + 50000) * passengersList.length).toLocaleString('vi'),
+      total: calculateGrandTotal().toLocaleString('vi'),
       status: 'Chờ thanh toán',
       badge: 'hold',
       pax: passengersList.length,
       passengersList: passengersList,
+      extraServices: extraServices,
       type: 'Một chiều',
       timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
       seat: passengersList[0]?.seat || '12C',
-      gate: '--',
+      gate: flightData?.gate || '--',
+      aircraft: flightData?.aircraft || 'A321',
       terminal: 'T1'
     };
     setActionType('hold');
@@ -65,15 +93,17 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
       airline: flightData?.airline || 'Vietnam Airlines',
       date: 'Hôm nay',
       time: flightData?.departure || '08:00 AM',
-      total: (((flightData?.price || 1850000) + 50000) * passengersList.length).toLocaleString('vi'),
+      total: calculateGrandTotal().toLocaleString('vi'),
       status: 'Chờ thanh toán',
       badge: 'hold',
       pax: passengersList.length,
       passengersList: passengersList,
+      extraServices: extraServices,
       type: 'Một chiều',
       timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
       seat: passengersList[0]?.seat || '12C',
-      gate: '--',
+      gate: flightData?.gate || '--',
+      aircraft: flightData?.aircraft || 'A321',
       terminal: 'T1'
     };
     setActionType('success');
@@ -114,7 +144,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
             <div style={{ marginBottom: 24 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h4 style={{ margin: 0, fontSize: 14, color: '#1e293b' }}>Danh sách hành khách</h4>
-                <Button variant="outline" size="sm" onClick={() => setPassengersList([...passengersList, { id: Date.now(), name: '', type: 'Người lớn', seat: '' }])}>
+                <Button variant="outline" size="sm" onClick={() => {
+                  setPassengersList([...passengersList, { id: Date.now(), name: '', type: 'Người lớn', seat: '' }]);
+                  setExtraServices({
+                    baggage: [...extraServices.baggage, { weight: 0, price: 0 }],
+                    meals: [...extraServices.meals, { selected: false, type: '', price: 0 }],
+                  });
+                }}>
                   <span className="material-icons-round" style={{ fontSize: 16 }}>add</span> Thêm khách
                 </Button>
               </div>
@@ -143,7 +179,15 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                       </select>
                     </div>
                     {passengersList.length > 1 && (
-                      <button style={{ height: 38, width: 38, border: 'none', background: '#fef2f2', color: '#dc2626', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setPassengersList(passengersList.filter((_, idx) => idx !== i))}>
+                      <button style={{ height: 38, width: 38, border: 'none', background: '#fef2f2', color: '#dc2626', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => {
+                        const newList = passengersList.filter((_, idx) => idx !== i);
+                        setPassengersList(newList);
+                        // Also update extra services
+                        setExtraServices({
+                          baggage: extraServices.baggage.filter((_, idx) => idx !== i),
+                          meals: extraServices.meals.filter((_, idx) => idx !== i),
+                        });
+                      }}>
                         <span className="material-icons-round" style={{ fontSize: 18 }}>delete</span>
                       </button>
                     )}
@@ -194,23 +238,61 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
         return (
           <div className="step-content">
             <h3>Bước 4: Dịch vụ bổ sung</h3>
-            <div className="ancillary-grid">
-              <div className="anc-card">
-                <span className="material-icons-round">luggage</span>
-                <div>
-                  <b>Hành lý thêm</b>
-                  <p>Thêm 20kg chỉ từ 250k</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+              {passengersList.map((p, i) => (
+                <div key={p.id} style={{ background: '#f8fafc', padding: 20, borderRadius: 16, border: '1px solid #e2e8f0' }}>
+                  <h4 style={{ margin: '0 0 16px', color: '#1e293b', fontSize: 14 }}>Hành khách: {p.name || `Hành khách ${i + 1}`}</h4>
+                  <div className="ancillary-grid">
+                    <div className="anc-card">
+                      <span className="material-icons-round">luggage</span>
+                      <div style={{ flex: 1 }}>
+                        <b>Hành lý thêm</b>
+                        <p>{extraServices.baggage[i]?.weight > 0 ? `Đã chọn: ${extraServices.baggage[i].weight}kg (+${extraServices.baggage[i].price.toLocaleString('vi')}đ)` : 'Chưa chọn hành lý'}</p>
+                      </div>
+                      <select 
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                        value={extraServices.baggage[i]?.weight || 0}
+                        onChange={(e) => {
+                          const weight = parseInt(e.target.value);
+                          const price = weight === 15 ? 150000 : weight === 20 ? 250000 : weight === 30 ? 450000 : 0;
+                          const newBaggage = [...extraServices.baggage];
+                          newBaggage[i] = { weight, price };
+                          setExtraServices({ ...extraServices, baggage: newBaggage });
+                        }}
+                      >
+                        <option value={0}>0kg - 0đ</option>
+                        <option value={15}>15kg - 150.000đ</option>
+                        <option value={20}>20kg - 250.000đ</option>
+                        <option value={30}>30kg - 450.000đ</option>
+                      </select>
+                    </div>
+                    <div className="anc-card">
+                      <span className="material-icons-round">restaurant</span>
+                      <div style={{ flex: 1 }}>
+                        <b>Suất ăn trên mây</b>
+                        <p>{extraServices.meals[i]?.selected ? `Đã chọn: ${extraServices.meals[i].type} (+${extraServices.meals[i].price.toLocaleString('vi')}đ)` : 'Chưa chọn suất ăn'}</p>
+                      </div>
+                      <select 
+                        style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #cbd5e1' }}
+                        value={extraServices.meals[i]?.type || ''}
+                        onChange={(e) => {
+                          const type = e.target.value;
+                          const selected = type !== '';
+                          const price = selected ? 85000 : 0;
+                          const newMeals = [...extraServices.meals];
+                          newMeals[i] = { selected, type, price };
+                          setExtraServices({ ...extraServices, meals: newMeals });
+                        }}
+                      >
+                        <option value="">Không chọn</option>
+                        <option value="Cơm gà Hội An">Cơm gà Hội An - 85.000đ</option>
+                        <option value="Phở bò truyền thống">Phở bò truyền thống - 85.000đ</option>
+                        <option value="Mì xào hải sản">Mì xào hải sản - 85.000đ</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
-                <Button size="sm" variant="outline">Thêm</Button>
-              </div>
-              <div className="anc-card">
-                <span className="material-icons-round">restaurant</span>
-                <div>
-                  <b>Suất ăn</b>
-                  <p>Thực đơn đa dạng</p>
-                </div>
-                <Button size="sm" variant="outline">Thêm</Button>
-              </div>
+              ))}
             </div>
           </div>
         );
@@ -267,14 +349,29 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                     </div>
                     <div className="divider-sum"></div>
                     <div className="summary-list">
-                      <div className="row-sum"><span>Giá vé ({selectedFare}) x {passengersList.length}</span><b>{((flightData?.price || 1850000) * passengersList.length).toLocaleString('vi')}đ</b></div>
+                      <div className="row-sum"><span>Giá vé ({selectedFare}) x {passengersList.length}</span><b>{(getBaseFare() * passengersList.length).toLocaleString('vi')}đ</b></div>
                       <div className="row-sum"><span>Chỗ ngồi ({passengersList.map(p => p.seat || '--').join(', ')})</span><b>0đ</b></div>
+                      
+                      {extraServices.baggage.some(b => b.weight > 0) && (
+                        <div className="row-sum">
+                          <span>Hành lý ({extraServices.baggage.filter(b => b.weight > 0).length} gói)</span>
+                          <b>{extraServices.baggage.reduce((s, b) => s + b.price, 0).toLocaleString('vi')}đ</b>
+                        </div>
+                      )}
+                      
+                      {extraServices.meals.some(m => m.selected) && (
+                        <div className="row-sum">
+                          <span>Suất ăn ({extraServices.meals.filter(m => m.selected).length} phần)</span>
+                          <b>{extraServices.meals.reduce((s, m) => s + (m.selected ? m.price : 0), 0).toLocaleString('vi')}đ</b>
+                        </div>
+                      )}
+
                       <div className="row-sum"><span>Phí phục vụ x {passengersList.length}</span><b>{(50000 * passengersList.length).toLocaleString('vi')}đ</b></div>
                     </div>
                     <div className="divider-sum"></div>
                     <div className="total-box-sum">
                       <p>TỔNG CỘNG</p>
-                      <h2>{(((flightData?.price || 1850000) + 50000) * passengersList.length).toLocaleString('vi')} đ</h2>
+                      <h2>{calculateGrandTotal().toLocaleString('vi')} đ</h2>
                     </div>
                     <Button fullWidth variant="outline" onClick={handleHoldBooking}>GIỮ CHỖ TRƯỚC</Button>
                   </Card>
@@ -313,6 +410,13 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
             flightNumber={flightData?.id || 'VN-214'}
             allowedClass={selectedFare}
             initialSelectedSeat={passengersList[editingSeatIndex].seat}
+            occupiedSeats={[
+              '12B', '14A', '14C', '15D', '15E', '15F', '1A', '1B', '2A', '2C', 
+              ...passengersList
+                .filter((_, idx) => idx !== editingSeatIndex)
+                .map(p => p.seat)
+                .filter(s => !!s)
+            ]}
             onConfirm={(seat) => {
               const newList = [...passengersList];
               newList[editingSeatIndex].seat = seat;
