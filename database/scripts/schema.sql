@@ -76,7 +76,8 @@ CREATE TABLE ChuyenBay (
     thoi_gian_bay INT,
     nha_ga VARCHAR(20),
     cong_khoi_hanh VARCHAR(20),
-    trang_thai VARCHAR(20) DEFAULT 'Scheduled'
+    trang_thai VARCHAR(20) DEFAULT 'Scheduled',
+    ma_may_bay VARCHAR(50)
 );
 
 -- Bảng lưu chi tiết từng hạng ghế cho chuyến bay

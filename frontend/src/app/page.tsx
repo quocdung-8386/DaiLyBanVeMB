@@ -2,16 +2,15 @@
 
 import React, { useState } from 'react';
 import Dashboard from './dashboard/Dashboard';
-import ChatBubble from '../components/ChatBubble';
 import FlightsPage from './flights/FlightsPage';
 import BookingPage from './booking/BookingPage';
+import ChatBubble from '../components/ChatBubble';
 import TicketsPage from './tickets/TicketsPage';
 import PaymentsPage from './payments/PaymentsPage';
 import SettingsPage from './settings/SettingsPage';
 import IssueTicketPage from './tickets/issue/IssueTicketPage';
 import ExchangeTicketPage from './tickets/exchange/ExchangeTicketPage';
 import CancelTicketPage from './tickets/cancel/CancelTicketPage';
-import RefundManagementPage from './refund-management/RefundManagementPage';
 import LoginPage from './login/LoginPage';
 import ReportsPage from './reports/ReportsPage';
 import UsersPage from './users/UsersPage';
@@ -19,11 +18,14 @@ import ProfilePage from './profile/ProfilePage';
 import AuditLogPage from './audit-log/AuditLogPage';
 import PaymentHistoryPage from './payments/history/PaymentHistoryPage';
 import AiAdminPage from './ai-admin/AiAdminPage';
+import RefundManagementPage from './refund-management/RefundManagementPage';
 import PassengersPage from './passengers/PassengersPage';
 import SeatMapPage from './seat-map/SeatMapPage';
 import LoyaltyPage from './loyalty/LoyaltyPage';
 import CheckinPage from './checkin/CheckinPage';
 import GateManagementPage from './gate-management/GateManagementPage';
+
+import { api } from '../api';
 
 export interface BookingData {
   id: string;
@@ -57,17 +59,29 @@ export default function Home() {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
   // Global Bookings State
-  const [globalBookings, setGlobalBookings] = useState<BookingData[]>([
-    { id: 'BK-005', pnr: 'HOLD01', customer: 'Nguyễn Quốc Dũng', flight: 'QH321', airline: 'Bamboo Airways', from: 'HAN', to: 'DAD', airportFrom: 'Nội Bài', airportTo: 'Đà Nẵng', date: '10/05/2026', time: '10:00', total: '2,150,000', status: 'Chờ thanh toán', badge: 'hold', pax: 1, type: 'Một chiều', timeLimit: '2026-05-10T18:00:00', gate: '--', terminal: 'T1', seat: '12A', boarding: '09:30' },
-  ]);
+  const [globalBookings, setGlobalBookings] = useState<BookingData[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
 
-  const [globalFlights, setGlobalFlights] = useState([
-    { id: 1, code: 'QH', name: 'Bamboo Airways', flight: 'QH321', aircraft: 'Airbus A320', dep: '10:00', arr: '11:20', from: 'HAN', to: 'DAD', dur: '1h 20m', stops: 0, price: 2150000, seatsSold: 168, cap: 180, status: 'Đang bán vé', badge: 'Chuyến bay phổ biến', carry: '7kg', checked: '20kg', gate: '--' },
-    { id: 2, code: 'VN', name: 'Vietnam Airlines', flight: 'VN123', aircraft: 'Airbus A321', dep: '08:30', arr: '10:45', from: 'SGN', to: 'HAN', dur: '2h 15m', stops: 0, price: 2150000, seatsSold: 135, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg', gate: 'B12' },
-    { id: 3, code: 'VJ', name: 'VietJet Air', flight: 'VJ456', aircraft: 'Airbus A320', dep: '14:15', arr: '15:35', from: 'DAD', to: 'SGN', dur: '1h 20m', stops: 0, price: 1250000, seatsSold: 217, cap: 220, status: 'Đang bán vé', badge: 'Tiết kiệm nhất', carry: '7kg', checked: '0kg', gate: '--' },
-    { id: 4, code: 'VN', name: 'Vietnam Airlines', flight: 'VN204', aircraft: 'Boeing 787', dep: '19:00', arr: '21:10', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1890000, seatsSold: 152, cap: 180, status: 'Đang bán vé', carry: '12kg', checked: '23kg', gate: '04' },
-    { id: 5, code: 'QH', name: 'Bamboo Airways', flight: 'QH204', aircraft: 'Airbus A320', dep: '08:15', arr: '10:25', from: 'HAN', to: 'SGN', dur: '2h 10m', stops: 0, price: 1750000, seatsSold: 180, cap: 180, status: 'Đã đóng chuyến', carry: '7kg', checked: '20kg', gate: '--' },
-  ]);
+  const [globalFlights, setGlobalFlights] = useState<any[]>([]);
+
+  // Fetch initial data from Backend
+  React.useEffect(() => {
+    const initData = async () => {
+      try {
+        const [flights, bookings, stats] = await Promise.all([
+          api.getFlights(),
+          api.getBookings(),
+          api.getStats()
+        ]);
+        setGlobalFlights(flights);
+        setGlobalBookings(bookings);
+        setDashboardStats(stats);
+      } catch (error) {
+        console.error("Failed to fetch initial data:", error);
+      }
+    };
+    initData();
+  }, []);
 
   // Auto-expiry logic for Hold bookings
   React.useEffect(() => {
@@ -86,20 +100,100 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [globalBookings]);
 
-  const addBooking = (newBooking: BookingData) => {
-    setGlobalBookings(prev => [newBooking, ...prev]);
+  const addBooking = async (newBooking: any) => {
+    try {
+      const payload = {
+        flight_id: newBooking.flight,
+        customer_name: newBooking.customer,
+        phone: newBooking.phone || '',
+        email: newBooking.email || '',
+        passengers: newBooking.passengersList.map((p: any) => ({
+          name: p.name,
+          seat: p.seat,
+          age_type: p.type
+        })),
+        total_amount: parseFloat(newBooking.total.replace(/,/g, '')),
+        status: newBooking.status,
+        fare_class: newBooking.fareClass || 'Economy'
+      };
+      const res = await api.createBooking(payload);
+      if (res.id) {
+        const bookings = await api.getBookings();
+        setGlobalBookings(bookings);
+      }
+    } catch (error) {
+      console.error("Failed to create booking:", error);
+    }
   };
 
-  const updateBookingStatus = (id: string, status: string, badge: any) => {
-    setGlobalBookings(prev => prev.map(b => b.id === id ? { ...b, status, badge, timeLimit: status === 'Đã xuất vé' ? null : b.timeLimit } : b));
+  const updateBookingStatus = async (id: string, status: string, badge: any) => {
+    try {
+      await api.updateBooking(id, { status });
+      setGlobalBookings(prev => prev.map(b => b.id === id ? { ...b, status, badge, timeLimit: status === 'Đã xuất vé' ? null : b.timeLimit } : b));
+    } catch (error) {
+      console.error("Failed to update booking status:", error);
+    }
   };
 
-  const updateBooking = (updated: BookingData) => {
-    setGlobalBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
+  const updateBooking = async (updated: any) => {
+    try {
+      await api.updateBooking(updated.id, { status: updated.status, seat: updated.seat });
+      setGlobalBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
+    } catch (error) {
+      console.error("Failed to update booking:", error);
+    }
   };
 
-  const updateFlightInfo = (flightCode: string, aircraft: string, gate: string) => {
-    setGlobalFlights(prev => prev.map(f => f.flight === flightCode ? { ...f, aircraft, gate } : f));
+  const updateFlightInfo = async (flightCode: string, aircraft: string, gate: string) => {
+    try {
+      await api.updateFlight(flightCode, { aircraft, gate });
+      setGlobalFlights(prev => prev.map(f => f.flight === flightCode ? { ...f, aircraft, gate } : f));
+      // Also update local bookings for that flight
+      setGlobalBookings(prev => prev.map(b => b.flight === flightCode ? { ...b, aircraft, gate } : b));
+    } catch (error) {
+      console.error("Failed to update flight info:", error);
+    }
+  };
+
+  const deleteBooking = async (id: string) => {
+    try {
+      await api.deleteBooking(id);
+      setGlobalBookings(prev => prev.filter(b => b.id !== id));
+    } catch (error) {
+      console.error("Failed to delete booking:", error);
+    }
+  };
+
+  const addFlight = async (flightData: any) => {
+    try {
+      // Map frontend flight data to backend schema
+      const payload = {
+        ma_cb: flightData.flight,
+        ma_tuyen: `${flightData.from}-${flightData.to}`,
+        ma_hang: flightData.code,
+        ngay_gio_di: new Date().toISOString(), // Default for now
+        ngay_gio_den: new Date().toISOString(),
+        thoi_gian_bay: 120,
+        ma_may_bay: flightData.aircraft,
+        gia_ve: flightData.price,
+        cap: flightData.cap,
+        trang_thai: 'Đang bán vé'
+      };
+      await api.createFlight(payload);
+      const flights = await api.getFlights();
+      setGlobalFlights(flights);
+    } catch (error) {
+      console.error("Failed to add flight:", error);
+    }
+  };
+
+  const deleteFlight = async (id: string) => {
+    try {
+      await api.deleteFlight(id);
+      setGlobalFlights(prev => prev.filter(f => f.id !== id));
+    } catch (error) {
+      console.error("Failed to delete flight:", error);
+    }
   };
 
   const handleGoToCheckout = (ticket: any) => {
@@ -118,9 +212,18 @@ export default function Home() {
       case 'login':
         return <LoginPage onNavigate={setCurrentPage} />;
       case 'dashboard':
-        return <Dashboard onNavigate={setCurrentPage} bookings={globalBookings} />;
+        return <Dashboard onNavigate={setCurrentPage} bookings={globalBookings} stats={dashboardStats} flights={globalFlights} />;
       case 'flights':
-        return <FlightsPage onNavigate={setCurrentPage} onSelectFlight={setSelectedFlightData} flights={globalFlights} onUpdateFlights={setGlobalFlights} />;
+        return (
+          <FlightsPage 
+            onNavigate={setCurrentPage} 
+            onSelectFlight={setSelectedFlightData} 
+            flights={globalFlights} 
+            onAddFlight={addFlight}
+            onUpdateFlight={updateFlightInfo}
+            onDeleteFlight={deleteFlight}
+          />
+        );
       case 'booking':
       case 'create_booking':
         return (
@@ -139,7 +242,7 @@ export default function Home() {
             onCheckout={handleGoToCheckout}
             bookings={globalBookings}
             onUpdateStatus={updateBookingStatus}
-            onDeleteBooking={(id) => setGlobalBookings(prev => prev.filter(b => b.id !== id))}
+            onDeleteBooking={deleteBooking}
           />
         );
       case 'payments':
@@ -162,8 +265,6 @@ export default function Home() {
         return <ReportsPage onNavigate={setCurrentPage} />;
       case 'users':
         return <UsersPage onNavigate={setCurrentPage} />;
-      case 'profile':
-        return <ProfilePage onNavigate={setCurrentPage} />;
       case 'audit_log':
         return <AuditLogPage onNavigate={setCurrentPage} />;
       case 'payment_history':
@@ -179,7 +280,7 @@ export default function Home() {
       case 'refund-management':
         return <RefundManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} />;
       case 'passengers':
-        return <PassengersPage onNavigate={setCurrentPage} />;
+        return <PassengersPage onNavigate={setCurrentPage} bookings={globalBookings} />;
       case 'seat-map':
         return <SeatMapPage onNavigate={setCurrentPage} />;
       case 'loyalty':
@@ -189,7 +290,7 @@ export default function Home() {
       case 'gate-management':
         return <GateManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} onUpdateBooking={updateBooking} onUpdateFlightInfo={updateFlightInfo} />;
       default:
-        return <Dashboard onNavigate={setCurrentPage} />;
+        return <Dashboard onNavigate={setCurrentPage} bookings={globalBookings} stats={dashboardStats} />;
     }
   };
 

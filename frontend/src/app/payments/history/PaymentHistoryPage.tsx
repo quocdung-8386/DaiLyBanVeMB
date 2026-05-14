@@ -2,20 +2,39 @@ import React, { useState } from 'react';
 import Card from '../../../components/Card';
 import Button from '../../../components/Button';
 import AppLayout from '../../../components/AppLayout';
+import { api } from '../../../api';
 
 interface PaymentHistoryPageProps {
   onNavigate?: (id: string) => void;
 }
 
 const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const transactions = [
-    { id: 'TXN-8829', booking: 'G7X9PQ', customer: 'Nguyễn Văn Trường', method: 'Chuyển khoản', amount: '2,450,000 đ', status: 'completed', date: '24/10/2023 10:12', bank: 'MB Bank' },
-    { id: 'TXN-8830', booking: 'A2B4C6', customer: 'Trần Thị Lan', method: 'Tiền mặt', amount: '1,890,000 đ', status: 'completed', date: '24/10/2023 11:30', bank: 'Quầy SGN' },
-    { id: 'TXN-8831', booking: 'L9M1N2', customer: 'Lê Quang Minh', method: 'Thẻ POS', amount: '4,100,000 đ', status: 'pending', date: '24/10/2023 14:15', bank: 'Visa ****42' },
-    { id: 'TXN-8832', booking: 'X7Y8Z9', customer: 'Phạm Thu Hà', method: 'Chuyển khoản', amount: '3,200,000 đ', status: 'failed', date: '24/10/2023 15:20', bank: 'Vietcombank' },
-  ];
+  React.useEffect(() => {
+    const fetchPayments = async () => {
+      try {
+        const data = await api.getPayments();
+        setTransactions(data);
+      } catch (error) {
+        console.error("Failed to fetch payments:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPayments();
+  }, []);
+
+  const totalRevenue = transactions.reduce((sum, tx) => {
+    const amount = parseFloat(tx.amount.replace(/[^0-9.-]+/g, ""));
+    return sum + (tx.status === 'Đã thanh toán' ? amount : 0);
+  }, 0);
+
+  const pendingRevenue = transactions.reduce((sum, tx) => {
+    const amount = parseFloat(tx.amount.replace(/[^0-9.-]+/g, ""));
+    return sum + (tx.status === 'Chờ thanh toán' ? amount : 0);
+  }, 0);
 
   return (
     <AppLayout 
@@ -44,8 +63,8 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
               <span className="material-icons-round">payments</span>
             </div>
             <div className="data">
-              <p>Tổng thu hôm nay</p>
-              <h3>42.8M</h3>
+              <p>Tổng doanh thu</p>
+              <h3>{(totalRevenue / 1000000).toFixed(1)}M</h3>
             </div>
           </Card>
           <Card className="finance-pill">
@@ -53,8 +72,8 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
               <span className="material-icons-round">account_balance</span>
             </div>
             <div className="data">
-              <p>Chuyển khoản chờ duyệt</p>
-              <h3>8.5M</h3>
+              <p>Chờ thanh toán</p>
+              <h3>{(pendingRevenue / 1000000).toFixed(1)}M</h3>
             </div>
           </Card>
           <Card className="finance-pill">
@@ -62,8 +81,8 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
               <span className="material-icons-round">error_outline</span>
             </div>
             <div className="data">
-              <p>Giao dịch thất bại</p>
-              <h3>2.1M</h3>
+              <p>Số lượng GD</p>
+              <h3>{transactions.length}</h3>
             </div>
           </Card>
         </div>
@@ -101,31 +120,30 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
                   <tr key={tx.id}>
                     <td>
                       <div className="time-cell">
-                        <b>{tx.date.split(' ')[1]}</b>
-                        <span>{tx.date.split(' ')[0]}</span>
+                        <b>{tx.date ? tx.date.split('T')[1].substring(0, 5) : '--:--'}</b>
+                        <span>{tx.date ? tx.date.split('T')[0] : '----/--/--'}</span>
                       </div>
                     </td>
                     <td>
                       <div className="tx-cell">
                         <code className="id-code">{tx.id}</code>
-                        <span className="pnr-link">PNR: {tx.booking}</span>
+                        <span className="pnr-link">Booking: {tx.bookingId}</span>
                       </div>
                     </td>
-                    <td><b>{tx.customer}</b></td>
+                    <td><b>{tx.customer || 'N/A'}</b></td>
                     <td>
                       <div className="method-cell">
                         <span className="material-icons-round">account_balance_wallet</span>
                         <div>
                           <p>{tx.method}</p>
-                          <span>{tx.bank}</span>
                         </div>
                       </div>
                     </td>
                     <td><b className="amount-text">{tx.amount}</b></td>
                     <td>
-                      <span className={`status-pill ${tx.status}`}>
+                      <span className={`status-pill ${tx.status === 'Đã thanh toán' ? 'completed' : tx.status === 'Chờ thanh toán' ? 'pending' : 'failed'}`}>
                         <i className="dot"></i>
-                        {tx.status === 'completed' ? 'Hoàn tất' : tx.status === 'pending' ? 'Đang xử lý' : 'Thất bại'}
+                        {tx.status}
                       </span>
                     </td>
                     <td>

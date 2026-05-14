@@ -4,6 +4,7 @@ import AppLayout from '../../components/AppLayout';
 
 interface PassengersPageProps {
   onNavigate?: (id: string) => void;
+  bookings: any[];
 }
 
 const passengerManifest = [
@@ -12,8 +13,34 @@ const passengerManifest = [
   { id: 'PAX-003', name: 'LE HUU DAT', idNumber: '079203004321', ticketCode: 'VE-003', flight: 'VN789', seat: '08B', class: 'Business', status: 'Not Checked-in', boardingStatus: 'N/A' },
 ];
 
-const PassengersPage: React.FC<PassengersPageProps> = ({ onNavigate }) => {
+const PassengersPage: React.FC<PassengersPageProps> = ({ onNavigate, bookings }) => {
   const [filterFlight, setFilterFlight] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const passengers = React.useMemo(() => {
+    return bookings.flatMap(b => {
+      const pList = b.passengersList || [{ name: b.customer, seat: b.seat }];
+      return pList.map((p: any, idx: number) => ({
+        id: `${b.id}-${idx}`,
+        name: p.name,
+        pnr: b.pnr,
+        flight: b.flight,
+        seat: p.seat || b.seat,
+        class: b.fareClass || 'Economy',
+        status: b.status.includes('Check-in') ? 'Checked-in' : 'Not Checked-in',
+        boardingStatus: b.status === 'Boarded' ? 'Boarded' : 'Waiting',
+        ticketCode: b.id
+      }));
+    });
+  }, [bookings]);
+
+  const filtered = passengers.filter(p => {
+    if (filterFlight !== 'all' && p.flight !== filterFlight) return false;
+    if (search && !p.name.toLowerCase().includes(search.toLowerCase()) && !p.pnr.toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  const uniqueFlights = Array.from(new Set(bookings.map(b => b.flight)));
 
   return (
     <AppLayout 
@@ -29,18 +56,19 @@ const PassengersPage: React.FC<PassengersPageProps> = ({ onNavigate }) => {
 
         <Card className="filter-card">
            <div className="filter-grid">
-              <div className="filter-item">
-                 <label>CHUYẾN BAY</label>
-                 <select value={filterFlight} onChange={e => setFilterFlight(e.target.value)}>
-                    <option value="all">Tất cả chuyến bay</option>
-                    <option value="VN123">VN123 (SGN-HAN)</option>
-                    <option value="VN789">VN789 (HAN-PQC)</option>
-                 </select>
-              </div>
-              <div className="filter-item">
-                 <label>TÌM KIẾM</label>
-                 <input type="text" placeholder="Tên, CCCD, Mã vé..." />
-              </div>
+               <div className="filter-item">
+                  <label>CHUYẾN BAY</label>
+                  <select value={filterFlight} onChange={e => setFilterFlight(e.target.value)}>
+                     <option value="all">Tất cả chuyến bay</option>
+                     {uniqueFlights.map(f => (
+                       <option key={f} value={f}>{f}</option>
+                     ))}
+                  </select>
+               </div>
+               <div className="filter-item">
+                  <label>TÌM KIẾM</label>
+                  <input type="text" placeholder="Tên, PNR, Mã vé..." value={search} onChange={e => setSearch(e.target.value)} />
+               </div>
            </div>
         </Card>
 
@@ -58,17 +86,17 @@ const PassengersPage: React.FC<PassengersPageProps> = ({ onNavigate }) => {
                  </tr>
               </thead>
               <tbody>
-                 {passengerManifest.map(p => (
-                    <tr key={p.id}>
-                       <td><b>{p.name}</b></td>
-                       <td>{p.idNumber}</td>
-                       <td>{p.flight}</td>
-                       <td>{p.class} / {p.seat}</td>
-                       <td><span className={`status ${p.status.toLowerCase().replace(' ', '-')}`}>{p.status}</span></td>
-                       <td><span className={`status ${p.boardingStatus.toLowerCase()}`}>{p.boardingStatus}</span></td>
-                       <td><code>{p.ticketCode}</code></td>
-                    </tr>
-                 ))}
+                  {filtered.map(p => (
+                     <tr key={p.id}>
+                        <td><b>{p.name}</b></td>
+                        <td>{p.pnr}</td>
+                        <td>{p.flight}</td>
+                        <td>{p.class} / {p.seat}</td>
+                        <td><span className={`status ${p.status.toLowerCase().replace(/\s+/g, '-')}`}>{p.status}</span></td>
+                        <td><span className={`status ${p.boardingStatus.toLowerCase()}`}>{p.boardingStatus}</span></td>
+                        <td><code>{p.ticketCode}</code></td>
+                     </tr>
+                  ))}
               </tbody>
            </table>
         </Card>

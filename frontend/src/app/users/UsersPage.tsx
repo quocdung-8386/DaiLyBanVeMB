@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import AppLayout from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
+import { api } from '../../api';
 
 interface UsersPageProps {
   onNavigate: (page: string) => void;
@@ -9,17 +10,34 @@ interface UsersPageProps {
 
 const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showUserPopup, setShowUserPopup] = useState(false);
   const [showRolePopup, setShowRolePopup] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editingRole, setEditingRole] = useState<any>(null);
 
-  const [usersList, setUsersList] = useState([
-    { id: 'NV001', name: 'Nguyễn Văn Admin', username: 'admin_dung', role: 'Quản trị hệ thống', agency: 'Trụ sở chính', status: 'Hoạt động' },
-    { id: 'NV002', name: 'Trần Thị Kế Toán', username: 'ketoan_01', role: 'Kế toán', agency: 'Trụ sở chính', status: 'Hoạt động' },
-    { id: 'NV003', name: 'Lê Văn Bán Vé', username: 'agent_le', role: 'Nhân viên bán vé', agency: 'Chi nhánh Quận 1', status: 'Khóa' },
-  ]);
+  React.useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const data = await api.getStaff();
+        setUsersList(data.map((s: any) => ({
+          id: s.id,
+          name: s.username, // Using username as name if name not available
+          username: s.username,
+          role: s.department || 'Nhân viên',
+          agency: s.agency || 'Trụ sở chính',
+          status: 'Hoạt động'
+        })));
+      } catch (error) {
+        console.error("Failed to fetch staff:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStaff();
+  }, []);
 
   const [rolesList, setRolesList] = useState([
     { id: 'R01', name: 'Quản trị hệ thống', usersCount: 2, desc: 'Toàn quyền truy cập mọi tính năng', permissions: ['booking', 'issuing', 'refund', 'reports', 'settings', 'users'] },
@@ -125,7 +143,12 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
           </button>
         </div>
 
-        {activeTab === 'users' && (
+        {loading ? (
+          <div style={{ padding: 40, textAlign: 'center', color: '#64748b' }}>
+            <span className="material-icons-round" style={{ animation: 'spin 1s linear infinite', fontSize: 32 }}>sync</span>
+            <p style={{ marginTop: 12, fontWeight: 600 }}>Đang tải dữ liệu nhân sự...</p>
+          </div>
+        ) : activeTab === 'users' && (
           <Card className="tab-content">
             <div className="toolbar">
               <div className="search-box">
@@ -156,7 +179,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
                       <td><div className="tx-id">{u.id}</div></td>
                       <td>
                         <div className="customer-info">
-                          <div className="customer-avatar">{u.name.split(' ').map(w => w[0]).slice(-2).join('')}</div>
+                          <div className="customer-avatar">{u.name ? u.name.split(' ').filter(Boolean).map(w => w[0]).slice(-2).join('').toUpperCase() : '??'}</div>
                           <div>
                             <p className="name">{u.name}</p>
                             <p className="subtext">@{u.username}</p>

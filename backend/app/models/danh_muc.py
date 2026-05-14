@@ -74,6 +74,7 @@ class ChuyenBay(Base):
     nha_ga: Mapped[str | None] = mapped_column(String(20))
     cong_khoi_hanh: Mapped[str | None] = mapped_column(String(20))
     trang_thai: Mapped[str] = mapped_column(String(20), default="Scheduled")
+    ma_may_bay: Mapped[str | None] = mapped_column(String(50))
 
     # Relationships
     tuyen_bay: Mapped["TuyenBay | None"] = relationship(back_populates="chuyen_bays")

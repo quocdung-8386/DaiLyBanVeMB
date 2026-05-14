@@ -6,7 +6,7 @@ Bảng: DatCho, VeMayBay, Ve_DichVu
 from datetime import datetime
 from decimal import Decimal
 from sqlalchemy import (
-    String, Integer, Numeric, TIMESTAMP, ForeignKey, func
+    String, Integer, Numeric, TIMESTAMP, ForeignKey, func, ForeignKeyConstraint
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -34,6 +34,12 @@ class DatCho(Base):
 
 class VeMayBay(Base):
     __tablename__ = "vemaybay"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["ma_cb", "hang_ghe"],
+            ["chitiethangghe.ma_cb", "chitiethangghe.hang_ghe"],
+        ),
+    )
 
     ma_ve: Mapped[str] = mapped_column(String(20), primary_key=True)
     ma_dat_cho: Mapped[str] = mapped_column(

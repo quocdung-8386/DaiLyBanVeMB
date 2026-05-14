@@ -6,6 +6,8 @@ import AppLayout from '../../components/AppLayout';
 interface DashboardProps { 
   onNavigate?: (id: string) => void; 
   bookings?: any[];
+  stats?: any;
+  flights?: any[];
 }
 
 const S = {
@@ -18,58 +20,22 @@ const S = {
   card:   { background:'white', borderRadius:14, border:'1px solid #e2e8f0', padding:'20px', boxShadow:'0 1px 4px rgba(0,0,0,0.05)' } as React.CSSProperties,
 };
 
-const metricCards = [
-  { label:'Vé bán hôm nay', value:'147', sub:'+23 so với hôm qua', icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff' },
-  { label:'Chờ thanh toán', value:'32', sub:'Cần xử lý ngay', icon:'pending_actions', color:'#d97706', bg:'#fef3c7' },
-  { label:'Vé đã hủy', value:'12', sub:'-5% so với tuần trước', icon:'cancel', color:'#dc2626', bg:'#fef2f2' },
-  { label:'Doanh thu vé (ngày)', value:'284M', sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
-  { label:'Số lượng khách', value:'1,248', sub:'Hành khách đã bay', icon:'groups', color:'#7c3aed', bg:'#f5f3ff' },
-  { label:'Ghế còn trống', value:'428', sub:'Trong 24h tới', icon:'event_seat', color:'#0891b2', bg:'#ecfeff' },
-  { label:'Tỷ lệ lấp đầy', value:'82.5%', sub:'+2.1% mục tiêu', icon:'leaderboard', color:'#4f46e5', bg:'#eef2ff' },
-  { label:'Tổng vé đã bán', value:'12.4K', sub:'Tháng này', icon:'analytics', color:'#db2777', bg:'#fdf2f8' },
-];
-
-const departures = [
-  { flight:'VN123', route:'SGN → HAN', time:'08:30', seats:147, cap:180, status:'Đang lên máy bay', badge:'boarding' },
-  { flight:'VJ456', route:'HAN → DAD', time:'09:15', seats:189, cap:220, status:'Đã đóng cửa', badge:'closed' },
-  { flight:'QH321', route:'SGN → HPH', time:'10:00', seats:98,  cap:162, status:'Đang bán vé', badge:'open' },
-  { flight:'VN789', route:'HAN → PQC', time:'11:45', seats:165, cap:180, status:'Đang lên máy bay', badge:'boarding' },
-  { flight:'VJ101', route:'DAD → SGN', time:'13:20', seats:201, cap:220, status:'Đang bán vé', badge:'open' },
-];
-
-const topRoutes = [
-  { route:'SGN → HAN', tickets:1248, revenue:'3.2 tỷ', fill:85 },
-  { route:'HAN → SGN', tickets:1102, revenue:'2.9 tỷ', fill:78 },
-  { route:'SGN → DAD', tickets:876,  revenue:'1.8 tỷ', fill:62 },
-  { route:'HAN → PQC', tickets:654,  revenue:'2.1 tỷ', fill:71 },
-  { route:'SGN → HPH', tickets:432,  revenue:'1.1 tỷ', fill:55 },
-];
-
-const recentActivities = [
-  { type:'issued',    icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff', msg:'Vé VE-2847 được xuất thành công', detail:'PNR G7X9PQ · SGN→HAN · Nguyễn Văn An', time:'2 phút trước' },
-  { type:'payment',   icon:'payments',           color:'#16a34a', bg:'#dcfce7', msg:'Thanh toán hoàn tất vé VE-2846', detail:'3,250,000đ · VNPay · PNR A2B4C6',       time:'5 phút trước' },
-  { type:'cancelled', icon:'cancel',             color:'#dc2626', bg:'#fef2f2', msg:'Vé VE-2840 bị hủy',               detail:'PNR L9M1N2 · HAN→PQC · Lê Hữu Đạt',  time:'12 phút trước' },
-  { type:'boarding',  icon:'flight_takeoff',     color:'#7c3aed', bg:'#f5f3ff', msg:'VN123 bắt đầu lên máy bay',       detail:'Cổng B12 · Terminal 2 · 08:30',        time:'18 phút trước' },
-  { type:'issued',    icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff', msg:'Vé VE-2845 được xuất thành công', detail:'PNR X7Y8Z9 · SGN→HPH · Phạm Tuấn Khải','time':'25 phút trước' },
-  { type:'payment',   icon:'payments',           color:'#16a34a', bg:'#dcfce7', msg:'Thanh toán hoàn tất vé VE-2844', detail:'2,450,000đ · Tiền mặt · PNR R3S4T5',    time:'31 phút trước' },
-];
-
-const badgeStyle = (b: string) => {
-  if (b === 'boarding') return { bg:'#f5f3ff', color:'#7c3aed' };
-  if (b === 'closed')   return { bg:'#fef2f2', color:'#dc2626' };
+const badgeStyle = (status: string) => {
+  if (status === 'Đang lên máy bay' || status === 'Boarding') return { bg:'#f5f3ff', color:'#7c3aed' };
+  if (status === 'Đã đóng cửa' || status === 'Closed')   return { bg:'#fef2f2', color:'#dc2626' };
   return { bg:'#dcfce7', color:'#15803d' };
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats, flights = [] }) => {
   const [activeTab, setActiveTab] = useState<'today'|'week'|'month'>('today');
 
-  // Dynamic calculations
+  // Dynamic calculations for core metrics
   const totalBooked = bookings.length;
   const pendingCount = bookings.filter(b => b.status === 'Chờ thanh toán').length;
   const cancelledCount = bookings.filter(b => b.status === 'Đã hủy').length;
   const ticketedCount = bookings.filter(b => b.status === 'Đã xuất vé').length;
   
-  const totalRevenue = bookings
+  const totalRevenueNum = bookings
     .filter(b => b.status === 'Đã xuất vé')
     .reduce((sum, b) => {
       const price = parseInt(b.total?.replace(/\D/g, '') || '0');
@@ -83,15 +49,61 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
   };
 
   const dynamicMetrics = [
-    { label:'Vé bán hôm nay', value: ticketedCount.toString(), sub:'Tổng vé đã xuất', icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff' },
-    { label:'Chờ thanh toán', value: pendingCount.toString(), sub:'Cần xử lý ngay', icon:'pending_actions', color:'#d97706', bg:'#fef3c7' },
+    { label:'Vé bán hôm nay', value: stats?.activeBookings?.toString() || ticketedCount.toString(), sub:'Tổng vé đã xuất', icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff' },
+    { label:'Chờ thanh toán', value: stats?.holdBookings?.toString() || pendingCount.toString(), sub:'Cần xử lý ngay', icon:'pending_actions', color:'#d97706', bg:'#fef3c7' },
     { label:'Vé đã hủy', value: cancelledCount.toString(), sub:'Thống kê hệ thống', icon:'cancel', color:'#dc2626', bg:'#fef2f2' },
-    { label:'Doanh thu (Tổng)', value: formatCurrency(totalRevenue), sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
-    { label:'Số lượng khách', value: bookings.reduce((sum, b) => sum + (b.pax || 1), 0).toString(), sub:'Hành khách hệ thống', icon:'groups', color:'#7c3aed', bg:'#f5f3ff' },
-    { label:'Booking mới', value: totalBooked.toString(), sub:'Tổng số giao dịch', icon:'analytics', color:'#db2777', bg:'#fdf2f8' },
-    { label:'Tỷ lệ lấp đầy', value:'84.2%', sub:'+2.1% mục tiêu', icon:'leaderboard', color:'#4f46e5', bg:'#eef2ff' },
-    { label:'Ghế còn trống', value:'428', sub:'Trong 24h tới', icon:'event_seat', color:'#0891b2', bg:'#ecfeff' },
+    { label:'Doanh thu (Tổng)', value: stats?.totalRevenue || formatCurrency(totalRevenueNum), sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
+    { label:'Số lượng khách', value: stats?.totalCustomers?.toString() || bookings.reduce((sum, b) => sum + (b.pax || 1), 0).toString(), sub:'Hành khách hệ thống', icon:'groups', color:'#7c3aed', bg:'#f5f3ff' },
+    { label:'Booking mới', value: stats?.totalBookings?.toString() || totalBooked.toString(), sub:'Tổng số giao dịch', icon:'analytics', color:'#db2777', bg:'#fdf2f8' },
+    { label:'Tỷ lệ lấp đầy', value: flights.length > 0 ? (flights.reduce((s, f) => s + (f.seatsSold/f.cap), 0) / flights.length * 100).toFixed(1) + '%' : '0%', sub:'Dựa trên ghế đã bán', icon:'leaderboard', color:'#4f46e5', bg:'#eef2ff' },
+    { label:'Ghế còn trống', value: flights.reduce((s, f) => s + (f.cap - f.seatsSold), 0).toString(), sub:'Toàn mạng bay', icon:'event_seat', color:'#0891b2', bg:'#ecfeff' },
   ];
+
+  // Dynamic Departures from real flights
+  const dynamicDepartures = flights.slice(0, 5).map(f => ({
+    flight: f.flight,
+    route: `${f.from} → ${f.to}`,
+    time: f.dep,
+    seats: f.seatsSold,
+    cap: f.cap,
+    status: f.status === 'Scheduled' ? 'Đang bán vé' : f.status,
+    badge: f.status
+  }));
+
+  // Dynamic Top Routes
+  const routeMap: Record<string, { tickets: number, revenue: number, cap: number, seats: number }> = {};
+  bookings.forEach(b => {
+    const rKey = `${b.from} → ${b.to}`;
+    if (!routeMap[rKey]) routeMap[rKey] = { tickets: 0, revenue: 0, cap: 0, seats: 0 };
+    routeMap[rKey].tickets += 1;
+    routeMap[rKey].revenue += parseInt(b.total?.replace(/\D/g, '') || '0');
+  });
+  
+  const dynamicTopRoutes = Object.entries(routeMap)
+    .map(([route, data]) => ({
+      route,
+      tickets: data.tickets,
+      revenue: formatCurrency(data.revenue),
+      fill: Math.min(100, Math.round((data.tickets / 10) * 100)) // Simulated fill for routes based on bookings
+    }))
+    .sort((a, b) => b.tickets - a.tickets)
+    .slice(0, 5);
+
+  // Dynamic Recent Activities
+  const dynamicActivities = bookings.slice(-6).reverse().map(b => {
+    const isSuccess = b.status === 'Đã xuất vé' || b.status === 'Đã thanh toán';
+    const isHold = b.status === 'Chờ thanh toán' || b.badge === 'hold';
+    
+    return {
+      type: isSuccess ? 'issued' : isHold ? 'payment' : 'cancelled',
+      icon: isSuccess ? 'confirmation_number' : isHold ? 'pending_actions' : 'cancel',
+      color: isSuccess ? '#2563eb' : isHold ? '#d97706' : '#dc2626',
+      bg: isSuccess ? '#eff6ff' : isHold ? '#fef3c7' : '#fef2f2',
+      msg: isSuccess ? `Vé ${b.id} đã được xuất` : `Booking ${b.id} đang chờ`,
+      detail: `PNR ${b.pnr} · ${b.from}→${b.to} · ${b.customer}`,
+      time: 'Vừa xong'
+    };
+  });
 
   return (
     <AppLayout activeItem="dashboard" onNavigate={onNavigate || (() => {})}>
@@ -276,8 +288,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
                 <button onClick={() => onNavigate?.('flights')} style={{ background:'#eff6ff', border:'none', borderRadius:8, padding:'5px 12px', fontSize:12, fontWeight:700, color:'#2563eb', cursor:'pointer' }}>Xem tất cả</button>
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                {departures.map((d,i) => {
-                  const bs = badgeStyle(d.badge);
+                {dynamicDepartures.length > 0 ? dynamicDepartures.map((d,i) => {
+                  const bs = badgeStyle(d.status);
                   const pct = Math.round(d.seats/d.cap*100);
                   return (
                     <div key={i} style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 14px', background:'#f8fafc', borderRadius:10, border:'1px solid #f1f5f9', cursor:'pointer' }} onClick={() => onNavigate?.('flights')}>
@@ -297,7 +309,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
                       <span style={{ background:bs.bg, color:bs.color, fontSize:10, fontWeight:700, padding:'3px 8px', borderRadius:8, whiteSpace:'nowrap' }}>{d.status}</span>
                     </div>
                   );
-                })}
+                }) : (
+                  <p style={{textAlign:'center', padding:20, color:'#64748b', fontSize:13}}>Không có chuyến bay sắp khởi hành</p>
+                )}
               </div>
             </div>
 
@@ -310,7 +324,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
                   <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Top tuyến bay</h3>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                  {topRoutes.map((r,i) => (
+                  {dynamicTopRoutes.length > 0 ? dynamicTopRoutes.map((r,i) => (
                     <div key={i} style={{ display:'flex', alignItems:'center', gap:10 }}>
                       <span style={{ fontSize:12, fontWeight:800, color:'#94a3b8', minWidth:16 }}>#{i+1}</span>
                       <div style={{ flex:1 }}>
@@ -324,7 +338,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
                       </div>
                       <span style={{ fontSize:11, color:'#64748b', minWidth:28, textAlign:'right' }}>{r.fill}%</span>
                     </div>
-                  ))}
+                  )) : (
+                    <p style={{fontSize:12, color:'#64748b', textAlign:'center', padding:10}}>Chưa có dữ liệu tuyến bay</p>
+                  )}
                 </div>
               </div>
 
@@ -335,7 +351,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
                   <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Hoạt động gần đây</h3>
                 </div>
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                  {recentActivities.map((a,i) => (
+                  {dynamicActivities.length > 0 ? dynamicActivities.map((a,i) => (
                     <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
                       <div style={{ width:32, height:32, borderRadius:8, background:a.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                         <span className="material-icons-round" style={{ fontSize:16, color:a.color }}>{a.icon}</span>
@@ -346,7 +362,9 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [] }) => {
                       </div>
                       <span style={{ fontSize:10, color:'#94a3b8', whiteSpace:'nowrap' }}>{a.time}</span>
                     </div>
-                  ))}
+                  )) : (
+                    <p style={{fontSize:12, color:'#64748b', textAlign:'center', padding:10}}>Chưa có hoạt động mới</p>
+                  )}
                 </div>
               </div>
             </div>

@@ -22,6 +22,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
   const [selectedFare, setSelectedFare] = useState('Economy');
   const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
   const [editingSeatIndex, setEditingSeatIndex] = useState<number | null>(null);
+  const [isFlightSelectOpen, setIsFlightSelectOpen] = useState(false);
 
   // Extra services state
   const [extraServices, setExtraServices] = useState({
@@ -336,10 +337,17 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                 <div className="summary-column">
                   <Card className="summary-card-premium">
                     <h3 className="summary-title">Tóm tắt hành trình</h3>
-                    <div className="flight-mini-card">
+                    <div 
+                      className="flight-mini-card clickable" 
+                      onClick={() => setIsFlightSelectOpen(true)}
+                      title="Click để đổi chuyến bay"
+                    >
                       <div style={{display:'flex', justifyContent:'space-between', marginBottom:12}}>
                         <b>{flightData?.id || 'VN-214'}</b>
-                        <span style={{color:'#2563eb', fontWeight:700}}>{selectedFare}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span className="change-link">Đổi chuyến</span>
+                          <span style={{color:'#2563eb', fontWeight:700}}>{selectedFare}</span>
+                        </div>
                       </div>
                       <div style={{display:'flex', justifyContent:'space-between', alignItems:'center'}}>
                          <div style={{textAlign:'center'}}><b>{flightData?.from || 'SGN'}</b><p style={{margin:0, fontSize:11}}>{flightData?.departure || '08:30'}</p></div>
@@ -401,6 +409,57 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                    <p>Vui lòng đợi trong giây lát để đến trang thanh toán.</p>
                  </>
                )}
+            </div>
+          </div>
+        )}
+
+        {isFlightSelectOpen && (
+          <div className="modal-overlay-b" onClick={() => setIsFlightSelectOpen(false)}>
+            <div className="modal-content-b wide" onClick={e => e.stopPropagation()}>
+              <div className="modal-header-b">
+                <h3>Chọn chuyến bay khác</h3>
+                <button onClick={() => setIsFlightSelectOpen(false)}>
+                  <span className="material-icons-round">close</span>
+                </button>
+              </div>
+              <div className="modal-body-list-b" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+                {flights && flights.length > 0 ? (
+                  flights.map(f => (
+                    <div 
+                      key={f.id} 
+                      className={`flight-select-item ${flightData?.id === f.id ? 'selected' : ''}`}
+                      onClick={() => {
+                        setFlightData(f);
+                        setIsFlightSelectOpen(false);
+                      }}
+                    >
+                      <div className="f-info">
+                        <b>{f.id}</b>
+                        <span>{f.name}</span>
+                      </div>
+                      <div className="f-route">
+                        <div className="r-box">
+                          <b>{f.from}</b>
+                          <small>{f.dep}</small>
+                        </div>
+                        <span className="material-icons-round">east</span>
+                        <div className="r-box">
+                          <b>{f.to}</b>
+                          <small>{f.arr}</small>
+                        </div>
+                      </div>
+                      <div className="f-price">
+                        <b>{f.price.toLocaleString('vi')}đ</b>
+                        <Button size="sm" variant={flightData?.id === f.id ? 'primary' : 'outline'}>
+                          {flightData?.id === f.id ? 'Đang chọn' : 'Chọn'}
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <p style={{ textAlign: 'center', padding: 20, color: '#64748b' }}>Không có chuyến bay khả dụng</p>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -500,7 +559,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
 
         .summary-card-premium { position: sticky; top: 0; }
         .summary-title { font-size: 15px; margin: 0 0 16px; }
-        .flight-mini-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; }
+        .flight-mini-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 16px; margin-bottom: 20px; transition: all 0.2s; }
+        .flight-mini-card.clickable { cursor: pointer; border-left: 4px solid #2563eb; }
+        .flight-mini-card.clickable:hover { background: #eff6ff; border-color: #2563eb; transform: translateX(2px); }
+        .change-link { font-size: 11px; color: #64748b; text-decoration: underline; opacity: 0; transition: 0.2s; }
+        .flight-mini-card.clickable:hover .change-link { opacity: 1; }
         .divider-sum { height: 1px; background: #f1f5f9; margin: 16px 0; }
         .summary-list { display: flex; flex-direction: column; gap: 8px; }
         .row-sum { display: flex; justify-content: space-between; font-size: 13px; color: #64748b; }
@@ -523,6 +586,21 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
         .icon-circle-b { width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; }
         .icon-circle-b.green { background: #dcfce7; color: #16a34a; }
         .icon-circle-b span { font-size: 32px; }
+
+        .modal-content-b.wide { width: 600px; }
+        .flight-select-item { display: flex; align-items: center; justify-content: space-between; padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: 0.2s; margin-bottom: 10px; }
+        .flight-select-item:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .flight-select-item.selected { border-color: #2563eb; background: #eff6ff; }
+        .f-info { display: flex; flex-direction: column; width: 120px; }
+        .f-info b { font-size: 14px; color: #1e293b; }
+        .f-info span { font-size: 11px; color: #64748b; }
+        .f-route { display: flex; align-items: center; gap: 12px; flex: 1; justify-content: center; }
+        .r-box { text-align: center; width: 60px; }
+        .r-box b { display: block; font-size: 15px; color: #0f172a; }
+        .r-box small { font-size: 11px; color: #64748b; }
+        .f-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; width: 140px; }
+        .f-price b { color: #2563eb; font-size: 16px; font-weight: 800; }
+
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { 100% { transform: rotate(360deg); } }
       `}</style>

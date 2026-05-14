@@ -208,7 +208,7 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate,
                       <td><span className="code-tag">{r.id}</span></td>
                       <td>
                         <div className="user-cell">
-                          <div className="user-avatar">{r.customer.charAt(0)}</div>
+                          <div className="refund-table-avatar">{r.customer.charAt(0)}</div>
                           <span className="user-name">{r.customer}</span>
                         </div>
                       </td>
@@ -400,7 +400,7 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate,
 
         .code-tag { background: #f1f5f9; color: #475569; padding: 3px 6px; border-radius: 4px; font-family: monospace; font-size: 11px; font-weight: 700; border: 1px solid #e2e8f0; }
         .user-cell { display: flex; align-items: center; gap: 10px; }
-        .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #2563eb; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+        .refund-table-avatar { width: 36px; height: 36px; border-radius: 10px; background: #0f172a; color: white; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
         .user-name { font-size: 13px; font-weight: 700; color: #1e293b; }
         .ticket-cell { display: flex; flex-direction: column; gap: 1px; }
         .pnr-tag { font-size: 12px; font-weight: 800; color: #2563eb; }

@@ -8,7 +8,9 @@ interface FlightsPageProps {
   onNavigate?: (id: string) => void;
   onSelectFlight?: (flight: any) => void;
   flights: any[];
-  onUpdateFlights?: (flights: any[]) => void;
+  onAddFlight?: (flight: any) => void;
+  onUpdateFlight?: (id: string, aircraft: string, gate: string) => void;
+  onDeleteFlight?: (id: string) => void;
 }
 
 const airlineStyle: Record<string,{bg:string,color:string}> = {
@@ -34,6 +36,53 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
     class: 'Economy',
     airline: 'all'
   });
+
+  // Flight Form State for Add/Edit
+  const [flightForm, setFlightForm] = useState({
+    flight: '',
+    code: 'VN',
+    from: 'HAN',
+    to: 'SGN',
+    dep: '08:00',
+    arr: '10:00',
+    price: 1500000,
+    cap: 180,
+    status: 'Đang bán vé',
+    aircraft: 'Airbus A321',
+    gate: '--'
+  });
+
+  React.useEffect(() => {
+    if (editingFlight) {
+      setFlightForm({
+        flight: editingFlight.flight,
+        code: editingFlight.code,
+        from: editingFlight.from,
+        to: editingFlight.to,
+        dep: editingFlight.dep,
+        arr: editingFlight.arr,
+        price: editingFlight.price,
+        cap: editingFlight.cap,
+        status: editingFlight.status,
+        aircraft: editingFlight.aircraft,
+        gate: editingFlight.gate
+      });
+    } else {
+      setFlightForm({
+        flight: '',
+        code: 'VN',
+        from: 'HAN',
+        to: 'SGN',
+        dep: '08:00',
+        arr: '10:00',
+        price: 1500000,
+        cap: 180,
+        status: 'Đang bán vé',
+        aircraft: 'Airbus A321',
+        gate: '--'
+      });
+    }
+  }, [editingFlight, showAddModal]);
 
   const handleSwapRoute = () => {
     setSearchForm(prev => ({ ...prev, from: prev.to, to: prev.from }));
