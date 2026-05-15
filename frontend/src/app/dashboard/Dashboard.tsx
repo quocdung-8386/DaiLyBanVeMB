@@ -157,6 +157,33 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
     acc.push(`${c.color} ${prev}% ${prev+c.pct}%`);
     return acc;
   }, []).join(', ') || '#e2e8f0 0% 100%';
+  
+  // Dynamic Fare Class Distribution
+  const fareClassChartData = useMemo(() => {
+    const m: Record<string, number> = { 'Economy': 0, 'Premium Economy': 0, 'Business': 0, 'First Class': 0 };
+    bookings.forEach((b: any) => {
+      const cls = b.fareClass || b.hang_ghe || 'Economy';
+      if (m[cls] !== undefined) m[cls]++;
+      else m['Economy']++;
+    });
+    const total = Math.max(Object.values(m).reduce((s, v) => s + v, 0), 1);
+    const colors: Record<string, string> = { 
+      'Economy': '#3b82f6', 
+      'Premium Economy': '#8b5cf6', 
+      'Business': '#f59e0b', 
+      'First Class': '#1e293b' 
+    };
+    return Object.entries(m).map(([label, cnt]) => ({
+      label, val: cnt, pct: Math.round(cnt / total * 100),
+      color: colors[label] || '#6366f1'
+    })).filter(c => c.val > 0);
+  }, [bookings]);
+  
+  const fareConicStops = fareClassChartData.reduce((acc: string[], c: any, i: number) => {
+    const prev = fareClassChartData.slice(0, i).reduce((s: number, x: any) => s + x.pct, 0);
+    acc.push(`${c.color} ${prev}% ${prev + c.pct}%`);
+    return acc;
+  }, []).join(', ') || '#e2e8f0 0% 100%';
 
   // Dynamic Alerts: hold bookings nearing expiry
   const holdAlerts = useMemo(() => {
@@ -201,6 +228,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
       activeItem="dashboard" 
       onNavigate={onNavigate || (() => {})} 
       currentUser={user} 
+      bookings={bookings}
       bookingPendingCount={pendingCount}
       flightCount={flights.length}
       passengerCount={bookings.reduce((sum: number, b: any) => sum + (b.passengersList?.length || 1), 0)}
@@ -329,28 +357,28 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
               </div>
             </div>
 
-            {/* Class Distribution Chart */}
+            {/* Fare Class Distribution Chart */}
             <div style={S.card}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:20 }}>
                 <span className="material-icons-round" style={{ color:'#7c3aed', fontSize:20 }}>pie_chart</span>
-                <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Thị phần theo Hãng</h3>
+                <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Phân bổ theo Hạng vé</h3>
               </div>
               <div style={{ display:'flex', alignItems:'center', gap:30, height:200 }}>
-                {airlineChartData.length > 0 ? (
+                {fareClassChartData.length > 0 ? (
                   <>
-                    <div style={{ position:'relative', width:140, height:140, borderRadius:'50%', background:`conic-gradient(${conicStops})`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <div style={{ position:'relative', width:140, height:140, borderRadius:'50%', background:`conic-gradient(${fareConicStops})`, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
                       <div style={{ width:80, height:80, borderRadius:'50%', background:'white', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-                        <span style={{ fontSize:18, fontWeight:900, color:'#1e293b' }}>{bookings.length}</span>
-                        <span style={{ fontSize:9, color:'#94a3b8', fontWeight:700 }}>BOOKING</span>
+                         <span style={{ fontSize:18, fontWeight:900, color:'#1e293b' }}>{bookings.length}</span>
+                         <span style={{ fontSize:9, color:'#94a3b8', fontWeight:700 }}>VÉ</span>
                       </div>
                     </div>
                     <div style={{ flex:1, display:'flex', flexDirection:'column', gap:12 }}>
-                      {airlineChartData.map((c: any, i: number) => (
+                      {fareClassChartData.map((c: any, i: number) => (
                         <div key={i}>
                           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:4 }}>
                             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
-                              <div style={{ width:10, height:10, borderRadius:3, background:c.color }} />
-                              <span style={{ fontSize:12, fontWeight:700, color:'#475569' }}>{c.label}</span>
+                               <div style={{ width:10, height:10, borderRadius:3, background:c.color }} />
+                               <span style={{ fontSize:12, fontWeight:700, color:'#475569' }}>{c.label}</span>
                             </div>
                             <span style={{ fontSize:12, fontWeight:800, color:'#1e293b' }}>{c.pct}%</span>
                           </div>
@@ -362,7 +390,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
                     </div>
                   </>
                 ) : (
-                  <p style={{fontSize:13,color:'#94a3b8',textAlign:'center',width:'100%'}}>Chưa có dữ liệu booking</p>
+                  <p style={{fontSize:13,color:'#94a3b8',textAlign:'center',width:'100%'}}>Chưa có dữ liệu hạng vé</p>
                 )}
               </div>
             </div>

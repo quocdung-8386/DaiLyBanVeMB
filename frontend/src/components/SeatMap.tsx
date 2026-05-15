@@ -25,27 +25,33 @@ const SeatMap: React.FC<SeatMapProps> = ({
 
   // Generate A321 Seat Layout
   const businessRows = [1, 2, 3];
-  const economyRows = Array.from({ length: 25 }, (_, i) => i + 10); // Rows 10 to 34
+  const premiumEconomyRows = [10, 11, 12];
+  const economyRows = Array.from({ length: 22 }, (_, i) => i + 13); // Rows 13 to 34
 
   const isOccupied = (seatId: string) => occupiedSeats.includes(seatId);
   const isSelected = (seatId: string) => selectedSeat === seatId;
 
-  const handleSeatClick = (seatId: string, isBusiness: boolean) => {
+  const handleSeatClick = (seatId: string, rowClass: 'business' | 'premium' | 'economy') => {
     if (isOccupied(seatId)) return;
     if (allowedClass) {
-       if (allowedClass === 'Economy' && isBusiness) {
+       if (allowedClass === 'Economy' && rowClass !== 'economy') {
           showToast('Vui lòng chọn ghế thuộc hạng Phổ thông (Economy).', 'warning');
           return;
        }
-       if ((allowedClass === 'Business' || allowedClass === 'First Class') && !isBusiness) {
-          showToast('Vui lòng chọn ghế thuộc hạng Thương gia (Business).', 'warning');
+       if (allowedClass === 'Premium Economy' && rowClass !== 'premium') {
+          showToast('Vui lòng chọn ghế thuộc hạng Phổ thông đặc biệt (Premium Economy).', 'warning');
+          return;
+       }
+       if ((allowedClass === 'Business' || allowedClass === 'First Class') && rowClass !== 'business') {
+          showToast('Vui lòng chọn ghế thuộc hạng Thương gia/Hạng Nhất.', 'warning');
           return;
        }
     }
     setSelectedSeat(seatId);
   };
 
-  const renderRow = (rowNum: number, isBusiness: boolean = false) => {
+  const renderRow = (rowNum: number, rowClass: 'business' | 'premium' | 'economy' = 'economy') => {
+    const isBusiness = rowClass === 'business';
     const letters = isBusiness ? ['A', 'C', 'gap', 'D', 'F'] : ['A', 'B', 'C', 'gap', 'D', 'E', 'F'];
     
     return (
@@ -58,18 +64,21 @@ const SeatMap: React.FC<SeatMapProps> = ({
             const seatId = `${rowNum}${letter}`;
             const occupied = isOccupied(seatId);
             const selected = isSelected(seatId);
-            const isSelectable = allowedClass ? (
-              (allowedClass === 'Economy' && !isBusiness) ||
-              ((allowedClass === 'Business' || allowedClass === 'First Class') && isBusiness)
-            ) : true;
             
-            const seatClass = `seat ${isBusiness ? 'business' : 'economy'} ${occupied ? 'occupied' : ''} ${selected ? 'selected' : ''} ${!isSelectable && !occupied ? 'disabled-class' : ''}`;
+            let isSelectable = true;
+            if (allowedClass) {
+              if (allowedClass === 'Economy') isSelectable = rowClass === 'economy';
+              else if (allowedClass === 'Premium Economy') isSelectable = rowClass === 'premium';
+              else if (allowedClass === 'Business' || allowedClass === 'First Class') isSelectable = rowClass === 'business';
+            }
+            
+            const seatClass = `seat ${rowClass} ${occupied ? 'occupied' : ''} ${selected ? 'selected' : ''} ${!isSelectable && !occupied ? 'disabled-class' : ''}`;
             
             return (
               <div 
                 key={seatId} 
                 className={seatClass}
-                onClick={() => handleSeatClick(seatId, isBusiness)}
+                onClick={() => handleSeatClick(seatId, rowClass)}
                 title={`Ghế ${seatId}${occupied ? ' (Đã đặt)' : ''}`}
               >
                 {letter}
@@ -101,6 +110,10 @@ const SeatMap: React.FC<SeatMapProps> = ({
               <span>Phổ thông</span>
             </div>
             <div className="legend-item">
+              <div className="seat-sample premium"></div>
+              <span>Phổ thông ĐB</span>
+            </div>
+            <div className="legend-item">
               <div className="seat-sample business"></div>
               <span>Thương gia</span>
             </div>
@@ -118,8 +131,8 @@ const SeatMap: React.FC<SeatMapProps> = ({
             <div className="plane-nose"></div>
             <div className="plane-body">
               <div className="cabin-section">
-                <div className="cabin-title">Hạng Thương Gia (Business Class)</div>
-                {businessRows.map(r => renderRow(r, true))}
+                <div className="cabin-title">HẠNG THƯƠNG GIA (BUSINESS CLASS)</div>
+                {businessRows.map(r => renderRow(r, 'business'))}
               </div>
               
               <div className="cabin-divider">
@@ -131,8 +144,13 @@ const SeatMap: React.FC<SeatMapProps> = ({
               </div>
 
               <div className="cabin-section">
-                <div className="cabin-title">Hạng Phổ Thông (Economy Class)</div>
-                {economyRows.map(r => renderRow(r, false))}
+                <div className="cabin-title">HẠNG PHỔ THÔNG ĐẶC BIỆT</div>
+                {premiumEconomyRows.map(r => renderRow(r, 'premium'))}
+              </div>
+
+              <div className="cabin-section" style={{ marginTop: 24 }}>
+                <div className="cabin-title">HẠNG PHỔ THÔNG (ECONOMY CLASS)</div>
+                {economyRows.map(r => renderRow(r, 'economy'))}
               </div>
             </div>
           </div>
@@ -194,18 +212,24 @@ const SeatMap: React.FC<SeatMapProps> = ({
         .seat {
           display: flex; align-items: center; justify-content: center;
           font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s;
-          border: 2px solid transparent; color: white;
+          border: 2px solid transparent; background: white;
         }
-        .seat:hover:not(.occupied) { transform: translateY(-2px) scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .seat:hover:not(.occupied):not(.disabled-class) { transform: translateY(-2px) scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
         
-        .seat.economy, .seat-sample.economy { background: #e0f2fe; border-color: #7dd3fc; color: #0369a1; }
-        .seat.business, .seat-sample.business { background: #fef3c7; border-color: #fcd34d; color: #b45309; }
+        .seat.economy, .seat-sample.economy { border-color: #7dd3fc; color: #0369a1; }
+        .seat.economy:not(.selected):not(.occupied) { background: #f0f9ff; }
+        
+        .seat.premium, .seat-sample.premium { border-color: #d8b4fe; color: #6b21a8; }
+        .seat.premium:not(.selected):not(.occupied) { background: #faf5ff; }
+        
+        .seat.business, .seat-sample.business { border-color: #fcd34d; color: #b45309; }
+        .seat.business:not(.selected):not(.occupied) { background: #fffbeb; }
         
         .seat.occupied, .seat-sample.occupied { background: #e2e8f0; border-color: #cbd5e1; color: transparent; cursor: not-allowed; }
         .seat.occupied::after { content: '×'; color: #94a3b8; font-size: 16px; position: absolute; }
-        .seat.disabled-class { opacity: 0.3; cursor: not-allowed; }
+        .seat.disabled-class { opacity: 0.2; cursor: not-allowed; filter: grayscale(1); }
         
-        .seat.selected, .seat-sample.selected { background: #2563eb; border-color: #1d4ed8; color: white; box-shadow: 0 0 0 4px rgba(37,99,235,0.2); }
+        .seat.selected, .seat-sample.selected { background: #2563eb !important; border-color: #1d4ed8 !important; color: white !important; box-shadow: 0 0 0 4px rgba(37,99,235,0.2); }
 
         .plane-container { max-width: 380px; margin: 0 auto; background: white; border-radius: 40px; padding: 20px 0; border: 4px solid #f1f5f9; box-shadow: inset 0 0 20px rgba(0,0,0,0.02); }
         .plane-nose { height: 100px; background: linear-gradient(to bottom, #f1f5f9 0%, white 100%); border-top-left-radius: 50% 100%; border-top-right-radius: 50% 100%; margin: -24px -4px 20px; border: 4px solid #f1f5f9; border-bottom: none; }
@@ -217,7 +241,7 @@ const SeatMap: React.FC<SeatMapProps> = ({
         .row-num { width: 24px; text-align: center; font-size: 12px; font-weight: 800; color: #94a3b8; }
         .seats-group { display: flex; gap: 8px; }
         
-        .seat.economy { width: 32px; height: 32px; border-radius: 6px; }
+        .seat.economy, .seat.premium { width: 32px; height: 32px; border-radius: 6px; }
         .seat.business { width: 40px; height: 40px; border-radius: 8px; font-size: 14px; }
         .aisle { width: 24px; }
 

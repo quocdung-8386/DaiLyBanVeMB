@@ -103,7 +103,7 @@ const IssueTicketPage: React.FC<IssueTicketPageProps> = ({ onNavigate, ticketDat
                     <div className="p-avatar">AN</div>
                     <div className="p-info">
                       <p className="p-name">{data.customer}</p>
-                      <p className="p-sub">Người lớn · Phổ thông · 20kg ký gửi</p>
+                      <p className="p-sub">Người lớn · {data.fareClass || data.hang_ghe || 'Phổ thông'} · 20kg ký gửi</p>
                     </div>
                     <div className="p-status">
                        <span className="badge success">Đã thanh toán</span>

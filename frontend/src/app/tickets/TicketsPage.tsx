@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast, showConfirm } from '../../components/AppLayout';
 import Button from '../../components/Button';
 
 interface TicketsPageProps {
@@ -65,6 +65,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterAirline, setFilterAirline] = useState('all');
+  const [filterClass, setFilterClass] = useState('all');
   const [search, setSearch] = useState('');
   const [actionType, setActionType] = useState<'issue' | 'void' | 'refund' | 'delete' | null>(null);
   const [isAddPaxModalOpen, setIsAddPaxModalOpen] = useState(false);
@@ -79,11 +80,6 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
   const [viewingTicketRef, setViewingTicketRef] = useState<{bookingId: string, paxIndex: number} | null>(null);
   const [viewMode, setViewMode] = useState<'passengers' | 'history'>('passengers');
   const [selectedTickets, setSelectedTickets] = useState<string[]>([]);
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
-    visible: false,
-    message: '',
-    type: 'success',
-  });
 
   const getAirportName = (code: string) => ({ 'SGN': 'Tân Sơn Nhất', 'HAN': 'Nội Bài', 'DAD': 'Đà Nẵng', 'PQC': 'Phú Quốc', 'HPH': 'Cát Bi' }[code] || code);
 
@@ -149,10 +145,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
     };
   }, [viewingTicketRef, bookingsData, passengersData]);
 
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
-  };
+
 
   const handleAddPax = () => {
     if (!selectedId || !newPax.name) return;
@@ -172,11 +165,13 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
     });
     setIsAddPaxModalOpen(false);
     setNewPax({ name: '', seat: '', type: 'Người lớn', baggage: 0, mealType: 'none' });
+    showToast(`Đã thêm hành khách ${newPax.name.toUpperCase()} vào booking`, 'success');
   };
 
   const filtered = bookingsData.filter(t => {
     if (filterStatus !== 'all' && t.badge !== filterStatus) return false;
     if (filterAirline !== 'all' && t.airline !== filterAirline) return false;
+    if (filterClass !== 'all' && (t.fareClass || t.hang_ghe) !== filterClass) return false;
     
     const searchMatch = !search || 
       t.pnr.toLowerCase().includes(search.toLowerCase()) || 
@@ -219,6 +214,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
       bookingPendingCount={bookingPendingCount}
       flightCount={flightCount}
       passengerCount={passengerCount}
+      bookings={bookingsData}
     >
       <div className="tickets-page-content" style={{ display: 'flex', alignItems: 'flex-start' }}>
 
@@ -291,6 +287,17 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
                   <option value="Vietjet Air">Vietjet Air</option>
                   <option value="Bamboo Airways">Bamboo Airways</option>
                 </select>
+                <select 
+                  value={filterClass} 
+                  onChange={e => setFilterClass(e.target.value)} 
+                  style={{ border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: 13, color: '#475569', background: '#f8fafc', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="all">Tất cả hạng vé</option>
+                  <option value="Economy">Economy</option>
+                  <option value="Premium Economy">Premium Economy</option>
+                  <option value="Business">Business</option>
+                  <option value="First Class">First Class</option>
+                </select>
               </div>
             </div>
 
@@ -344,6 +351,9 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
                         </div>
                         <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 6, padding: '3px 10px' }}>
                           <span style={{ fontFamily: 'monospace', fontWeight: 800, color: '#1d4ed8', fontSize: 13 }}>PNR: {t.pnr}</span>
+                        </div>
+                        <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 6, padding: '3px 10px' }}>
+                          <span style={{ fontWeight: 700, color: '#7c3aed', fontSize: 11 }}>{t.fareClass || t.hang_ghe || 'Economy'}</span>
                         </div>
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -462,8 +472,16 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
                       {paxList.length} hành khách trong booking này
                     </p>
                     <button 
-                      onClick={() => setIsAddPaxModalOpen(true)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 8, color: '#1d4ed8', fontWeight: 700, fontSize: 12, cursor: 'pointer' }}
+                      onClick={() => !(['Đã Check-in', 'Đã thanh toán', 'Đã xuất vé', 'Đã hoàn thành', 'Đã hủy'].includes(selected.status)) && setIsAddPaxModalOpen(true)}
+                      disabled={['Đã Check-in', 'Đã thanh toán', 'Đã xuất vé', 'Đã hoàn thành', 'Đã hủy'].includes(selected.status)}
+                      style={{ 
+                        display: 'flex', alignItems: 'center', gap: 4, padding: '6px 14px', 
+                        background: ['Đã Check-in', 'Đã thanh toán', 'Đã xuất vé', 'Đã hoàn thành', 'Đã hủy'].includes(selected.status) ? '#f1f5f9' : '#eff6ff', 
+                        border: '1px solid #bfdbfe', borderRadius: 8, 
+                        color: ['Đã Check-in', 'Đã thanh toán', 'Đã xuất vé', 'Đã hoàn thành', 'Đã hủy'].includes(selected.status) ? '#94a3b8' : '#1d4ed8', 
+                        fontWeight: 700, fontSize: 12, cursor: ['Đã Check-in', 'Đã thanh toán', 'Đã xuất vé', 'Đã hoàn thành', 'Đã hủy'].includes(selected.status) ? 'not-allowed' : 'pointer',
+                        opacity: ['Đã Check-in', 'Đã thanh toán', 'Đã xuất vé', 'Đã hoàn thành', 'Đã hủy'].includes(selected.status) ? 0.7 : 1
+                      }}
                     >
                       <span className="material-icons-round" style={{ fontSize: 15 }}>person_add</span>
                       Thêm khách
@@ -545,12 +563,13 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
                         <button 
                           title="Xóa khách" 
                           onClick={() => {
-                            if (window.confirm(`Xóa hành khách ${p.name}?`)) {
+                            showConfirm(`Bạn có chắc chắn muốn xóa hành khách ${p.name}?`, () => {
                               setPassengersData({
                                 ...passengersData,
                                 [selected.id]: (passengersData[selected.id] || []).filter((_: any, idx: number) => idx !== i)
                               });
-                            }
+                              showToast(`Đã xóa hành khách ${p.name}`, 'info');
+                            }, 'Xóa hành khách');
                           }}
                           style={{ background: '#fef2f2', border: 'none', borderRadius: 8, width: 32, height: 32, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}
                         >
@@ -564,18 +583,45 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
                 </>
               ) : (
                 <div style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 20 }}>
-                  {[
-                    { time: '08/05/2026 14:30', user: 'Admin', action: 'Tạo booking (Hold)', detail: 'PNR: HOLD01 · Giá: 2,150,000đ' },
-                    { time: '08/05/2026 14:35', user: 'Admin', action: 'Thêm hành khách', detail: 'NGUYEN VAN A · Ghế: 12A' },
-                    { time: '08/05/2026 15:00', user: 'System', action: 'Gửi thông báo Email', detail: 'Đã gửi xác nhận đặt chỗ cho khách hàng' },
-                  ].map((h, i) => (
-                    <div key={i} style={{ position: 'relative', paddingLeft: 24, borderLeft: '2px solid #e2e8f0' }}>
-                      <div style={{ position: 'absolute', left: -7, top: 0, width: 12, height: 12, borderRadius: '50%', background: '#2563eb', border: '2px solid white' }} />
-                      <p style={{ margin: '0 0 4px', fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>{h.time} · {h.user}</p>
-                      <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{h.action}</p>
-                      <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>{h.detail}</p>
-                    </div>
-                  ))}
+                  {(() => {
+                    const events = [
+                      { 
+                        time: selected.bookingDate || selected.date || '08/05/2026 14:30', 
+                        user: 'Admin', 
+                        action: `Khởi tạo Booking (${selected.badge === 'hold' ? 'Giữ chỗ' : 'Xác nhận'})`, 
+                        detail: `Mã PNR: ${selected.pnr} · Tổng: ${selected.total}đ` 
+                      }
+                    ];
+
+                    // Add events for passengers
+                    paxList.forEach((p, idx) => {
+                       events.push({
+                         time: selected.bookingDate || selected.date,
+                         user: 'Admin',
+                         action: 'Đăng ký hành khách',
+                         detail: `${p.name} · Ghế: ${p.seat}`
+                       });
+                    });
+
+                    // Add status change if finalized
+                    if (selected.status !== 'Chờ thanh toán') {
+                      events.push({
+                        time: new Date().toLocaleDateString('vi-VN') + ' ' + new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
+                        user: 'System',
+                        action: 'Cập nhật trạng thái',
+                        detail: `Chuyển sang: ${selected.status}`
+                      });
+                    }
+
+                    return events.map((h, i) => (
+                      <div key={i} style={{ position: 'relative', paddingLeft: 24, borderLeft: '2px solid #e2e8f0' }}>
+                        <div style={{ position: 'absolute', left: -7, top: 0, width: 12, height: 12, borderRadius: '50%', background: '#2563eb', border: '2px solid white' }} />
+                        <p style={{ margin: '0 0 4px', fontSize: 11, color: '#94a3b8', fontWeight: 700 }}>{h.time} · {h.user}</p>
+                        <p style={{ margin: '0 0 2px', fontSize: 13, fontWeight: 700, color: '#1e293b' }}>{h.action}</p>
+                        <p style={{ margin: 0, fontSize: 12, color: '#64748b' }}>{h.detail}</p>
+                      </div>
+                    ));
+                  })()}
                   <div style={{ padding: '20px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1', textAlign: 'center' }}>
                     <p style={{ margin: 0, fontSize: 12, color: '#94a3b8' }}>Cuộn xuống để xem thêm lịch sử</p>
                   </div>
@@ -741,7 +787,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
                  </div>
                  <div className="pass-grid-4 mt-lg">
                     <div className="pass-col"><label>DATE</label><b>{activeViewingTicket.ticket.date}</b></div>
-                    <div className="pass-col"><label>BOARDING</label><b>{activeViewingTicket.ticket.time}</b></div>
+                    <div className="pass-col"><label>CLASS</label><b>{activeViewingTicket.ticket.fareClass || activeViewingTicket.ticket.hang_ghe || 'Economy'}</b></div>
                     <div className="pass-col"><label>GATE</label><b>{activeViewingTicket.ticket.gate || '--'}</b></div>
                     <div className="pass-col"><label>SEAT</label><b className="seat-highlight">{passengersData[activeViewingTicket.ticket.id]?.[viewingTicketRef?.paxIndex || 0]?.seat}</b></div>
                  </div>
@@ -894,40 +940,7 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
         .mt-lg { margin-top: 24px; }
         .tickets-page-content { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Toast Styles */
-        .toast-notification {
-          position: fixed;
-          bottom: 24px;
-          right: 24px;
-          padding: 16px 24px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          color: white;
-          font-weight: 600;
-          font-size: 14px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-          z-index: 9999;
-          animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes slideInRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .toast-notification.success { background: #10b981; }
-        .toast-notification.error { background: #ef4444; }
-        .toast-notification button { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; opacity: 0.8; margin-left: 24px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.2); }
-        .toast-notification button:hover { opacity: 1; }
       `}</style>
-        {toast.visible && (
-          <div className={`toast-notification ${toast.type}`}>
-            <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
-            <span>{toast.message}</span>
-            <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
-          </div>
-        )}
       </AppLayout>
   );
 };

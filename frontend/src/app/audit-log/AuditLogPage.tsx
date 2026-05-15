@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import AppLayout from '../../components/AppLayout';
+import { api } from '../../api';
 
 interface AuditLogPageProps {
   onNavigate?: (id: string) => void;
@@ -14,14 +15,40 @@ interface AuditLogPageProps {
 
 const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState<'all' | 'info' | 'warning' | 'danger'>('all');
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const logs = [
-    { id: 'LOG-4829', user: 'admin_dung', action: 'Phát hành vé', module: 'Tickets', target: '738-29481726', time: '10:12:34 24/10', type: 'info' },
-    { id: 'LOG-4830', user: 'agent_an', action: 'Hủy đặt chỗ', module: 'Booking', target: 'G7X9PQ', time: '11:04:11 24/10', type: 'warning' },
-    { id: 'LOG-4831', user: 'admin_dung', action: 'Thay đổi giá vé', module: 'Flights', target: 'QH-202', time: '13:45:00 24/10', type: 'danger' },
-    { id: 'LOG-4832', user: 'sys_bot', action: 'Tự động khóa PNR', module: 'System', target: 'PNR-EXP-01', time: '15:20:05 24/10', type: 'info' },
-    { id: 'LOG-4833', user: 'agent_an', action: 'Hoàn tiền', module: 'Refund', target: 'RFD-1022', time: '16:10:22 24/10', type: 'warning' },
-  ];
+  const fetchLogs = async () => {
+    setLoading(true);
+    try {
+      const data = await api.getAuditLogs(200);
+      setLogs(data);
+    } catch {
+      // Fallback empty
+      setLogs([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+  }, []);
+
+  const filteredLogs = logs.filter(log => {
+    const matchSearch =
+      log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      log.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.module || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const matchType = activeFilter === 'all' || log.type === activeFilter;
+    return matchSearch && matchType;
+  });
+
+  const totalToday = logs.length;
+  const warningCount = logs.filter(l => l.type === 'warning').length;
+  const dangerCount = logs.filter(l => l.type === 'danger').length;
 
   return (
     <AppLayout 
@@ -52,15 +79,15 @@ const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate, currentUser, on
         <div className="audit-stats">
           <Card className="mini-stat">
             <p>Tổng log hôm nay</p>
-            <h3>1,248</h3>
+            <h3>{totalToday}</h3>
           </Card>
           <Card className="mini-stat">
-            <p>Cảnh báo bảo mật</p>
-            <h3 className="text-warning">12</h3>
+            <p>Cảnh báo</p>
+            <h3 className="text-warning">{warningCount}</h3>
           </Card>
           <Card className="mini-stat">
-            <p>Lỗi hệ thống</p>
-            <h3 className="text-danger">0</h3>
+            <p>Lỗi nghiêm trọng</p>
+            <h3 className="text-danger">{dangerCount}</h3>
           </Card>
         </div>
 
@@ -72,12 +99,29 @@ const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate, currentUser, on
               <input type="text" placeholder="Tìm theo ID, người dùng, hành động..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
             </div>
             <div className="type-filters">
-              <span className="badge active">Tất cả</span>
-              <span className="badge info">Thông tin</span>
-              <span className="badge warning">Cảnh báo</span>
-              <span className="badge danger">Nghiêm trọng</span>
+              {(['all', 'info', 'warning', 'danger'] as const).map(f => (
+                <span
+                  key={f}
+                  className={`badge ${f !== 'all' ? f : ''} ${activeFilter === f ? 'active' : ''}`}
+                  onClick={() => setActiveFilter(f)}
+                >
+                  {f === 'all' ? 'Tất cả' : f === 'info' ? 'Thông tin' : f === 'warning' ? 'Cảnh báo' : 'Nghiêm trọng'}
+                </span>
+              ))}
             </div>
           </div>
+
+          {loading ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>
+              <span className="material-icons-round" style={{ fontSize: 48, marginBottom: 12 }}>hourglass_top</span>
+              <p>Đang tải nhật ký...</p>
+            </div>
+          ) : filteredLogs.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: '#94a3b8' }}>
+              <span className="material-icons-round" style={{ fontSize: 48, marginBottom: 12 }}>search_off</span>
+              <p>Không tìm thấy log nào phù hợp.</p>
+            </div>
+          ) : (
 
           <div className="table-wrapper">
             <table className="premium-table">
@@ -87,12 +131,12 @@ const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate, currentUser, on
                   <th>NGƯỜI DÙNG</th>
                   <th>HÀNH ĐỘNG</th>
                   <th>MODULE</th>
-                  <th>ĐỐI TƯỢNG TÁC ĐỘNG</th>
+                  <th>GHI CHÚ</th>
                   <th>MÃ LOG</th>
                 </tr>
               </thead>
               <tbody>
-                {logs.map(log => (
+                {filteredLogs.map(log => (
                   <tr key={log.id}>
                     <td><div className="time-cell"><span className="material-icons-round">schedule</span> {log.time}</div></td>
                     <td><span className="user-tag">{log.user}</span></td>
@@ -110,16 +154,13 @@ const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate, currentUser, on
               </tbody>
             </table>
           </div>
+          )}
 
           <div className="pagination">
-            <span>Trang 1 của 42</span>
-            <div className="btns">
-              <button disabled><span className="material-icons-round">chevron_left</span></button>
-              <button className="active">1</button>
-              <button>2</button>
-              <button>3</button>
-              <button><span className="material-icons-round">chevron_right</span></button>
-            </div>
+            <span>Tổng: {filteredLogs.length} bản ghi</span>
+            <Button variant="outline" size="sm" onClick={fetchLogs}>
+              <span className="material-icons-round" style={{ fontSize: 16 }}>refresh</span> Làm mới
+            </Button>
           </div>
         </Card>
       </div>

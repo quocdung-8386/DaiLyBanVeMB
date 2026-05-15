@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast } from '../../components/AppLayout';
 import SeatMap from '../../components/SeatMap';
 
 interface BookingPageProps {
@@ -28,7 +28,27 @@ const BookingPage: React.FC<BookingPageProps> = ({
   const [contactInfo, setContactInfo] = useState({ name: '', phone: '', email: '' });
   const [passengersList, setPassengersList] = useState([{ id: 1, name: '', type: 'Người lớn', seat: '' }]);
   const [bookingStep, setBookingStep] = useState(1);
-  const [selectedFare, setSelectedFare] = useState('Economy');
+  const [selectedFare, setSelectedFare] = useState(initialFlight?.cls || 'Economy');
+  
+  // Effect to handle fare change and seat validation
+  React.useEffect(() => {
+    // If the fare changes, we should ideally validate seats. 
+    // For now, let's just make sure passengersList knows about the change if needed, 
+    // but the actual validation happens in handleHold/Confirm.
+    // However, if we want to be "synced", we should clear seats that don't match.
+    setPassengersList(prev => prev.map(p => {
+      if (!p.seat) return p;
+      const rowNum = parseInt(p.seat.match(/\d+/)?.[0] || '0');
+      const isBusinessSeat = rowNum >= 1 && rowNum <= 3;
+      const isEconomySeat = rowNum >= 10;
+      
+      const isValid = (selectedFare === 'Economy' && isEconomySeat) || 
+                      ((selectedFare === 'Business' || selectedFare === 'First Class') && isBusinessSeat);
+                      
+      return isValid ? p : { ...p, seat: '' };
+    }));
+  }, [selectedFare]);
+
   const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
   const [editingSeatIndex, setEditingSeatIndex] = useState<number | null>(null);
   const [isFlightSelectOpen, setIsFlightSelectOpen] = useState(false);
@@ -41,6 +61,7 @@ const BookingPage: React.FC<BookingPageProps> = ({
 
   const getBaseFare = () => {
     const base = flightData?.price || 1850000;
+    if (selectedFare === 'Premium Economy') return base * 1.5;
     if (selectedFare === 'Business') return base * 2.5;
     if (selectedFare === 'First Class') return base * 4.5;
     return base;
@@ -57,16 +78,15 @@ const BookingPage: React.FC<BookingPageProps> = ({
     const feesTotal = 50000 * passengersList.length;
     return baseFareTotal + feesTotal + getExtraServicesTotal();
   };
-
   const validateBooking = () => {
     for (let i = 0; i < passengersList.length; i++) {
       if (!passengersList[i].name || !passengersList[i].name.trim()) {
-        alert(`Vui lòng nhập Họ tên cho Hành khách ${i + 1}`);
+        showToast(`Vui lòng nhập Họ tên cho Hành khách ${i + 1}`, 'warning');
         return false;
       }
     }
     if (!contactInfo.name?.trim() || !contactInfo.phone?.trim() || !contactInfo.email?.trim()) {
-      alert("Vui lòng nhập đầy đủ Thông tin liên hệ (Họ tên, Số điện thoại, Email)");
+      showToast("Vui lòng nhập đầy đủ Thông tin liên hệ (Họ tên, Số điện thoại, Email)", 'warning');
       return false;
     }
     return true;
@@ -123,7 +143,7 @@ const BookingPage: React.FC<BookingPageProps> = ({
       extraServices: extraServices,
       type: 'Một chiều',
       timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
-      seat: passengersList[0]?.seat || '12C',
+      seat: passengersList[0]?.seat || '',
       gate: flightData?.gate || '--',
       aircraft: flightData?.aircraft || 'A321',
       terminal: flightData?.terminal || 'T1'
@@ -182,7 +202,7 @@ const BookingPage: React.FC<BookingPageProps> = ({
       extraServices: extraServices,
       type: 'Một chiều',
       timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
-      seat: passengersList[0]?.seat || '12C',
+      seat: passengersList[0]?.seat || '',
       gate: flightData?.gate || '--',
       aircraft: flightData?.aircraft || 'A321',
       terminal: flightData?.terminal || 'T1'
@@ -210,6 +230,7 @@ const BookingPage: React.FC<BookingPageProps> = ({
             <div className="fare-grid">
               {[
                 { name: 'Economy', price: flightData?.price || 1850000, features: ['7kg Carry-on', 'Standard Seat'] },
+                { name: 'Premium Economy', price: (flightData?.price || 1850000) * 1.5, features: ['10kg Carry-on', 'Extra Legroom', 'Priority Boarding'] },
                 { name: 'Business', price: (flightData?.price || 1850000) * 2.5, features: ['14kg Carry-on', '30kg Checked', 'Lounge Access', 'Premium Seat'] },
                 { name: 'First Class', price: (flightData?.price || 1850000) * 4.5, features: ['Unlimited Carry-on', '40kg Checked', 'Private Suite', 'Fine Dining'] }
               ].map(f => (
@@ -263,6 +284,12 @@ const BookingPage: React.FC<BookingPageProps> = ({
                         <option>Trẻ em</option>
                         <option>Em bé</option>
                       </select>
+                    </div>
+                    <div className="field" style={{ width: 120, margin: 0 }}>
+                      <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>Hạng ghế</label>
+                      <div style={{ padding: '10px 14px', background: '#eff6ff', color: '#2563eb', borderRadius: 8, fontSize: 13, fontWeight: 700, textAlign: 'center', border: '1px solid #bfdbfe' }}>
+                        {selectedFare}
+                      </div>
                     </div>
                     {passengersList.length > 1 && (
                       <button style={{ height: 38, width: 38, border: 'none', background: '#fef2f2', color: '#dc2626', borderRadius: 8, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => {
@@ -395,6 +422,7 @@ const BookingPage: React.FC<BookingPageProps> = ({
       bookingPendingCount={bookingPendingCount}
       flightCount={flightCount}
       passengerCount={passengerCount}
+      bookings={bookings}
     >
       <div className="booking-page-content">
         
@@ -611,7 +639,7 @@ const BookingPage: React.FC<BookingPageProps> = ({
         .step-content h3 { font-size: 18px; color: #1e293b; margin-bottom: 24px; }
         .step-actions { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 24px; border-top: 1px solid #f1f5f9; }
 
-        .fare-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        .fare-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
         .fare-card { padding: 20px; border: 2px solid #f1f5f9; border-radius: 16px; cursor: pointer; transition: all 0.2s; }
         .fare-card:hover { border-color: #bfdbfe; background: #f8fbff; }
         .fare-card.active { border-color: #2563eb; background: #eff6ff; }

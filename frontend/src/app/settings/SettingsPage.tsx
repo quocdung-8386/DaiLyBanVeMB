@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast } from '../../components/AppLayout';
 import AirlinesTab from './AirlinesTab';
 import AirportsTab from './AirportsTab';
 import RoutesTab from './RoutesTab';
@@ -19,19 +19,6 @@ interface SettingsPageProps {
 
 const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [activeTab, setActiveTab] = useState('airlines');
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
-    visible: false,
-    message: '',
-    type: 'success',
-  });
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => {
-      setToast(prev => ({ ...prev, visible: false }));
-    }, 4000);
-  };
-
   const handleSaveAll = () => {
     showToast('Đã lưu tất cả thay đổi trên hệ thống!', 'success');
   };
@@ -45,6 +32,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate, currentUser, on
       bookingPendingCount={bookingPendingCount}
       flightCount={flightCount}
       passengerCount={passengerCount}
+      bookings={[]}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Cấu hình hệ thống' }]}
     >
       <div className="settings-page-content">
@@ -93,22 +81,16 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate, currentUser, on
 
           {/* ── MAIN CONTENT ── */}
           <div className="settings-main">
-            {activeTab === 'airlines' && <AirlinesTab onToast={showToast} />}
-            {activeTab === 'airports' && <AirportsTab onToast={showToast} />}
-            {activeTab === 'routes' && <RoutesTab onToast={showToast} />}
-            {activeTab === 'markup' && <MarkupTab onToast={showToast} />}
-            {activeTab === 'general' && <GeneralTab onToast={showToast} />}
+            {activeTab === 'airlines' && <AirlinesTab />}
+            {activeTab === 'airports' && <AirportsTab />}
+            {activeTab === 'routes' && <RoutesTab />}
+            {activeTab === 'markup' && <MarkupTab />}
+            {activeTab === 'general' && <GeneralTab />}
           </div>
         </div>
       </div>
 
-      {toast.visible && (
-        <div className={`toast-notification ${toast.type}`}>
-          <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
-          <span>{toast.message}</span>
-          <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
-        </div>
-      )}
+
 
       <style>{`
         .settings-page-content { animation: fadeIn 0.4s ease-out; }
@@ -173,31 +155,7 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate, currentUser, on
         .input-field:focus { border-color: #2563eb; background: white; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 32px; }
 
-        /* Toast Styles */
-        .toast-notification {
-          position: fixed;
-          bottom: 24px;
-          right: 24px;
-          padding: 16px 24px;
-          border-radius: 12px;
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          color: white;
-          font-weight: 600;
-          font-size: 14px;
-          box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-          z-index: 9999;
-          animation: slideInRight 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        @keyframes slideInRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
-        }
-        .toast-notification.success { background: #10b981; }
-        .toast-notification.error { background: #ef4444; }
-        .toast-notification button { background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center; opacity: 0.8; margin-left: 24px; padding-left: 12px; border-left: 1px solid rgba(255,255,255,0.2); }
-        .toast-notification button:hover { opacity: 1; }
+
       `}</style>
     </AppLayout>
   );

@@ -28,7 +28,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
       const data = await api.getStaff();
       setUsersList(data.map((s: any) => ({
         id: String(s.id),
-        name: s.username, 
+        name: s.username,
         username: s.username,
         role: s.department || 'STAFF',
         agency: s.agency || 'DAILY_01',
@@ -89,7 +89,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
 
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({ name: '', username: '', role: 'STAFF', agency: 'DAILY_01', status: 'Hoạt động', password: '' });
-  
+
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
     visible: false,
     message: '',
@@ -197,7 +197,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
         });
       }
       fetchStaff();
-      
+
       setShowUserPopup(false);
       showToast(editingUser ? 'Cập nhật nhân viên thành công!' : 'Đã thêm nhân viên mới!', 'success');
     } catch (error) {
@@ -205,21 +205,22 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
     }
   };
 
-  const filteredUsers = usersList.filter(u => 
-    (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+  const filteredUsers = usersList.filter(u =>
+    (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     (u.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
     String(u.id).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <AppLayout 
-      activeItem="users" 
-      onNavigate={onNavigate} 
+    <AppLayout
+      activeItem="users"
+      onNavigate={onNavigate}
       currentUser={currentUser}
       onLogout={onLogout}
       bookingPendingCount={bookingPendingCount}
       flightCount={flightCount}
       passengerCount={passengerCount}
+      bookings={[]}
       breadcrumb={[{ label: 'Quản Lý Nhân Sự & Phân Quyền' }]}
     >
       <div className="users-page">
@@ -364,11 +365,11 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
                 {!editingUser && (
                   <div className="form-group">
                     <label>Mật khẩu tạm</label>
-                    <input 
-                      type="password" 
-                      value={formData.password} 
-                      onChange={e => setFormData({ ...formData, password: e.target.value })} 
-                      placeholder="Nhập mật khẩu" 
+                    <input
+                      type="password"
+                      value={formData.password}
+                      onChange={e => setFormData({ ...formData, password: e.target.value })}
+                      placeholder="Nhập mật khẩu"
                     />
                   </div>
                 )}
@@ -400,7 +401,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
               </div>
               <div className="user-popup-footer">
                 <button className="btn-cancel" onClick={() => setShowUserPopup(false)}>Hủy</button>
-                <button className="btn-save" onClick={handleSaveUser}><span className="material-icons-round" style={{fontSize: 18}}>save</span> {editingUser ? 'Cập nhật' : 'Lưu nhân viên'}</button>
+                <button className="btn-save" onClick={handleSaveUser}><span className="material-icons-round" style={{ fontSize: 18 }}>save</span> {editingUser ? 'Cập nhật' : 'Lưu nhân viên'}</button>
               </div>
             </div>
           </div>
@@ -441,7 +442,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
               </div>
               <div className="user-popup-footer">
                 <button className="btn-cancel" onClick={() => setShowRolePopup(false)}>Hủy</button>
-                <button className="btn-save" onClick={handleSaveRole}><span className="material-icons-round" style={{fontSize: 18}}>save</span> Lưu quyền hạn</button>
+                <button className="btn-save" onClick={handleSaveRole}><span className="material-icons-round" style={{ fontSize: 18 }}>save</span> Lưu quyền hạn</button>
               </div>
             </div>
           </div>

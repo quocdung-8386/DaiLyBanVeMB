@@ -25,6 +25,16 @@ const CheckinPage: React.FC<CheckinPageProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [step, setStep] = useState<'search' | 'passengers' | 'baggage' | 'boarding_pass'>('search');
+  
+  const translateFareClass = (cls: string) => {
+    const map: Record<string, string> = {
+      'Economy': 'PHỔ THÔNG',
+      'Premium Economy': 'PHỔ THÔNG ĐẶC BIỆT',
+      'Business': 'THƯƠNG GIA',
+      'First Class': 'HẠNG NHẤT'
+    };
+    return map[cls] || cls.toUpperCase();
+  };
 
   const [selectedPassengers, setSelectedPassengers] = useState<string[]>([]);
   const [isSeatMapOpen, setIsSeatMapOpen] = useState(false);
@@ -32,12 +42,15 @@ const CheckinPage: React.FC<CheckinPageProps> = ({
   
   const paxList = React.useMemo(() => {
     if (!foundBooking) return [];
-    return foundBooking.passengersList && foundBooking.passengersList.length > 0
-      ? foundBooking.passengersList
-      : Array.from({ length: foundBooking.pax || 1 }).map((_, i) => ({
-          name: i === 0 ? foundBooking.customer : `HÀNH KHÁCH ${i+1}`,
-          seat: i === 0 ? (foundBooking.seat || '12A') : `12${String.fromCharCode(66+i)}`
-        }));
+    if (foundBooking.passengersList && foundBooking.passengersList.length > 0) {
+      return foundBooking.passengersList;
+    }
+    // Fallback if structure is slightly different
+    return Array.from({ length: foundBooking.pax || 1 }).map((_, i) => ({
+      name: i === 0 ? foundBooking.customer : `HÀNH KHÁCH ${i+1}`,
+      seat: i === 0 ? (foundBooking.seat || '--') : '--',
+      fare_class: foundBooking.fareClass || foundBooking.hang_ghe || 'Economy'
+    }));
   }, [foundBooking]);
   const [editingPassengerSeat, setEditingPassengerSeat] = useState<string | null>(null);
 
@@ -85,12 +98,13 @@ const CheckinPage: React.FC<CheckinPageProps> = ({
   return (
     <AppLayout 
       activeItem="checkin" 
-      onNavigate={onNavigate}
+      onNavigate={onNavigate || (() => {})}
       currentUser={currentUser}
       onLogout={onLogout}
       bookingPendingCount={bookingPendingCount}
       flightCount={flightCount}
       passengerCount={passengerCount}
+      bookings={bookings}
     >
       <div className="checkin-wrapper">
         <div className="checkin-hero">
@@ -293,7 +307,7 @@ const CheckinPage: React.FC<CheckinPageProps> = ({
                   <div key={idxStr} className="boarding-pass-card">
                     <div className="bp-header">
                       <div className="bp-airline">SKYWARD AIRLINES</div>
-                      <div className="bp-class">PHỔ THÔNG</div>
+                      <div className="bp-class">{translateFareClass(foundBooking?.fareClass || foundBooking?.hang_ghe || 'Economy')}</div>
                     </div>
                     <div className="bp-body">
                       <div className="bp-route">
@@ -365,8 +379,15 @@ const CheckinPage: React.FC<CheckinPageProps> = ({
 
       {isSeatMapOpen && (
         <SeatMap 
-          flightNumber="VN234"
+          flightNumber={foundBooking?.flight || 'VN-001'}
+          allowedClass={foundBooking?.fareClass || foundBooking?.hang_ghe || 'Economy'}
           initialSelectedSeat={editingPassengerSeat ? passengerSeats[editingPassengerSeat] : undefined}
+          occupiedSeats={[
+            ...bookings
+              .filter(b => b.flight === foundBooking?.flight && b.badge !== 'danger')
+              .flatMap(b => b.passengersList ? b.passengersList.map((p: any) => p.seat) : (b.seat ? b.seat.split(', ') : [])),
+            ...Object.values(passengerSeats)
+          ]}
           onConfirm={(seat) => {
             if (editingPassengerSeat) {
               setPassengerSeats(prev => ({ ...prev, [editingPassengerSeat]: seat }));

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Dashboard from './dashboard/Dashboard';
 import FlightsPage from './flights/FlightsPage';
 import BookingPage from './booking/BookingPage';
+import AppLayout, { showToast } from '../components/AppLayout';
 import ChatBubble from '../components/ChatBubble';
 import TicketsPage from './tickets/TicketsPage';
 import PaymentsPage from './payments/PaymentsPage';
@@ -229,11 +230,14 @@ export default function Home() {
       if (res.id) {
         const bookings = await api.getBookings();
         setGlobalBookings(bookings);
+        showToast(`Đặt chỗ thành công cho khách ${newBooking.customer}`, 'success');
         return res;
       }
+      showToast('Không thể tạo đặt chỗ', 'error');
       return null;
     } catch (error) {
       console.error("Failed to create booking:", error);
+      showToast('Lỗi hệ thống khi tạo đặt chỗ', 'error');
     }
   };
 
@@ -276,12 +280,14 @@ export default function Home() {
           const updatedTicket = freshData.find((b: any) => b.id === id);
           if (updatedTicket) setSelectedTicketData(updatedTicket);
         }
-        
+        showToast(`Cập nhật trạng thái Booking ${id} thành ${status}`, 'success');
         return true;
       }
+      showToast('Cập nhật trạng thái thất bại', 'error');
       return false;
     } catch (error) {
       console.error("Failed to update booking status:", error);
+      showToast('Lỗi khi cập nhật trạng thái', 'error');
       return false;
     }
   };
@@ -290,9 +296,11 @@ export default function Home() {
     try {
       await api.updateBooking(updated.id, { status: updated.status, seat: updated.seat });
       setGlobalBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
+      showToast(`Cập nhật thành công Booking ${updated.id}`, 'success');
       return true;
     } catch (error) {
       console.error("Failed to update booking:", error);
+      showToast('Cập nhật booking thất bại', 'error');
       return false;
     }
   };
@@ -303,9 +311,11 @@ export default function Home() {
       setGlobalFlights(prev => prev.map(f => f.flight === flightCode ? { ...f, aircraft, gate } : f));
       // Also update local bookings for that flight
       setGlobalBookings(prev => prev.map(b => b.flight === flightCode ? { ...b, aircraft, gate } : b));
+      showToast(`Cập nhật thông tin chuyến bay ${flightCode}`, 'success');
       return true;
     } catch (error) {
       console.error("Failed to update flight info:", error);
+      showToast('Cập nhật chuyến bay thất bại', 'error');
       return false;
     }
   };
@@ -314,8 +324,10 @@ export default function Home() {
     try {
       await api.deleteBooking(id);
       setGlobalBookings(prev => prev.filter(b => b.id !== id));
+      showToast(`Đã xóa Booking ${id}`, 'info');
     } catch (error) {
       console.error("Failed to delete booking:", error);
+      showToast('Xóa booking thất bại', 'error');
     }
   };
 

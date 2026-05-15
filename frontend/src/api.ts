@@ -99,7 +99,7 @@ export const api = {
       email: data.email,
       total_amount: data.tong_tien || (typeof data.total === 'string' ? parseFloat(data.total.replace(/,/g, '')) : data.total) || 0,
       status: data.trang_thai_tt || data.status || "Chờ thanh toán",
-      fare_class: data.hang_ghe || data.fareClass || "Economy",
+      fare_class: data.hang_ghe || data.fareClass || data.fare_class || "Economy",
       passengers: paxData.map((p: any) => ({
         name: p.name || p.ten_hanh_khach,
         seat: p.seat || p.so_ghe,
@@ -269,6 +269,131 @@ export const api = {
   getReports: async () => {
     const res = await fetchWithNoCache(`${BASE_URL}/reports/full`);
     if (!res.ok) throw new Error('Failed to fetch reports data');
+    return res.json();
+  },
+
+  // Audit Logs
+  getAuditLogs: async (limit = 100) => {
+    const res = await fetchWithNoCache(`${BASE_URL}/audit-logs/?limit=${limit}`);
+    if (!res.ok) throw new Error('Failed to fetch audit logs');
+    return res.json();
+  },
+  createAuditLog: async (payload: { hanh_dong: string; bang_tac_dong?: string; ghi_chu?: string; ma_nv?: number }) => {
+    const res = await fetch(`${BASE_URL}/audit-logs/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) return null;
+    return res.json();
+  },
+
+  // ─── Catalog: Airlines ───────────────────────────────────────────────────
+  getAirlines: async () => {
+    const res = await fetchWithNoCache(`${BASE_URL}/catalog/airlines`);
+    if (!res.ok) throw new Error('Failed to fetch airlines');
+    return res.json();
+  },
+  createAirline: async (data: { ma_hang: string; ten_hang: string; quoc_gia?: string }) => {
+    const res = await fetch(`${BASE_URL}/catalog/airlines`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
+    return res.json();
+  },
+  updateAirline: async (id: string, data: any) => {
+    const res = await fetch(`${BASE_URL}/catalog/airlines/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update airline');
+    return res.json();
+  },
+  deleteAirline: async (id: string) => {
+    const res = await fetch(`${BASE_URL}/catalog/airlines/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete airline');
+    return res.json();
+  },
+
+  // ─── Catalog: Airports ───────────────────────────────────────────────────
+  getAirports: async () => {
+    const res = await fetchWithNoCache(`${BASE_URL}/catalog/airports`);
+    if (!res.ok) throw new Error('Failed to fetch airports');
+    return res.json();
+  },
+  createAirport: async (data: { ma_sb: string; ten_sb: string; thanh_pho?: string; quoc_gia?: string }) => {
+    const res = await fetch(`${BASE_URL}/catalog/airports`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
+    return res.json();
+  },
+  updateAirport: async (id: string, data: any) => {
+    const res = await fetch(`${BASE_URL}/catalog/airports/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update airport');
+    return res.json();
+  },
+  deleteAirport: async (id: string) => {
+    const res = await fetch(`${BASE_URL}/catalog/airports/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete airport');
+    return res.json();
+  },
+
+  // ─── Catalog: Routes ─────────────────────────────────────────────────────
+  getRoutes: async () => {
+    const res = await fetchWithNoCache(`${BASE_URL}/catalog/routes`);
+    if (!res.ok) throw new Error('Failed to fetch routes');
+    return res.json();
+  },
+  createRoute: async (data: { ma_tuyen: string; ma_sb_di: string; ma_sb_den: string; khoang_cach?: number }) => {
+    const res = await fetch(`${BASE_URL}/catalog/routes`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
+    return res.json();
+  },
+  updateRoute: async (id: string, data: any) => {
+    const res = await fetch(`${BASE_URL}/catalog/routes/${id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error('Failed to update route');
+    return res.json();
+  },
+  deleteRoute: async (id: string) => {
+    const res = await fetch(`${BASE_URL}/catalog/routes/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete route');
+    return res.json();
+  },
+
+  // ─── Loyalty ─────────────────────────────────────────────────────────────
+  getLoyaltyMembers: async () => {
+    const res = await fetchWithNoCache(`${BASE_URL}/loyalty/members`);
+    if (!res.ok) throw new Error('Failed to fetch loyalty members');
+    return res.json();
+  },
+  getLoyaltyStats: async () => {
+    const res = await fetchWithNoCache(`${BASE_URL}/loyalty/stats`);
+    if (!res.ok) throw new Error('Failed to fetch loyalty stats');
+    return res.json();
+  },
+  getPointsHistory: async (maKh: number) => {
+    const res = await fetchWithNoCache(`${BASE_URL}/loyalty/history/${maKh}`);
+    if (!res.ok) throw new Error('Failed to fetch points history');
+    return res.json();
+  },
+  adjustPoints: async (maKh: number, payload: { loai_gd: string; so_diem: number; ly_do?: string }) => {
+    const res = await fetch(`${BASE_URL}/loyalty/members/${maKh}/adjust`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
     return res.json();
   },
 };

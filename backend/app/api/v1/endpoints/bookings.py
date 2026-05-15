@@ -92,12 +92,16 @@ async def get_bookings(db: AsyncSession = Depends(get_db)):
                     "gate": (cb.cong_khoi_hanh if cb else "--") or "--",
                     "terminal": (cb.nha_ga if cb and hasattr(cb, 'nha_ga') else "T1") or "T1",
                     "seat": "",
+                    "fareClass": "Economy", # Default
+                    "bookingDate": dc.ngay_dat.strftime("%d/%m/%Y %H:%M") if dc.ngay_dat else "---",
                     "boarding": (cb.ngay_gio_di - timedelta(minutes=40)).strftime("%H:%M") if cb and cb.ngay_gio_di else "---",
                     "passengersList": []
                 }
             
             if ve:
                 bookings_map[bid]["pax"] += 1
+                if not bookings_map[bid].get("fareClass") or bookings_map[bid]["fareClass"] == "Economy":
+                    bookings_map[bid]["fareClass"] = ve.hang_ghe or "Economy"
                 bookings_map[bid]["passengersList"].append({
                     "name": ve.ten_hanh_khach,
                     "seat": ve.so_ghe or "--",

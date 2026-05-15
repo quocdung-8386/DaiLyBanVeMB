@@ -116,7 +116,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({
         to: f.to,
         duration: f.dur,
         price: f.price,
-        cls: 'Phổ thông',
+        cls: searchForm.class || 'Economy',
         gate: f.gate,
         aircraft: f.aircraft
       });
@@ -147,6 +147,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({
       bookingPendingCount={bookingPendingCount}
       flightCount={flightCount}
       passengerCount={passengerCount}
+      bookings={bookings}
       breadcrumb={[{ label: 'Điều hành', page: 'dashboard' }, { label: 'Quản lý Chuyến bay' }]}
     >
       <div className="flights-page-content">
