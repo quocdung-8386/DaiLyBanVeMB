@@ -8,16 +8,25 @@ interface FlightsPageProps {
   onNavigate?: (id: string) => void;
   onSelectFlight?: (flight: any) => void;
   flights: any[];
+  bookings?: any[];
   onAddFlight?: (flight: any) => void;
   onUpdateFlight?: (id: string, aircraft: string, gate: string) => void;
   onDeleteFlight?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
 const airlineStyle: Record<string,{bg:string,color:string}> = {
   VN: { bg:'#005a8c', color:'white' }, VJ: { bg:'#ed1b24', color:'white' }, QH: { bg:'#00a563', color:'white' }
 };
 
-const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, flights, onUpdateFlights }) => {
+const FlightsPage: React.FC<FlightsPageProps> = ({ 
+  onNavigate, onSelectFlight, flights, bookings = [], onAddFlight, onUpdateFlight, onDeleteFlight,
+  currentUser, onLogout, bookingPendingCount, flightCount, passengerCount
+}) => {
   const [stops, setStops] = useState<string[]>(['0']);
   const [airlines, setAirlines] = useState<string[]>(['VN', 'VJ', 'QH']);
   const [viewingFlight, setViewingFlight] = useState<any | null>(null);
@@ -31,55 +40,52 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
   const [searchForm, setSearchForm] = useState({
     from: 'HAN',
     to: 'SGN',
-    date: '2023-10-24',
+    date: new Date().toISOString().split('T')[0],
     pax: '1',
     class: 'Economy',
     airline: 'all'
   });
 
-  // Flight Form State for Add/Edit
+  // Flight Form State for Add/Edit — map tới ChuyenBay schema
   const [flightForm, setFlightForm] = useState({
-    flight: '',
-    code: 'VN',
-    from: 'HAN',
-    to: 'SGN',
-    dep: '08:00',
-    arr: '10:00',
-    price: 1500000,
-    cap: 180,
-    status: 'Đang bán vé',
-    aircraft: 'Airbus A321',
-    gate: '--'
+    flight: '',          // ma_cb
+    code: 'VNA',         // ma_hang
+    from: 'HAN',         // ma_sb_di (via TuyenBay)
+    to: 'SGN',           // ma_sb_den (via TuyenBay)
+    dep: '08:00',        // ngay_gio_di (HH:MM)
+    arr: '10:00',        // ngay_gio_den (HH:MM)
+    price: 1500000,      // gia_co_ban
+    cap: 180,            // tong_so_ghe
+    status: 'Đang bán vé', // trang_thai
+    aircraft: 'Airbus A321', // ma_may_bay
+    gate: '--',          // cong_khoi_hanh
+    nha_ga: 'T1',        // nha_ga
+    thoi_gian_bay: 120,  // thoi_gian_bay (phút)
   });
 
   React.useEffect(() => {
     if (editingFlight) {
       setFlightForm({
-        flight: editingFlight.flight,
-        code: editingFlight.code,
-        from: editingFlight.from,
-        to: editingFlight.to,
-        dep: editingFlight.dep,
-        arr: editingFlight.arr,
-        price: editingFlight.price,
-        cap: editingFlight.cap,
-        status: editingFlight.status,
-        aircraft: editingFlight.aircraft,
-        gate: editingFlight.gate
+        flight: editingFlight.flight || '',
+        code: editingFlight.code || 'VNA',
+        from: editingFlight.from || 'HAN',
+        to: editingFlight.to || 'SGN',
+        dep: editingFlight.dep || '08:00',
+        arr: editingFlight.arr || '10:00',
+        price: editingFlight.price || 0,
+        cap: editingFlight.cap || 180,
+        status: editingFlight.status || 'Đang bán vé',
+        aircraft: editingFlight.aircraft || editingFlight.ma_may_bay || 'Airbus A321',
+        gate: editingFlight.gate || editingFlight.cong_khoi_hanh || '--',
+        nha_ga: editingFlight.nha_ga || 'T1',
+        thoi_gian_bay: editingFlight.thoi_gian_bay || 120,
       });
     } else {
       setFlightForm({
-        flight: '',
-        code: 'VN',
-        from: 'HAN',
-        to: 'SGN',
-        dep: '08:00',
-        arr: '10:00',
-        price: 1500000,
-        cap: 180,
-        status: 'Đang bán vé',
-        aircraft: 'Airbus A321',
-        gate: '--'
+        flight: '', code: 'VNA', from: 'HAN', to: 'SGN',
+        dep: '08:00', arr: '10:00', price: 1500000, cap: 180,
+        status: 'Đang bán vé', aircraft: 'Airbus A321',
+        gate: '--', nha_ga: 'T1', thoi_gian_bay: 120,
       });
     }
   }, [editingFlight, showAddModal]);
@@ -136,6 +142,11 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
     <AppLayout 
       activeItem="flights" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Điều hành', page: 'dashboard' }, { label: 'Quản lý Chuyến bay' }]}
     >
       <div className="flights-page-content">
@@ -164,18 +175,18 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
             <div className="q-input-group">
               <label>HÀNH TRÌNH</label>
               <div className="q-route-display">
-                <span className="code">HAN</span>
+                <span className="code">{searchForm.from}</span>
                 <span className="material-icons-round separator">multiple_stop</span>
-                <span className="code">SGN</span>
+                <span className="code">{searchForm.to}</span>
               </div>
             </div>
             <div className="q-input-group">
               <label>NGÀY BAY</label>
-              <div className="q-val">24/10/2023</div>
+              <div className="q-val">{new Date(searchForm.date).toLocaleDateString('vi-VN')}</div>
             </div>
             <div className="q-input-group">
               <label>HÀNG KHÔNG</label>
-              <div className="q-val">Tất cả hãng</div>
+              <div className="q-val">{searchForm.airline === 'all' ? 'Tất cả hãng' : searchForm.airline}</div>
             </div>
             <div className="q-action">
               <button className="edit-search-btn" onClick={() => setShowSearchModal(true)}>
@@ -258,8 +269,18 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
             </div>
 
             <div className="flight-grid">
-              {filteredFlights.map(f => (
-                <Card key={f.id} className={`flight-card-premium ${f.status === 'Đã đóng chuyến' ? 'is-closed' : ''}`}>
+              {filteredFlights.map(f => {
+                // Calculate dynamic seatsSold from global bookings prop
+                const flightBookings = (bookings || []).filter(b => 
+                  (b.flight === f.flight || b.flight === f.id) && 
+                  b.status !== 'Đã hủy'
+                );
+                const dynamicSeatsSold = flightBookings.reduce((sum, b) => sum + (b.passengersList?.length || b.pax || 1), 0);
+                const currentSeatsSold = dynamicSeatsSold || f.seatsSold || 0;
+                const currentCap = f.cap || 180;
+
+                return (
+                  <Card key={f.id} className={`flight-card-premium ${f.status === 'Đã đóng chuyến' ? 'is-closed' : ''}`}>
                   <div className="f-top">
                     <div className="f-airline-info">
                       <div className="f-logo-wrapper" style={{ background: airlineStyle[f.code]?.bg }}>
@@ -306,16 +327,12 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
                   <div className="f-footer">
                     <div className="f-meta-stats">
                       <div className="stat">
-                        <span className="material-icons-round">luggage</span>
-                        <span>{f.checked}</span>
-                      </div>
-                      <div className="stat">
                         <span className="material-icons-round">groups</span>
-                        <span>{f.seatsSold}/{f.cap} ghế</span>
+                        <span className="stat-label"><b>{currentSeatsSold}</b>/{currentCap} ghế</span>
                       </div>
                       <div className="stat-progress">
                          <div className="progress-bar">
-                            <div className="progress-fill" style={{ width: `${(f.seatsSold / f.cap) * 100}%` }}></div>
+                             <div className="progress-fill" style={{ width: `${(currentSeatsSold / currentCap) * 100}%` }}></div>
                          </div>
                       </div>
                     </div>
@@ -328,7 +345,7 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
                         <button className="btn-icon-alt" title="Chỉnh sửa" onClick={() => setEditingFlight(f)}><span className="material-icons-round">edit</span></button>
                         <button className="btn-icon-alt danger" title="Hủy chuyến" onClick={() => setDeletingFlight(f)}><span className="material-icons-round">delete</span></button>
                         <button className="btn-details" onClick={() => setViewingFlight(f)}>Chi tiết</button>
-                        {f.cap - f.seatsSold > 0 ? (
+                         {currentCap - currentSeatsSold > 0 ? (
                           <button className="btn-book" onClick={() => handleSelectFlight(f)}>Đặt chỗ</button>
                         ) : (
                           <button className="btn-sold-out" disabled>Hết vé</button>
@@ -337,7 +354,8 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
                     </div>
                   </div>
                 </Card>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
@@ -531,23 +549,58 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
                     </tr>
                   </thead>
                   <tbody>
-                    {[1, 2, 3, 4, 5].map(i => (
-                      <tr key={i}>
-                        <td>
-                          <div className="pax-cell">
-                            <div className="pax-avatar">N</div>
-                            <div>
-                               <p className="pax-name">NGUYEN VAN {String.fromCharCode(64+i)}</p>
-                               <p className="pax-meta">Hội viên: Silver</p>
+                    {(() => {
+                      const manifest: any[] = [];
+                      bookings.forEach(b => {
+                        if (b.flight === viewingFlight.flight || b.flight === viewingFlight.id) {
+                          if (b.passengersList && b.passengersList.length > 0) {
+                            b.passengersList.forEach((p: any) => {
+                              manifest.push({
+                                name: p.name || b.customer,
+                                class: p.hang_ghe || b.fareClass || 'Economy',
+                                seat: p.seat || '---',
+                                ticketNum: p.ma_ve || b.pnr || '---',
+                                status: p.trang_thai_ve || 'Đã xác nhận'
+                              });
+                            });
+                          } else {
+                            manifest.push({
+                              name: b.customer,
+                              class: b.fareClass || 'Economy',
+                              seat: b.seat || '---',
+                              ticketNum: b.pnr || '---',
+                              status: 'Đã xác nhận'
+                            });
+                          }
+                        }
+                      });
+
+                      if (manifest.length === 0) {
+                        return (
+                          <tr>
+                            <td colSpan={5} style={{textAlign: 'center', padding: '20px', color: '#64748b'}}>Chưa có hành khách đặt chỗ trên chuyến bay này.</td>
+                          </tr>
+                        );
+                      }
+
+                      return manifest.map((pax, idx) => (
+                        <tr key={idx}>
+                          <td>
+                            <div className="pax-cell">
+                              <div className="pax-avatar">{pax.name.charAt(0).toUpperCase()}</div>
+                              <div>
+                                 <p className="pax-name">{pax.name.toUpperCase()}</p>
+                                 <p className="pax-meta">Hành khách</p>
+                              </div>
                             </div>
-                          </div>
-                        </td>
-                        <td><span className="cls-tag">Economy</span></td>
-                        <td><b className="seat-num">12{String.fromCharCode(65+i)}</b></td>
-                        <td><span className="ticket-num">VE-000{i}</span></td>
-                        <td><span className="status-dot-tag active">Đã xuất vé</span></td>
-                      </tr>
-                    ))}
+                          </td>
+                          <td><span className="cls-tag">{pax.class}</span></td>
+                          <td><b className="seat-num">{pax.seat}</b></td>
+                          <td><span className="ticket-num">{pax.ticketNum}</span></td>
+                          <td><span className={`status-dot-tag ${pax.status === 'Đã hủy' ? 'failed' : 'active'}`}>{pax.status}</span></td>
+                        </tr>
+                      ));
+                    })()}
                   </tbody>
                 </table>
               </div>
@@ -592,26 +645,32 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
                 </button>
 
                 <div className="pa-form-scroll">
+                   {/* ── Nhóm 1: THÔNG TIN CHUNG ── */}
                    <div className="pa-section">
                       <h4>THÔNG TIN CHUNG</h4>
                       <div className="pa-grid">
                          <div className="pa-field">
                             <label>HÃNG HÀNG KHÔNG</label>
-                            <select defaultValue={editingFlight?.code || 'VN'}>
-                               <option value="VN">Vietnam Airlines</option>
+                            <select value={flightForm.code} onChange={e => setFlightForm({...flightForm, code: e.target.value})}>
+                               <option value="VNA">Vietnam Airlines</option>
                                <option value="VJ">Vietjet Air</option>
                                <option value="QH">Bamboo Airways</option>
+                               <option value="VN">Vietravel Airlines</option>
                             </select>
                          </div>
                          <div className="pa-field">
                             <label>SỐ HIỆU CHUYẾN BAY</label>
-                            <input type="text" placeholder="VD: VN123" defaultValue={editingFlight?.flight || ''} />
+                            <input type="text" placeholder="VD: VN123"
+                              value={flightForm.flight}
+                              onChange={e => setFlightForm({...flightForm, flight: e.target.value})}
+                              disabled={!!editingFlight}
+                            />
                          </div>
                       </div>
                       <div className="pa-grid">
                          <div className="pa-field">
-                            <label>ĐIỂM ĐI (FROM)</label>
-                            <select defaultValue={editingFlight?.from || 'HAN'}>
+                            <label>ĐIỂM ĐI</label>
+                            <select value={flightForm.from} onChange={e => setFlightForm({...flightForm, from: e.target.value})}>
                                <option value="HAN">Hà Nội (HAN)</option>
                                <option value="SGN">TP. Hồ Chí Minh (SGN)</option>
                                <option value="DAD">Đà Nẵng (DAD)</option>
@@ -619,8 +678,8 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
                             </select>
                          </div>
                          <div className="pa-field">
-                            <label>ĐIỂM ĐẾN (TO)</label>
-                            <select defaultValue={editingFlight?.to || 'SGN'}>
+                            <label>ĐIỂM ĐẾN</label>
+                            <select value={flightForm.to} onChange={e => setFlightForm({...flightForm, to: e.target.value})}>
                                <option value="SGN">TP. Hồ Chí Minh (SGN)</option>
                                <option value="HAN">Hà Nội (HAN)</option>
                                <option value="DAD">Đà Nẵng (DAD)</option>
@@ -630,55 +689,133 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
                       </div>
                    </div>
 
+                   {/* ── Nhóm 2: LỊCH TRÌNH & GIÁ ── */}
                    <div className="pa-section">
-                      <h4>LỊCH TRÌNH & GIÁ</h4>
+                      <h4>LỊCH TRÌNH &amp; GIÁ</h4>
                       <div className="pa-grid">
                          <div className="pa-field">
                             <label>GIỜ CẤT CÁNH</label>
-                            <input type="text" placeholder="HH:MM" defaultValue={editingFlight?.dep || ''} />
+                            <input type="text" placeholder="HH:MM"
+                              value={flightForm.dep}
+                              onChange={e => setFlightForm({...flightForm, dep: e.target.value})}
+                            />
                          </div>
                          <div className="pa-field">
                             <label>GIỜ HẠ CÁNH</label>
-                            <input type="text" placeholder="HH:MM" defaultValue={editingFlight?.arr || ''} />
+                            <input type="text" placeholder="HH:MM"
+                              value={flightForm.arr}
+                              onChange={e => setFlightForm({...flightForm, arr: e.target.value})}
+                            />
                          </div>
                       </div>
                       <div className="pa-grid">
                          <div className="pa-field">
-                            <label>GIÁ VÉ (VNĐ)</label>
-                            <input type="number" placeholder="0" defaultValue={editingFlight?.price || 0} />
+                            <label>THỜI GIAN BAY (phút)</label>
+                            <input type="number" placeholder="120"
+                              value={flightForm.thoi_gian_bay}
+                              onChange={e => setFlightForm({...flightForm, thoi_gian_bay: parseInt(e.target.value) || 0})}
+                            />
                          </div>
                          <div className="pa-field">
                             <label>TỔNG SỐ GHẾ</label>
-                            <input type="number" placeholder="180" defaultValue={editingFlight?.cap || 180} />
+                            <input type="number" placeholder="180"
+                              value={flightForm.cap}
+                              onChange={e => setFlightForm({...flightForm, cap: parseInt(e.target.value) || 180})}
+                            />
+                         </div>
+                      </div>
+                      <div className="pa-grid">
+                         <div className="pa-field">
+                            <label>GIÁ VÉ CƠ BẢN (VNĐ)</label>
+                            <input type="number" placeholder="0"
+                              value={flightForm.price}
+                              onChange={e => setFlightForm({...flightForm, price: parseInt(e.target.value) || 0})}
+                            />
+                         </div>
+                         <div className="pa-field">
+                            <label>MÁY BAY</label>
+                            <input type="text" placeholder="VD: Airbus A321"
+                              value={flightForm.aircraft}
+                              onChange={e => setFlightForm({...flightForm, aircraft: e.target.value})}
+                            />
                          </div>
                       </div>
                    </div>
 
+                   {/* ── Nhóm 3: CẢNG & NHÀ GA ── */}
                    <div className="pa-section">
-                      <h4>TRẠNG THÁI</h4>
+                      <h4>CẢNG KHỞI HÀNH &amp; NHÀ GA</h4>
+                      <div className="pa-grid">
+                         <div className="pa-field">
+                            <label>CỔNG KHỞI HÀNH</label>
+                            <input type="text" placeholder="VD: A01, B12, --"
+                              value={flightForm.gate}
+                              onChange={e => setFlightForm({...flightForm, gate: e.target.value})}
+                            />
+                         </div>
+                         <div className="pa-field">
+                            <label>NHÀ GA</label>
+                            <select value={flightForm.nha_ga} onChange={e => setFlightForm({...flightForm, nha_ga: e.target.value})}>
+                               <option value="T1">T1 — Nhà ga quốc nội</option>
+                               <option value="T2">T2 — Nhà ga quốc tế</option>
+                               <option value="T3">T3 — Nhà ga mới</option>
+                               <option value="--">Chưa xác định</option>
+                            </select>
+                         </div>
+                      </div>
+                   </div>
+
+                   {/* ── Nhóm 4: TRẠNG THÁI ── */}
+                   <div className="pa-section">
+                      <h4>TRẠNG THÁI VẬN HÀNH</h4>
                       <div className="pa-field">
-                         <label>TRẠNG THÁI VẬN HÀNH</label>
                          <div className="pa-status-options">
-                            {['Đang bán vé', 'Hết vé', 'Hủy chuyến'].map(st => (
-                               <label className={`pa-status-chip ${editingFlight?.status === st ? 'active' : ''}`} key={st}>
-                                  <input type="radio" name="status" defaultChecked={editingFlight?.status === st || st === 'Đang bán vé'} />
+                            {['Đang bán vé', 'Hết vé', 'Hủy chuyến', 'Delayed', 'Cancelled'].map(st => (
+                               <label className={`pa-status-chip ${flightForm.status === st ? 'active' : ''}`} key={st}>
+                                  <input type="radio" name="flight_status"
+                                    checked={flightForm.status === st}
+                                    onChange={() => setFlightForm({...flightForm, status: st})}
+                                  />
                                   <span>{st}</span>
                                </label>
                             ))}
                          </div>
                       </div>
-                   </div>
-                </div>
+                    </div>
+                 </div>
 
-                <div className="pa-footer">
-                   <button className="btn-pa-cancel" onClick={() => { setShowAddModal(false); setEditingFlight(null); }}>Hủy bỏ</button>
-                   <button className="btn-pa-submit" onClick={() => { showToast(editingFlight ? 'Cập nhật thành công!' : 'Thêm chuyến bay thành công!', 'success'); setShowAddModal(false); setEditingFlight(null); }}>
-                      {editingFlight ? 'CẬP NHẬT CHUYẾN BAY' : 'XÁC NHẬN THÊM MỚI'}
-                      <span className="material-icons-round">check_circle</span>
-                   </button>
-                </div>
-             </div>
-          </div>
+                 <div className="pa-footer">
+                    <button className="btn-pa-cancel" onClick={() => { setShowAddModal(false); setEditingFlight(null); }}>Hủy bỏ</button>
+                    <button className="btn-pa-submit" onClick={async () => {
+                       if (!flightForm.flight || !flightForm.from || !flightForm.to || !flightForm.dep || !flightForm.arr || !flightForm.price) {
+                          showToast('Vui lòng nhập đầy đủ thông tin bắt buộc!', 'error');
+                          return;
+                       }
+                       let success = false;
+                       if (editingFlight) {
+                         await onUpdateFlight?.(editingFlight.flight, flightForm.aircraft, flightForm.gate);
+                         success = true;
+                       } else {
+                         const res = await (onAddFlight as any)?.({
+                           ...flightForm,
+                           ma_may_bay: flightForm.aircraft,
+                           cong_khoi_hanh: flightForm.gate,
+                         });
+                         success = !!res;
+                       }
+                       if (success) {
+                         showToast(editingFlight ? 'Cập nhật thành công!' : 'Thêm chuyến bay thành công!', 'success');
+                         setShowAddModal(false); setEditingFlight(null);
+                       } else {
+                         showToast('Thao tác thất bại. Vui lòng kiểm tra lại!', 'error');
+                       }
+                    }}>
+                       {editingFlight ? 'CẬP NHẬT CHUYẾN BAY' : 'XÁC NHẬN THÊM MỚI'}
+                       <span className="material-icons-round">check_circle</span>
+                    </button>
+                 </div>
+              </div>
+           </div>
         </div>
       )}
 
@@ -793,9 +930,11 @@ const FlightsPage: React.FC<FlightsPageProps> = ({ onNavigate, onSelectFlight, f
         .f-meta-stats { display: flex; flex-direction: column; gap: 12px; }
         .stat { display: flex; align-items: center; gap: 8px; color: #64748b; font-size: 13px; font-weight: 600; }
         .stat .material-icons-round { font-size: 18px; color: #94a3b8; }
-        .stat-progress { width: 140px; margin-top: 4px; }
-        .progress-bar { height: 4px; background: #e2e8f0; border-radius: 2px; overflow: hidden; }
-        .progress-fill { height: 100%; background: #2563eb; }
+        .stat-label { font-size: 14px; font-weight: 700; color: #475569; }
+        .stat-label b { color: #1e293b; font-size: 16px; }
+        .stat-progress { width: 160px; margin-top: 8px; }
+        .progress-bar { height: 6px; background: #f1f5f9; border-radius: 10px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); border-radius: 10px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); }
 
         .f-pricing-block { text-align: right; }
         .price-group { margin-bottom: 12px; }

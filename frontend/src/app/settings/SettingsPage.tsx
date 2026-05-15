@@ -10,9 +10,14 @@ import GeneralTab from './GeneralTab';
 
 interface SettingsPageProps {
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
+const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [activeTab, setActiveTab] = useState('airlines');
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
     visible: false,
@@ -35,6 +40,11 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onNavigate }) => {
     <AppLayout 
       activeItem="settings" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Cấu hình hệ thống' }]}
     >
       <div className="settings-page-content">

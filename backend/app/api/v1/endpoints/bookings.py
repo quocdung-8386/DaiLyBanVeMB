@@ -1,132 +1,204 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from typing import List
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import random
 import string
 
 from app.core.database import get_db
 from app.models.nghiep_vu import DatCho, VeMayBay
-from app.models.quan_tri import KhachHang
-from app.models.danh_muc import ChuyenBay, TuyenBay, HangHangKhong
+from app.models.quan_tri import KhachHang, NguoiDung
+from app.models.danh_muc import ChuyenBay, TuyenBay, HangHangKhong, ChiTietHangGhe
 from app.schemas.booking import BookingCreate, BookingUpdate
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# --- UTILS ---
 def generate_id(prefix="BK", length=6):
     suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
     return f"{prefix}_{suffix}"
 
+def get_status_badge(status: str) -> str:
+    status_map = {
+        "Đã thanh toán": "success",
+        "Đã xuất vé": "success",
+        "Chờ thanh toán": "hold",
+        "Đã hủy": "danger",
+        "Hết hạn": "danger",
+        "Đã Void": "default",
+        "Yêu cầu hoàn": "warning",
+        "Đã hoàn tiền": "warning"
+    }
+    return status_map.get(status, "default")
+
+# --- ENDPOINTS ---
+
 @router.get("/", response_model=List[dict])
 async def get_bookings(db: AsyncSession = Depends(get_db)):
-    """Fetch all bookings with details."""
+    """Fetch all bookings with comprehensive details and aggregated passengers."""
     try:
         query = select(
             DatCho, KhachHang, VeMayBay, ChuyenBay, TuyenBay, HangHangKhong
-        ).join(
+        ).outerjoin(
             KhachHang, DatCho.ma_kh == KhachHang.ma_kh
-        ).join(
+        ).outerjoin(
             VeMayBay, DatCho.ma_dat_cho == VeMayBay.ma_dat_cho
-        ).join(
+        ).outerjoin(
             ChuyenBay, VeMayBay.ma_cb == ChuyenBay.ma_cb
-        ).join(
+        ).outerjoin(
             TuyenBay, ChuyenBay.ma_tuyen == TuyenBay.ma_tuyen
-        ).join(
+        ).outerjoin(
             HangHangKhong, ChuyenBay.ma_hang == HangHangKhong.ma_hang
-        )
+        ).order_by(DatCho.ngay_dat.desc())
 
         result = await db.execute(query)
-        bookings_data = []
-        seen_bookings = set()
+        rows = result.all()
+        
+        bookings_map = {}
+        
+        for dc, kh, ve, cb, tb, hhk in rows:
+            if not dc: continue
+            bid = dc.ma_dat_cho
+            
+            if bid not in bookings_map:
+                badge = get_status_badge(dc.trang_thai_tt)
+                
+                # Expiry logic
+                expiry = None
+                if badge == "hold" and dc.ngay_dat:
+                    expiry = (dc.ngay_dat + timedelta(hours=24)).isoformat()
+                
+                bookings_map[bid] = {
+                    "id": dc.ma_dat_cho,
+                    "pnr": dc.ma_dat_cho.split('_')[-1] if '_' in dc.ma_dat_cho else dc.ma_dat_cho,
+                    "customer": kh.ho_ten if kh else "Khách vãng lai",
+                    "flight": cb.ma_cb if cb else "N/A",
+                    "airline": hhk.ten_hang if hhk else "Vietnam Airlines",
+                    "from": tb.ma_sb_di if tb else (cb.ma_tuyen.split('-')[0] if cb and cb.ma_tuyen else "SGN"),
+                    "to": tb.ma_sb_den if tb else (cb.ma_tuyen.split('-')[1] if cb and cb.ma_tuyen and '-' in cb.ma_tuyen else "HAN"),
+                    "airportFrom": f"Sân bay {tb.ma_sb_di if tb else 'SGN'}",
+                    "airportTo": f"Sân bay {tb.ma_sb_den if tb else 'HAN'}",
+                    "date": cb.ngay_gio_di.strftime("%d/%m/%Y") if cb and cb.ngay_gio_di else "---",
+                    "time": cb.ngay_gio_di.strftime("%H:%M") if cb and cb.ngay_gio_di else "---",
+                    "total": f"{dc.tong_tien:,.0f}" if dc.tong_tien else "0",
+                    "pax": 0,
+                    "status": dc.trang_thai_tt or "Chờ thanh toán",
+                    "badge": badge,
+                    "type": "Một chiều",
+                    "timeLimit": expiry,
+                    "gate": (cb.cong_khoi_hanh if cb else "--") or "--",
+                    "terminal": (cb.nha_ga if cb and hasattr(cb, 'nha_ga') else "T1") or "T1",
+                    "seat": "",
+                    "boarding": (cb.ngay_gio_di - timedelta(minutes=40)).strftime("%H:%M") if cb and cb.ngay_gio_di else "---",
+                    "passengersList": []
+                }
+            
+            if ve:
+                bookings_map[bid]["pax"] += 1
+                bookings_map[bid]["passengersList"].append({
+                    "name": ve.ten_hanh_khach,
+                    "seat": ve.so_ghe or "--",
+                    "type": "Người lớn", # Default
+                    "fare_class": ve.hang_ghe or "ECO"
+                })
+                
+                # Aggregated seat display
+                seats = [p["seat"] for p in bookings_map[bid]["passengersList"] if p["seat"] != "--"]
+                bookings_map[bid]["seat"] = ", ".join(seats) if seats else "--"
 
-        for dc, kh, ve, cb, tb, hhk in result.all():
-            if dc.ma_dat_cho in seen_bookings:
-                continue
-            seen_bookings.add(dc.ma_dat_cho)
-            
-            status_map = {
-                "Đã thanh toán": "success",
-                "Chờ thanh toán": "hold",
-                "Đã hủy": "danger",
-                "Hết hạn": "danger",
-                "Đã Void": "default",
-                "Yêu cầu hoàn": "warning"
-            }
-            badge = status_map.get(dc.trang_thai_tt, "default")
-            
-            bookings_data.append({
-                "id": dc.ma_dat_cho,
-                "pnr": dc.ma_dat_cho.replace("BK_", "").replace("BOOK_", ""),
-                "customer": kh.ho_ten or "Unknown",
-                "flight": cb.ma_cb,
-                "airline": hhk.ten_hang,
-                "from": tb.ma_sb_di,
-                "to": tb.ma_sb_den,
-                "airportFrom": "Sân bay " + tb.ma_sb_di,
-                "airportTo": "Sân bay " + tb.ma_sb_den,
-                "date": cb.ngay_gio_di.strftime("%d/%m/%Y") if cb.ngay_gio_di else "N/A",
-                "time": cb.ngay_gio_di.strftime("%H:%M") if cb.ngay_gio_di else "N/A",
-                "total": f"{dc.tong_tien:,.0f}" if dc.tong_tien else "0",
-                "pax": 1,
-                "status": dc.trang_thai_tt,
-                "badge": badge,
-                "type": "Một chiều",
-                "timeLimit": cb.ngay_gio_di.isoformat() if cb.ngay_gio_di and badge == "hold" else None,
-                "gate": cb.cong_khoi_hanh or "--",
-                "terminal": cb.nha_ga or "T1",
-                "seat": ve.so_ghe or "--",
-                "boarding": cb.ngay_gio_di.strftime("%H:%M") if cb.ngay_gio_di else "N/A"
-            })
-        return bookings_data
+        return list(bookings_map.values())
     except Exception as e:
         logger.error(f"Error fetching bookings: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/", response_model=dict)
 async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_db)):
-    """Create a new booking."""
+    """Create a new booking and manage inventory."""
     try:
-        # 1. Ensure customer exists (or create one)
-        # For simplicity, we create a new one or find by name (Better to have customer ID from frontend)
+        # 1. Customer Handling
         cust_query = select(KhachHang).where(KhachHang.ho_ten == booking.customer_name)
         cust_result = await db.execute(cust_query)
         kh = cust_result.scalars().first()
         
         if not kh:
-            # Create a mock customer if not found
-            # In real app, this should be linked to authenticated user
-            kh = KhachHang(ho_ten=booking.customer_name, loai_khach="Vãng lai")
+            new_nd = NguoiDung(
+                tai_khoan=f"user_{''.join(random.choices(string.digits, k=6))}",
+                mat_khau="pbkdf2:sha256:...", 
+                trang_thai_hd=True
+            )
+            db.add(new_nd)
+            await db.flush()
+            
+            kh = KhachHang(ma_kh=new_nd.ma_nd, ho_ten=booking.customer_name, loai_khach="Vãng lai")
             db.add(kh)
             await db.flush()
 
-        # 2. Create DatCho
-        booking_id = generate_id("BK")
+        # 2. Create DatCho (Booking)
+        query_dc = select(DatCho.ma_dat_cho).where(DatCho.ma_dat_cho.like('BOOK_%')).order_by(DatCho.ma_dat_cho.desc()).limit(1)
+        res_dc = await db.execute(query_dc)
+        last_dc = res_dc.scalar()
+        if last_dc:
+            try:
+                num_dc = int(last_dc.split('_')[1]) + 1
+            except:
+                num_dc = 1
+        else:
+            num_dc = 1
+        booking_id = f"BOOK_{num_dc:03d}"
+        
         new_datcho = DatCho(
             ma_dat_cho=booking_id,
             ma_kh=kh.ma_kh,
             tong_tien=booking.total_amount,
-            trang_thai_tt=booking.status
+            trang_thai_tt=booking.status or "Chờ thanh toán"
         )
         db.add(new_datcho)
 
-        # 3. Create VeMayBay for each passenger
-        for i, pax in enumerate(booking.passengers):
+        # 3. Create VeMayBay (Tickets)
+        query_ve = select(VeMayBay.ma_ve).where(VeMayBay.ma_ve.like('TKT_%')).order_by(VeMayBay.ma_ve.desc()).limit(1)
+        res_ve = await db.execute(query_ve)
+        last_ve = res_ve.scalar()
+        if last_ve:
+            try:
+                ve_num = int(last_ve.split('_')[1]) + 1
+            except:
+                ve_num = 1
+        else:
+            ve_num = 1
+
+        for pax in booking.passengers:
             new_ve = VeMayBay(
-                ma_ve=generate_id("VE"),
+                ma_ve=f"TKT_{ve_num:03d}",
                 ma_dat_cho=booking_id,
                 ma_cb=booking.flight_id,
-                ten_hanh_khach=pax.name,
+                ten_hanh_khach=pax.name.upper(),
                 so_ghe=pax.seat,
-                hang_ghe=booking.fare_class,
-                gia_ve=booking.total_amount / len(booking.passengers)
+                hang_ghe=booking.fare_class or "ECO",
+                gia_ve=booking.total_amount / len(booking.passengers) if len(booking.passengers) > 0 else booking.total_amount,
+                trang_thai_ve="Đã xác nhận"
             )
             db.add(new_ve)
-
+            ve_num += 1
+            
+        # 4. Inventory Management
+        seat_query = select(ChiTietHangGhe).where(
+            ChiTietHangGhe.ma_cb == booking.flight_id,
+            ChiTietHangGhe.hang_ghe == (booking.fare_class or "ECO")
+        )
+        seat_result = await db.execute(seat_query)
+        seat_detail = seat_result.scalar_one_or_none()
+        
+        if seat_detail:
+            num_pax = len(booking.passengers)
+            if seat_detail.so_ghe_trong < num_pax:
+                raise HTTPException(status_code=400, detail="Chuyến bay đã hết chỗ ở hạng vé này.")
+            seat_detail.so_ghe_trong -= num_pax
+            
         await db.commit()
-        return {"id": booking_id, "status": "success", "message": "Booking created successfully"}
+        return {"id": booking_id, "status": "success", "message": "Đặt chỗ thành công!"}
     except Exception as e:
         await db.rollback()
         logger.error(f"Error creating booking: {e}")
@@ -134,38 +206,75 @@ async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_
 
 @router.patch("/{booking_id}", response_model=dict)
 async def update_booking(booking_id: str, update_data: BookingUpdate, db: AsyncSession = Depends(get_db)):
-    """Update booking status or details."""
+    """Cập nhật trạng thái booking bằng SQL trực tiếp để đảm bảo lưu 100%."""
+    print(f"\n>>>> [FORCE UPDATE] ID: {booking_id} | MỚI: {update_data.status}")
+    
     try:
-        stmt = update(DatCho).where(DatCho.ma_dat_cho == booking_id)
-        
+        # 1. Cập nhật trạng thái Booking bằng câu lệnh SQL trực tiếp
         if update_data.status:
-            stmt = stmt.values(trang_thai_tt=update_data.status)
-        
-        await db.execute(stmt)
-        
+            stmt = update(DatCho).where(DatCho.ma_dat_cho == booking_id).values(trang_thai_tt=update_data.status)
+            res = await db.execute(stmt)
+            
+            if res.rowcount == 0:
+                print(f">>>> ❌ KHÔNG TÌM THẤY DÒNG NÀO ĐỂ CẬP NHẬT CHO {booking_id}")
+                raise HTTPException(status_code=404, detail="Không tìm thấy booking")
+
+            # 2. Nếu Xuất vé -> Cập nhật toàn bộ vé
+            if update_data.status in ["Đã xuất vé", "Đã thanh toán"]:
+                ve_stmt = update(VeMayBay).where(VeMayBay.ma_dat_cho == booking_id).values(trang_thai_ve="Đã xác nhận")
+                await db.execute(ve_stmt)
+
+        # 3. Cập nhật số ghế nếu có
         if update_data.seat:
-            # Update seat for the first ticket in this booking for now
-            ve_stmt = update(VeMayBay).where(VeMayBay.ma_dat_cho == booking_id).values(so_ghe=update_data.seat)
-            await db.execute(ve_stmt)
+            ve_seat_stmt = update(VeMayBay).where(VeMayBay.ma_dat_cho == booking_id).values(so_ghe=update_data.seat)
+            await db.execute(ve_seat_stmt)
 
         await db.commit()
-        return {"status": "success", "message": "Booking updated successfully"}
+        print(f">>>> ✅ ĐÃ LƯU THÀNH CÔNG VÀO DATABASE CHO {booking_id}\n")
+        return {"status": "success", "message": "Updated successfully"}
+        
     except Exception as e:
         await db.rollback()
-        logger.error(f"Error updating booking: {e}")
+        print(f">>>> 💥 LỖI SQL: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"💥 Lỗi nghiêm trọng khi cập nhật booking: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.delete("/{booking_id}", response_model=dict)
 async def delete_booking(booking_id: str, db: AsyncSession = Depends(get_db)):
-    """Delete a booking and its associated tickets."""
+    """Delete a booking and restore inventory if it wasn't already canceled."""
     try:
-        from sqlalchemy import delete
-        # 1. Delete associated tickets first
+        # Load tickets to restore seats
+        ve_query = select(VeMayBay).where(VeMayBay.ma_dat_cho == booking_id)
+        ve_res = await db.execute(ve_query)
+        tickets = ve_res.scalars().all()
+        
+        # Load booking to check status
+        dc_query = select(DatCho).where(DatCho.ma_dat_cho == booking_id)
+        dc_res = await db.execute(dc_query)
+        dc = dc_res.scalar_one_or_none()
+        
+        if dc and dc.trang_thai_tt not in ["Đã hủy", "Hết hạn"] and tickets:
+            # Restore seats
+            flight_id = tickets[0].ma_cb
+            fare_class = tickets[0].hang_ghe
+            num_pax = len(tickets)
+            await db.execute(update(ChiTietHangGhe).where(
+                ChiTietHangGhe.ma_cb == flight_id,
+                ChiTietHangGhe.hang_ghe == fare_class
+            ).values(so_ghe_trong=ChiTietHangGhe.so_ghe_trong + num_pax))
+
+        # Delete tickets then booking
         await db.execute(delete(VeMayBay).where(VeMayBay.ma_dat_cho == booking_id))
-        # 2. Delete the booking
         await db.execute(delete(DatCho).where(DatCho.ma_dat_cho == booking_id))
         
         await db.commit()
-        return {"status": "success", "message": f"Booking {booking_id} deleted successfully"}
+        return {"status": "success", "message": "Xóa booking thành công!"}
     except Exception as e:
         await db.rollback()
         logger.error(f"Error deleting booking: {e}")

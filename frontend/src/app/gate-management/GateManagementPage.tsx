@@ -9,6 +9,11 @@ interface GateManagementPageProps {
   onUpdateStatus?: (id: string, status: string, badge: string) => void;
   onUpdateBooking?: (updated: any) => void;
   onUpdateFlightInfo?: (flightCode: string, aircraft: string, gate: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
 const AIRPORT_GATES: Record<string, string[]> = {
@@ -19,7 +24,10 @@ const AIRPORT_GATES: Record<string, string[]> = {
   'HPH': ['H1', 'H2']
 };
 
-const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, bookings, onUpdateStatus, onUpdateBooking, onUpdateFlightInfo }) => {
+const GateManagementPage: React.FC<GateManagementPageProps> = ({ 
+  onNavigate, bookings, onUpdateStatus, onUpdateBooking, onUpdateFlightInfo,
+  currentUser, onLogout, bookingPendingCount, flightCount, passengerCount 
+}) => {
   const [gateStatus, setGateStatus] = useState<'OPEN' | 'BOARDING' | 'CLOSED'>('OPEN');
   const [selectedFlight, setSelectedFlight] = useState<string>('');
   const [isGateModalOpen, setIsGateModalOpen] = useState(false);
@@ -125,7 +133,15 @@ const GateManagementPage: React.FC<GateManagementPageProps> = ({ onNavigate, boo
   };
 
   return (
-    <AppLayout activeItem="gate-management" onNavigate={onNavigate}>
+    <AppLayout 
+      activeItem="gate-management" 
+      onNavigate={onNavigate}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
+    >
       <div className="gate-dashboard">
         {/* Flight Operational Header */}
         <div className="dashboard-header-premium">

@@ -14,6 +14,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changeme"
     DEBUG: bool = True
     API_V1_STR: str = "/api/v1"
+    GEMINI_API_KEY: str | None = None
 
     class Config:
         env_file = str(_ENV_FILE)

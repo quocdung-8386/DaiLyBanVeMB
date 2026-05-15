@@ -3,12 +3,30 @@ import React, { useEffect, useRef } from 'react';
 interface SidebarProps {
   activeItem?: string;
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
 // Persist scroll position across mounts
 let sidebarScrollPosition = 0;
 
-const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  activeItem = 'dashboard', 
+  onNavigate, 
+  currentUser, 
+  onLogout, 
+  bookingPendingCount = 0,
+  flightCount = 0,
+  passengerCount = 0
+}) => {
+  // Load user from localStorage as fallback
+  const user = currentUser || (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+  const displayName = user.fullName || user.username || 'Người dùng';
+  const displayRole = user.role || 'Nhân viên';
+  const initials = displayName.slice(0, 2).toUpperCase();
   const menuGroups = [
     {
       group: 'Điều hành',
@@ -19,10 +37,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
     {
       group: 'Nghiệp vụ bay',
       items: [
-        { id: 'flights', label: 'Chuyến bay', icon: 'flight_takeoff', badge: '2' },
-        { id: 'booking', label: 'Đặt chỗ (Booking)', icon: 'book_online', badge: '3' },
-        { id: 'tickets', label: 'Quản lý Vé (Tickets)', icon: 'confirmation_number', badge: '12' },
-        { id: 'passengers', label: 'Hành khách', icon: 'person_search' },
+        { id: 'flights', label: 'Chuyến bay', icon: 'flight_takeoff', badge: flightCount > 0 ? flightCount.toString() : undefined },
+        { id: 'booking', label: 'Đặt chỗ (Booking)', icon: 'book_online', badge: bookingPendingCount > 0 ? bookingPendingCount.toString() : undefined },
+        { id: 'tickets', label: 'Quản lý Vé (Tickets)', icon: 'confirmation_number', badge: bookingPendingCount > 0 ? bookingPendingCount.toString() : undefined },
+        { id: 'passengers', label: 'Hành khách', icon: 'person_search', badge: passengerCount > 0 ? passengerCount.toString() : undefined },
         { id: 'seat-map', label: 'Sơ đồ ghế', icon: 'event_seat' },
       ],
     },
@@ -36,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
     {
       group: 'Tài chính',
       items: [
-        { id: 'payments', label: 'Lịch sử giao dịch', icon: 'payments', badge: 'New' },
+        { id: 'payment_history', label: 'Lịch sử giao dịch', icon: 'payments' },
         { id: 'refund-management', label: 'Hoàn/Hủy vé', icon: 'assignment_return' },
       ],
     },
@@ -107,12 +125,20 @@ const Sidebar: React.FC<SidebarProps> = ({ activeItem = 'dashboard', onNavigate 
 
       <div className="sidebar-footer">
         <div className={`user-card ${activeItem === 'profile' ? 'active' : ''}`} onClick={() => onNavigate?.('profile')} style={{ cursor: 'pointer', transition: 'all 0.2s' }} title="Quản lý tài khoản">
-          <div className="user-avatar">AD</div>
+          <div className="user-avatar">{initials}</div>
           <div className="user-meta">
-            <p className="user-name">Nguyễn Văn Admin</p>
-            <p className="user-role">Quản trị viên</p>
+            <p className="user-name">{displayName}</p>
+            <p className="user-role">{displayRole}</p>
           </div>
-          <button className="logout-btn" onClick={(e) => { e.stopPropagation(); onNavigate?.('login'); }} title="Đăng xuất">
+          <button className="logout-btn" onClick={(e) => {
+            e.stopPropagation();
+            if (onLogout) {
+              onLogout();
+            } else {
+              localStorage.removeItem('currentUser');
+              onNavigate?.('login');
+            }
+          }} title="Đăng xuất">
             <span className="material-icons-round">logout</span>
           </button>
         </div>

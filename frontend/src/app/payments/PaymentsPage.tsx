@@ -12,9 +12,14 @@ interface PaymentsPageProps {
   setView?: (view: 'checkout' | 'success') => void;
   ticketData?: BookingData | null;
   onClose?: () => void;
-  onPaymentSuccess?: (id: string) => void;
-  onUpdateStatus?: (id: string, status: string, badge: string) => void;
+  onPaymentSuccess?: (id: string, method?: string) => Promise<void> | void;
+  onUpdateStatus?: (id: string, status: string, badge: string, method?: string) => Promise<boolean> | boolean;
   bookings?: any[];
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
 const getAirportName = (code?: string) => {
@@ -31,7 +36,10 @@ const getAirportName = (code?: string) => {
   return map[code] || 'Sân bay';
 };
 
-const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkout', setView, ticketData, onClose, onPaymentSuccess, onUpdateStatus, bookings = [] }) => {
+const PaymentsPage: React.FC<PaymentsPageProps> = ({ 
+  onNavigate, view = 'checkout', setView, ticketData, onClose, onPaymentSuccess, onUpdateStatus, bookings = [],
+  currentUser, onLogout, bookingPendingCount, flightCount, passengerCount
+}) => {
   const [paymentMode, setPaymentMode] = useState<'pos' | 'remote'>('pos');
   const [posMethod, setPosMethod] = useState<'cash' | 'transfer' | 'card' | 'balance'>('cash');
   const [localTicket, setLocalTicket] = useState<BookingData | null>(null);
@@ -166,7 +174,7 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                     </div>
                     <div className="booking-info-grid">
                       <div>
-                        <p className="label">MÃ VÉ</p>
+                        <p className="label">MÃ VÉ / MÃ ĐẶT CHỖ</p>
                         <p className="val text-primary font-bold">{currentTicket?.id ?? 'N/A'}</p>
                       </div>
                       <div className="text-right">
@@ -191,7 +199,20 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                       </div>
                       <div className="text-right">
                         <p className="label">CỔNG SOÁT VÉ / NHÀ GA</p>
-                        <p className="val font-medium">{currentTicket?.gate ?? 'N/A'} / {currentTicket?.terminal ?? 'N/A'}</p>
+                        <p className="val font-medium">{currentTicket?.gate ?? currentTicket?.cong_khoi_hanh ?? 'N/A'} / {currentTicket?.terminal ?? currentTicket?.nha_ga ?? 'N/A'}</p>
+                      </div>
+                      <div>
+                        <p className="label">HẠNG VÉ (HANG GHE)</p>
+                        <p className="val font-medium">{currentTicket?.fareClass ?? currentTicket?.hang_ghe ?? 'Economy'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="label">TRẠNG THÁI ĐẶT CHỖ</p>
+                        <p className="val font-medium" style={{color: currentTicket?.trang_thai_tt === 'Da thanh toan' ? '#16a34a' : '#d97706'}}>
+                          {currentTicket?.trang_thai_tt === 'Cho thanh toan' ? 'Chờ thanh toán'
+                            : currentTicket?.trang_thai_tt === 'Da thanh toan' ? 'Đã thanh toán'
+                            : currentTicket?.trang_thai_tt === 'Da huy' ? 'Đã hủy'
+                            : currentTicket?.status ?? 'N/A'}
+                        </p>
                       </div>
 
                       {paxList.length > 0 && (
@@ -342,14 +363,27 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
                         <label className="text-sm font-semibold mb-xs" style={{ display: 'block' }}>Số tiền thu thực tế (VNĐ)</label>
                         <input type="text" className="input-field amount-input" value={amountCollected} onChange={(e) => setAmountCollected(e.target.value)} />
                       </div>
-                      <Button className="w-full mb-sm btn-primary-alt" onClick={() => {
-                        if (setView) setView('success');
+                      <Button className="w-full mb-sm btn-primary-alt" onClick={async () => {
                         const ticketId = currentTicket?.id;
                         if (ticketId) {
-                          if (onPaymentSuccess) onPaymentSuccess(ticketId);
-                          if (onUpdateStatus) onUpdateStatus(ticketId, 'Đã xuất vé', 'success');
+                          try {
+                            // Ghi nhận phuong_thuc vào ThanhToan
+                            const phuong_thuc_map: Record<string, string> = {
+                              cash: 'Tien mat',
+                              transfer: 'Chuyen khoan',
+                              card: 'Quet the POS',
+                              balance: 'So du dai ly'
+                            };
+                            // onPaymentSuccess triggers ThanhToan creation with phuong_thuc
+                            if (onPaymentSuccess) await (onPaymentSuccess as any)(ticketId, phuong_thuc_map[posMethod] || 'Tien mat');
+                            if (onUpdateStatus) await (onUpdateStatus as any)(ticketId, 'Đã xuất vé', 'success');
+                            
+                            if (setView) setView('success');
+                            showToast('Xác nhận thanh toán và xuất vé thành công!', 'success');
+                          } catch (err) {
+                            showToast('Lỗi khi xử lý thanh toán. Vui lòng thử lại.', 'error');
+                          }
                         }
-                        showToast('Xác nhận thanh toán và xuất vé thành công!', 'success');
                       }}>
                         <span className="material-icons-round">done_all</span>
                         Xác nhận thu tiền
@@ -768,6 +802,11 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({ onNavigate, view = 'checkou
     <AppLayout
       activeItem="payments"
       onNavigate={onNavigate || (() => { })}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[
         { label: 'Lịch sử giao dịch', page: 'payments' },
         currentTicket ? { label: `Xác nhận: ${currentTicket.pnr}` } : { label: 'Tra cứu' }

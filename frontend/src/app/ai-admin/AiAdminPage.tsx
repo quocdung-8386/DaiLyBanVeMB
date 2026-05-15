@@ -5,15 +5,25 @@ import AppLayout from '../../components/AppLayout';
 
 interface AiAdminPageProps {
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate }) => {
+const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [activeTab, setActiveTab] = useState<'assistant' | 'prediction' | 'settings'>('assistant');
 
   return (
     <AppLayout 
       activeItem="ai_admin" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Quản trị AI & Tự động hóa' }]}
     >
       <div className="ai-admin-page-content">

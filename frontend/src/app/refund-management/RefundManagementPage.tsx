@@ -6,10 +6,18 @@ import Button from '../../components/Button';
 interface RefundManagementPageProps {
   onNavigate?: (id: string) => void;
   bookings?: any[];
-  onUpdateStatus?: (id: string, status: string, badge: any) => void;
+  onUpdateStatus?: (id: string, status: string, badge: any, method?: string) => Promise<boolean> | void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate, bookings = [], onUpdateStatus }) => {
+const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ 
+  onNavigate, bookings = [], onUpdateStatus,
+  currentUser, onLogout, bookingPendingCount, flightCount, passengerCount 
+}) => {
   const [selectedRefundId, setSelectedRefundId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -104,6 +112,11 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({ onNavigate,
     <AppLayout 
       activeItem="refund-management" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Điều hành', page: 'dashboard' }, { label: 'Quản lý Hoàn tiền' }]}
     >
       <div className="refund-page-content">

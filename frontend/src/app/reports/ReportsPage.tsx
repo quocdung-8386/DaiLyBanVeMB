@@ -2,15 +2,37 @@ import React, { useState } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import AppLayout, { showToast } from '../../components/AppLayout';
+import { api } from '../../api';
 
 interface ReportsPageProps {
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
+const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [dateRange, setDateRange] = useState('Tháng này');
   const [isExporting, setIsExporting] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [reportData, setReportData] = useState<any>(null);
+
+  React.useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const data = await api.getReports();
+        setReportData(data);
+      } catch (error) {
+        console.error("Failed to fetch reports:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchReports();
+  }, []);
 
   const handleExport = () => {
     setIsExporting(true);
@@ -29,16 +51,21 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
   };
 
   const stats = [
-    { label: 'Tổng doanh thu (Gross)', value: '1,250,000,000 đ', change: '+12.5%', icon: 'payments', color: '#2563eb' },
-    { label: 'Lợi nhuận ròng (Net)', value: '185,000,000 đ', change: '+18.2%', icon: 'account_balance_wallet', color: '#10b981' },
-    { label: 'Số vé đã phát hành', value: '856', change: '+5.4%', icon: 'confirmation_number', color: '#f59e0b' },
-    { label: 'Tỷ lệ hoàn/hủy', value: '1.2%', change: '-0.5%', icon: 'assignment_return', color: '#ef4444' },
+    { label: 'Tổng doanh thu (Gross)', value: `${(reportData?.kpis?.total_revenue || 0).toLocaleString()} đ`, change: '+12.5%', icon: 'payments', color: '#2563eb' },
+    { label: 'Lợi nhuận ròng (Net)', value: `${(reportData?.kpis?.net_profit || 0).toLocaleString()} đ`, change: '+18.2%', icon: 'account_balance_wallet', color: '#10b981' },
+    { label: 'Số vé đã phát hành', value: reportData?.kpis?.total_tickets || '0', change: '+5.4%', icon: 'confirmation_number', color: '#f59e0b' },
+    { label: 'Tỷ lệ hoàn/hủy', value: `${reportData?.kpis?.cancel_rate || 0}%`, change: '-0.5%', icon: 'assignment_return', color: '#ef4444' },
   ];
 
   return (
     <AppLayout 
       activeItem="reports" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Báo cáo & Thống kê' }]}
     >
       <div className="reports-page-content">
@@ -119,13 +146,17 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
                 <span>1.5B</span><span>1B</span><span>500M</span><span>0</span>
               </div>
               <div className="chart-bars">
-                {[40, 65, 45, 90, 75, 55, 85].map((h, i) => (
-                  <div key={i} className="bar-group">
-                    <div className="bar rev" style={{ height: `${h}%` }}></div>
-                    <div className="bar prof" style={{ height: `${h * 0.3}%` }}></div>
-                    <span className="label">Th {i+1}</span>
-                  </div>
-                ))}
+                {(reportData?.monthly_stats || [40, 65, 45, 90, 75, 55, 85]).map((m: any, i: number) => {
+                  const h = typeof m === 'number' ? m : (m.revenue / 1500000000 * 100);
+                  const label = m.month || `Th ${i+1}`;
+                  return (
+                    <div key={i} className="bar-group">
+                      <div className="bar rev" style={{ height: `${Math.min(h, 100)}%` }}></div>
+                      <div className="bar prof" style={{ height: `${Math.min(h * 0.3, 30)}%` }}></div>
+                      <span className="label">{label}</span>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </Card>
@@ -142,9 +173,16 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
               </svg>
             </div>
             <div className="donut-legend">
-              <div className="legend-row"><span>Vietnam Airlines</span><b>60%</b></div>
-              <div className="legend-row"><span>VietJet Air</span><b>25%</b></div>
-              <div className="legend-row"><span>Bamboo Airways</span><b>15%</b></div>
+              {(reportData?.airline_share || []).map((a: any, i: number) => (
+                <div key={i} className="legend-row"><span>{a.name}</span><b>{a.percentage}%</b></div>
+              ))}
+              {(!reportData?.airline_share || reportData.airline_share.length === 0) && (
+                <>
+                  <div className="legend-row"><span>Vietnam Airlines</span><b>60%</b></div>
+                  <div className="legend-row"><span>VietJet Air</span><b>25%</b></div>
+                  <div className="legend-row"><span>Bamboo Airways</span><b>15%</b></div>
+                </>
+              )}
             </div>
           </Card>
         </div>
@@ -166,21 +204,29 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onNavigate }) => {
               </tr>
             </thead>
             <tbody>
-              {[
-                { route: 'HAN - SGN', count: 425, rev: '650.4M', prof: '42.5M', trend: '+12%' },
-                { route: 'SGN - DAD', count: 210, rev: '280.2M', prof: '18.4M', trend: '+8%' },
-                { route: 'HAN - PQC', count: 185, rev: '310.5M', prof: '22.1M', trend: '+15%' },
-                { route: 'SGN - VII', count: 120, rev: '145.8M', prof: '9.2M', trend: '-2%' },
-                { route: 'DAD - HAN', count: 95, rev: '112.4M', prof: '7.8M', trend: '+5%' },
-              ].map((r, i) => (
+              {(reportData?.top_routes || []).map((r: any, i: number) => (
                 <tr key={i}>
                   <td><div className="route-cell"><span className="material-icons-round">flight_takeoff</span> {r.route}</div></td>
                   <td><b>{r.count}</b></td>
-                  <td>{r.rev} đ</td>
-                  <td><b className="text-success">{r.prof} đ</b></td>
+                  <td>{r.revenue.toLocaleString()} đ</td>
+                  <td><b className="text-success">{r.profit.toLocaleString()} đ</b></td>
                   <td><span className={`trend-pill ${r.trend.startsWith('+') ? 'up' : 'down'}`}>{r.trend}</span></td>
                 </tr>
               ))}
+              {(!reportData?.top_routes || reportData.top_routes.length === 0) && (
+                [
+                  { route: 'HAN - SGN', count: 425, rev: '650.4M', prof: '42.5M', trend: '+12%' },
+                  { route: 'SGN - DAD', count: 210, rev: '280.2M', prof: '18.4M', trend: '+8%' },
+                ].map((r, i) => (
+                  <tr key={i}>
+                    <td><div className="route-cell"><span className="material-icons-round">flight_takeoff</span> {r.route}</div></td>
+                    <td><b>{r.count}</b></td>
+                    <td>{r.rev} đ</td>
+                    <td><b className="text-success">{r.prof} đ</b></td>
+                    <td><span className={`trend-pill ${r.trend.startsWith('+') ? 'up' : 'down'}`}>{r.trend}</span></td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </Card>

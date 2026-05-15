@@ -5,9 +5,14 @@ import AppLayout from '../../components/AppLayout';
 
 interface AuditLogPageProps {
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate }) => {
+const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [searchTerm, setSearchTerm] = useState('');
 
   const logs = [
@@ -22,6 +27,11 @@ const AuditLogPage: React.FC<AuditLogPageProps> = ({ onNavigate }) => {
     <AppLayout 
       activeItem="audit_log" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Nhật ký hoạt động' }]}
     >
       <div className="audit-log-page">

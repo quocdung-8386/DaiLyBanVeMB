@@ -7,6 +7,11 @@ interface AppLayoutProps {
   onNavigate: (page: string) => void;
   breadcrumb?: { label: string; page?: string }[];
   children: React.ReactNode;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
 export const showToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
@@ -52,11 +57,31 @@ const ToastContainer = () => {
   );
 };
 
-const AppLayout: React.FC<AppLayoutProps> = ({ activeItem, onNavigate, breadcrumb, children }) => {
+const AppLayout: React.FC<AppLayoutProps> = ({ 
+  activeItem, 
+  onNavigate, 
+  breadcrumb, 
+  children, 
+  currentUser, 
+  onLogout, 
+  bookingPendingCount,
+  flightCount,
+  passengerCount
+}) => {
+  // Fallback: read currentUser from localStorage if not passed
+  const resolvedUser = currentUser || (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
   return (
     <div className="layout">
       <ToastContainer />
-      <Sidebar activeItem={activeItem} onNavigate={onNavigate} />
+      <Sidebar 
+        activeItem={activeItem} 
+        onNavigate={onNavigate} 
+        currentUser={resolvedUser} 
+        onLogout={onLogout} 
+        bookingPendingCount={bookingPendingCount}
+        flightCount={flightCount}
+        passengerCount={passengerCount}
+      />
       <div className="main-container">
         <Header onNavigate={onNavigate} />
         <main className="content">

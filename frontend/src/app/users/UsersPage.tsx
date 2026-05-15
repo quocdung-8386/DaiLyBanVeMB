@@ -6,9 +6,14 @@ import { api } from '../../api';
 
 interface UsersPageProps {
   onNavigate: (page: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
+const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [activeTab, setActiveTab] = useState<'users' | 'roles'>('users');
   const [usersList, setUsersList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -18,35 +23,72 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
   const [editingUser, setEditingUser] = useState<any>(null);
   const [editingRole, setEditingRole] = useState<any>(null);
 
+  const fetchStaff = async () => {
+    try {
+      const data = await api.getStaff();
+      setUsersList(data.map((s: any) => ({
+        id: String(s.id),
+        name: s.username, 
+        username: s.username,
+        role: s.department || 'STAFF',
+        agency: s.agency || 'DAILY_01',
+        status: s.status || 'Hoạt động'
+      })));
+    } catch (error) {
+      console.error("Failed to fetch staff:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const [rolesList, setRolesList] = useState<any[]>([]);
+
+  const fetchRoles = async () => {
+    try {
+      const data = await api.getRoles();
+      setRolesList(data.map((r: any) => ({
+        id: r.id,
+        name: r.name,
+        desc: r.desc,
+        usersCount: r.usersCount,
+        permissions: r.permissions || []
+      })));
+    } catch (error) {
+      console.error("Failed to fetch roles:", error);
+    }
+  };
+
+  const [availablePermissions, setAvailablePermissions] = useState<any[]>([]);
+
+  const fetchPermissions = async () => {
+    try {
+      const data = await api.getPermissions();
+      setAvailablePermissions(data);
+    } catch (error) {
+      console.error("Failed to fetch permissions:", error);
+    }
+  };
+
+  const [agenciesList, setAgenciesList] = useState<any[]>([]);
+
+  const fetchAgencies = async () => {
+    try {
+      const data = await api.getAgencies();
+      setAgenciesList(data);
+    } catch (error) {
+      console.error("Failed to fetch agencies:", error);
+    }
+  };
+
   React.useEffect(() => {
-    const fetchStaff = async () => {
-      try {
-        const data = await api.getStaff();
-        setUsersList(data.map((s: any) => ({
-          id: s.id,
-          name: s.username, // Using username as name if name not available
-          username: s.username,
-          role: s.department || 'Nhân viên',
-          agency: s.agency || 'Trụ sở chính',
-          status: 'Hoạt động'
-        })));
-      } catch (error) {
-        console.error("Failed to fetch staff:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchStaff();
+    fetchRoles();
+    fetchPermissions();
+    fetchAgencies();
   }, []);
 
-  const [rolesList, setRolesList] = useState([
-    { id: 'R01', name: 'Quản trị hệ thống', usersCount: 2, desc: 'Toàn quyền truy cập mọi tính năng', permissions: ['booking', 'issuing', 'refund', 'reports', 'settings', 'users'] },
-    { id: 'R02', name: 'Kế toán', usersCount: 3, desc: 'Chỉ xem báo cáo, quản lý thanh toán, hóa đơn', permissions: ['reports', 'refund', 'payments'] },
-    { id: 'R03', name: 'Nhân viên bán vé', usersCount: 15, desc: 'Tạo đặt chỗ, xuất vé, hủy vé cơ bản', permissions: ['booking', 'issuing'] },
-  ]);
-
   const [searchTerm, setSearchTerm] = useState('');
-  const [formData, setFormData] = useState({ name: '', username: '', role: 'Nhân viên bán vé', agency: 'Trụ sở chính', status: 'Hoạt động' });
+  const [formData, setFormData] = useState({ name: '', username: '', role: 'STAFF', agency: 'DAILY_01', status: 'Hoạt động', password: '' });
   
   const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
     visible: false,
@@ -67,65 +109,119 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
 
   const handleOpenAdd = () => {
     setEditingUser(null);
-    setFormData({ name: '', username: '', role: 'Nhân viên bán vé', agency: 'Trụ sở chính', status: 'Hoạt động' });
+    setFormData({ name: '', username: '', role: 'STAFF', agency: 'DAILY_01', status: 'Hoạt động', password: '' });
     setShowUserPopup(true);
   };
 
-  const handleToggleLock = (user: any) => {
+  const handleOpenAddRole = () => {
+    setEditingRole({ name: '', desc: '', permissions: [] });
+    setShowRolePopup(true);
+  };
+
+  const handleOpenEditRole = (role: any) => {
+    setEditingRole({ ...role });
+    setShowRolePopup(true);
+  };
+
+  const handleToggleLock = async (user: any) => {
     const isLocked = user.status === 'Khóa';
     const newStatus = isLocked ? 'Hoạt động' : 'Khóa';
-    setUsersList(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
-    showToast(`Đã ${isLocked ? 'mở khóa' : 'khóa'} tài khoản ${user.username} thành công!`, isLocked ? 'success' : 'error');
+    try {
+      await api.updateStaff(user.id, { status: newStatus });
+      setUsersList(prev => prev.map(u => u.id === user.id ? { ...u, status: newStatus } : u));
+      showToast(`Đã ${isLocked ? 'mở khóa' : 'khóa'} tài khoản ${user.username} thành công!`, isLocked ? 'success' : 'error');
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi cập nhật trạng thái.', 'error');
+    }
   };
 
   const confirmDelete = (id: string) => {
     setShowDeleteConfirm(id);
   };
 
-  const handleDeleteUser = () => {
+  const handleDeleteUser = async () => {
     if (showDeleteConfirm) {
-      setUsersList(prev => prev.filter(u => u.id !== showDeleteConfirm));
-      setShowDeleteConfirm(null);
-      showToast('Đã xóa nhân viên khỏi hệ thống.', 'success');
+      try {
+        await api.deleteStaff(showDeleteConfirm);
+        setUsersList(prev => prev.filter(u => u.id !== showDeleteConfirm));
+        setShowDeleteConfirm(null);
+        showToast('Đã xóa nhân viên khỏi hệ thống.', 'success');
+      } catch (error) {
+        showToast('Có lỗi xảy ra khi xóa nhân viên.', 'error');
+      }
     }
   };
 
-  const handleOpenEditRole = (role: any) => {
-    setEditingRole(role);
-    setShowRolePopup(true);
+
+  const handleSaveRole = async () => {
+    try {
+      const isExisting = rolesList.some(r => r.id === editingRole.id);
+      if (isExisting) {
+        await api.updateRole(editingRole.id, editingRole);
+        setRolesList(prev => prev.map(r => r.id === editingRole.id ? editingRole : r));
+      } else {
+        await api.createRole(editingRole);
+        setRolesList(prev => [...prev, editingRole]);
+      }
+      setShowRolePopup(false);
+      showToast('Đã cập nhật quyền hạn cho vai trò thành công!', 'success');
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi lưu vai trò.', 'error');
+    }
   };
 
-  const handleSaveRole = () => {
-    setRolesList(prev => prev.map(r => r.id === editingRole.id ? editingRole : r));
-    setShowRolePopup(false);
-    showToast('Đã cập nhật quyền hạn cho vai trò thành công!', 'success');
-  };
-
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     if (!formData.name || !formData.username) {
       showToast('Vui lòng điền đầy đủ thông tin bắt buộc.', 'error');
       return;
     }
 
-    if (editingUser) {
-      setUsersList(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...formData } : u));
-    } else {
-      const newId = `NV${(usersList.length + 1).toString().padStart(3, '0')}`;
-      setUsersList(prev => [...prev, { id: newId, ...formData }]);
+    try {
+      const roleId = rolesList.find(r => r.name === formData.role)?.id || formData.role;
+      const agencyId = agenciesList.find(a => a.name === formData.agency)?.id || formData.agency;
+
+      if (editingUser) {
+        await api.updateStaff(editingUser.id, {
+          username: formData.username,
+          department: roleId,
+          agency: agencyId,
+          status: formData.status
+        });
+        setUsersList(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...formData, role: roleId, agency: agencyId } : u));
+      } else {
+        await api.createStaff({
+          username: formData.username,
+          password: formData.password || 'password123',
+          department: roleId,
+          agency: agencyId
+        });
+      }
+      fetchStaff();
+      
+      setShowUserPopup(false);
+      showToast(editingUser ? 'Cập nhật nhân viên thành công!' : 'Đã thêm nhân viên mới!', 'success');
+    } catch (error) {
+      showToast('Có lỗi xảy ra khi lưu thông tin.', 'error');
     }
-    
-    setShowUserPopup(false);
-    showToast(editingUser ? 'Cập nhật thông tin nhân viên thành công!' : 'Đã thêm nhân viên mới vào hệ thống!', 'success');
   };
 
   const filteredUsers = usersList.filter(u => 
-    u.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    u.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    u.id.toLowerCase().includes(searchTerm.toLowerCase())
+    (u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) || 
+    (u.username || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    String(u.id).toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <AppLayout activeItem="users" onNavigate={onNavigate} breadcrumb={[{ label: 'Quản Lý Nhân Sự & Phân Quyền' }]}>
+    <AppLayout 
+      activeItem="users" 
+      onNavigate={onNavigate} 
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
+      breadcrumb={[{ label: 'Quản Lý Nhân Sự & Phân Quyền' }]}
+    >
       <div className="users-page">
         <div className="page-header">
           <div className="header-titles">
@@ -179,15 +275,24 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
                       <td><div className="tx-id">{u.id}</div></td>
                       <td>
                         <div className="customer-info">
-                          <div className="customer-avatar">{u.name ? u.name.split(' ').filter(Boolean).map(w => w[0]).slice(-2).join('').toUpperCase() : '??'}</div>
+                          <div className="customer-avatar">
+                            {(() => {
+                              const nameStr = String(u.name || '').trim();
+                              if (!nameStr) return '??';
+                              const parts = nameStr.split(/\s+/).filter(Boolean);
+                              if (parts.length === 0) return '??';
+                              if (parts.length === 1) return parts[0][0].toUpperCase();
+                              return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+                            })()}
+                          </div>
                           <div>
                             <p className="name">{u.name}</p>
                             <p className="subtext">@{u.username}</p>
                           </div>
                         </div>
                       </td>
-                      <td><span className="role-badge">{u.role}</span></td>
-                      <td><span className="agency-text">{u.agency}</span></td>
+                      <td><span className="role-badge">{rolesList.find(r => r.id === u.role)?.name || u.role}</span></td>
+                      <td><span className="agency-text">{agenciesList.find(a => a.id === u.agency)?.name || u.agency}</span></td>
                       <td>
                         <span className={`status-badge ${u.status === 'Hoạt động' ? 'success' : 'danger'}`}>
                           <span className="dot"></span> {u.status}
@@ -218,11 +323,7 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
           <Card className="tab-content">
             <div className="toolbar">
               <div className="spacer"></div>
-              <Button onClick={() => {
-                const newId = `R${(rolesList.length + 1).toString().padStart(2, '0')}`;
-                setEditingRole({ id: newId, name: '', desc: '', usersCount: 0, permissions: [] });
-                setShowRolePopup(true);
-              }}>
+              <Button onClick={handleOpenAddRole}>
                 <span className="material-icons-round">add_moderator</span> Tạo vai trò mới
               </Button>
             </div>
@@ -261,22 +362,30 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
                   <input type="text" value={formData.username} onChange={e => setFormData({ ...formData, username: e.target.value })} placeholder="VD: nguyenva" disabled={!!editingUser} style={{ backgroundColor: editingUser ? '#f1f5f9' : 'transparent' }} />
                 </div>
                 {!editingUser && (
-                  <div className="form-group"><label>Mật khẩu tạm</label><input type="password" placeholder="Nhập mật khẩu" /></div>
+                  <div className="form-group">
+                    <label>Mật khẩu tạm</label>
+                    <input 
+                      type="password" 
+                      value={formData.password} 
+                      onChange={e => setFormData({ ...formData, password: e.target.value })} 
+                      placeholder="Nhập mật khẩu" 
+                    />
+                  </div>
                 )}
                 <div className="form-group">
                   <label>Vai trò</label>
                   <select value={formData.role} onChange={e => setFormData({ ...formData, role: e.target.value })}>
-                    <option>Nhân viên bán vé</option>
-                    <option>Kế toán</option>
-                    <option>Quản trị hệ thống</option>
+                    {rolesList.map(r => (
+                      <option key={r.id} value={r.id}>{r.name}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="form-group">
                   <label>Chi nhánh trực thuộc</label>
                   <select value={formData.agency} onChange={e => setFormData({ ...formData, agency: e.target.value })}>
-                    <option>Trụ sở chính</option>
-                    <option>Chi nhánh Quận 1</option>
-                    <option>Chi nhánh Tân Bình</option>
+                    {agenciesList.map(a => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
                   </select>
                 </div>
                 {editingUser && (
@@ -313,25 +422,21 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate }) => {
                 <div className="form-group">
                   <label>Danh sách quyền hạn</label>
                   <div className="permission-list">
-                    {[
-                      { id: 'booking', label: 'Tạo đặt chỗ (Booking)' },
-                      { id: 'issuing', label: 'Xuất vé (Issue)' },
-                      { id: 'refund', label: 'Yêu cầu hoàn (Refund)' },
-                      { id: 'payments', label: 'Quản lý thanh toán' },
-                      { id: 'reports', label: 'Xem báo cáo thống kê' },
-                      { id: 'users', label: 'Quản lý nhân sự' },
-                      { id: 'settings', label: 'Cấu hình hệ thống' },
-                    ].map(p => (
+                    {availablePermissions.map(p => (
                       <div key={p.id} className={`permission-item ${editingRole.permissions.includes(p.id) ? 'active' : ''}`}
                         onClick={() => {
                           const newPerms = editingRole.permissions.includes(p.id) ? editingRole.permissions.filter((id: any) => id !== p.id) : [...editingRole.permissions, p.id];
                           setEditingRole({ ...editingRole, permissions: newPerms });
                         }}>
                         <span className="material-icons-round check-icon" style={{ fontSize: 18 }}>check_circle</span>
-                        <span>{p.label}</span>
+                        <div>
+                          <p style={{ margin: 0, fontWeight: 600 }}>{p.label}</p>
+                          <p style={{ margin: 0, fontSize: 11, opacity: 0.7 }}>{p.desc}</p>
+                        </div>
                       </div>
                     ))}
                   </div>
+
                 </div>
               </div>
               <div className="user-popup-footer">

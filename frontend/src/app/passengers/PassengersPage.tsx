@@ -5,6 +5,11 @@ import AppLayout from '../../components/AppLayout';
 interface PassengersPageProps {
   onNavigate?: (id: string) => void;
   bookings: any[];
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
 const passengerManifest = [
@@ -13,7 +18,7 @@ const passengerManifest = [
   { id: 'PAX-003', name: 'LE HUU DAT', idNumber: '079203004321', ticketCode: 'VE-003', flight: 'VN789', seat: '08B', class: 'Business', status: 'Not Checked-in', boardingStatus: 'N/A' },
 ];
 
-const PassengersPage: React.FC<PassengersPageProps> = ({ onNavigate, bookings }) => {
+const PassengersPage: React.FC<PassengersPageProps> = ({ onNavigate, bookings, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [filterFlight, setFilterFlight] = useState('all');
   const [search, setSearch] = useState('');
 
@@ -46,6 +51,11 @@ const PassengersPage: React.FC<PassengersPageProps> = ({ onNavigate, bookings })
     <AppLayout 
       activeItem="passengers" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Điều hành', page: 'dashboard' }, { label: 'Hành khách' }]}
     >
       <div className="passengers-page">

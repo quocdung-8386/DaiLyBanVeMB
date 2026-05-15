@@ -10,9 +10,18 @@ interface BookingPageProps {
   onCheckout?: (ticket: any) => void;
   onAddBooking?: (booking: any) => void;
   flights?: any[];
+  bookings?: any[];
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, onCheckout, onAddBooking, flights }) => {
+const BookingPage: React.FC<BookingPageProps> = ({ 
+  onNavigate, initialFlight, onCheckout, onAddBooking, flights, bookings = [],
+  currentUser, onLogout, bookingPendingCount, flightCount, passengerCount
+}) => {
   const [flightData, setFlightData] = useState<any>(initialFlight || null);
   const [actionType, setActionType] = useState<'hold' | 'success' | null>(null);
 
@@ -49,15 +58,52 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
     return baseFareTotal + feesTotal + getExtraServicesTotal();
   };
 
-  const handleHoldBooking = () => {
-    const newBooking = {
-      id: `BK-${Math.floor(100 + Math.random() * 900)}`,
+  const validateBooking = () => {
+    for (let i = 0; i < passengersList.length; i++) {
+      if (!passengersList[i].name || !passengersList[i].name.trim()) {
+        alert(`Vui lòng nhập Họ tên cho Hành khách ${i + 1}`);
+        return false;
+      }
+    }
+    if (!contactInfo.name?.trim() || !contactInfo.phone?.trim() || !contactInfo.email?.trim()) {
+      alert("Vui lòng nhập đầy đủ Thông tin liên hệ (Họ tên, Số điện thoại, Email)");
+      return false;
+    }
+    return true;
+  };
+
+  const handleNextStep = () => {
+    if (bookingStep === 2 && !validateBooking()) {
+      return;
+    }
+    setBookingStep(s => s + 1);
+  };
+
+  const handleHoldBooking = async () => {
+    if (bookingStep >= 2 && !validateBooking()) return;
+    const newBooking: any = {
+      // ── DatCho fields ──
+      trang_thai_tt: 'Chờ thanh toán',           // trang_thai_tt
+      tong_tien: calculateGrandTotal(),           // tong_tien DECIMAL
+
+      // ── VeMayBay fields ──
+      hang_ghe: selectedFare,                     // hang_ghe
+      trang_thai_ve: 'Đã xác nhận',              // trang_thai_ve
+
+      // ── ChuyenBay reference ──
+      flight: flightData?.id || 'VN-204',         // ma_cb
+      ma_hang: flightData?.logo || '',            // ma_hang
+      ma_may_bay: flightData?.aircraft || 'A321', // ma_may_bay
+      nha_ga: flightData?.terminal || 'T1',       // nha_ga
+      cong_khoi_hanh: flightData?.gate || '--',  // cong_khoi_hanh
+
+      // ── UI/display fields ──
       pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),
       customer: contactInfo.name || passengersList[0]?.name || 'Khách hàng mới',
-      phone: contactInfo.phone || 'Chưa cung cấp',
+      phone: contactInfo.phone || '',
+      email: contactInfo.email || '',
       from: flightData?.from || 'SGN',
       to: flightData?.to || 'HAN',
-      flight: flightData?.id || 'VN-204',
       airline: flightData?.airline || 'Vietnam Airlines',
       date: 'Hôm nay',
       time: flightData?.departure || '08:00 AM',
@@ -65,32 +111,58 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
       status: 'Chờ thanh toán',
       badge: 'hold',
       pax: passengersList.length,
-      passengersList: passengersList,
+      fareClass: selectedFare,
+      passengersList: passengersList.map(p => ({
+        name: p.name,
+        seat: p.seat,
+        type: p.type,
+        hang_ghe: selectedFare,           // hang_ghe
+        gia_ve: getBaseFare(),             // gia_ve
+        trang_thai_ve: 'Da xac nhan'      // trang_thai_ve
+      })),
       extraServices: extraServices,
       type: 'Một chiều',
       timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
       seat: passengersList[0]?.seat || '12C',
       gate: flightData?.gate || '--',
       aircraft: flightData?.aircraft || 'A321',
-      terminal: 'T1'
+      terminal: flightData?.terminal || 'T1'
     };
     setActionType('hold');
+    
+    const result = await (onAddBooking as any)?.(newBooking);
+    
     setTimeout(() => {
       setActionType(null);
-      if (onAddBooking) onAddBooking(newBooking);
       if (onNavigate) onNavigate('tickets');
     }, 1500);
   };
 
-  const handleConfirmBooking = () => {
-    const newBooking = {
-      id: `BK-${Math.floor(100 + Math.random() * 900)}`,
+  const handleConfirmBooking = async () => {
+    if (bookingStep >= 2 && !validateBooking()) return;
+    const newBooking: any = {
+      // ── DatCho fields ──
+      trang_thai_tt: 'Chờ thanh toán',           // trang_thai_tt
+      tong_tien: calculateGrandTotal(),           // tong_tien DECIMAL
+
+      // ── VeMayBay fields ──
+      hang_ghe: selectedFare,                     // hang_ghe
+      trang_thai_ve: 'Đã xác nhận',              // trang_thai_ve
+
+      // ── ChuyenBay reference ──
+      flight: flightData?.id || 'VN-204',         // ma_cb
+      ma_hang: flightData?.logo || '',            // ma_hang
+      ma_may_bay: flightData?.aircraft || 'A321', // ma_may_bay
+      nha_ga: flightData?.terminal || 'T1',       // nha_ga
+      cong_khoi_hanh: flightData?.gate || '--',  // cong_khoi_hanh
+
+      // ── UI/display fields ──
       pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),
       customer: contactInfo.name || passengersList[0]?.name || 'Khách hàng mới',
-      phone: contactInfo.phone || 'Chưa cung cấp',
+      phone: contactInfo.phone || '',
+      email: contactInfo.email || '',
       from: flightData?.from || 'SGN',
       to: flightData?.to || 'HAN',
-      flight: flightData?.id || 'VN-204',
       airline: flightData?.airline || 'Vietnam Airlines',
       date: 'Hôm nay',
       time: flightData?.departure || '08:00 AM',
@@ -98,21 +170,34 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
       status: 'Chờ thanh toán',
       badge: 'hold',
       pax: passengersList.length,
-      passengersList: passengersList,
+      fareClass: selectedFare,
+      passengersList: passengersList.map(p => ({
+        name: p.name,
+        seat: p.seat,
+        type: p.type,
+        hang_ghe: selectedFare,           // hang_ghe
+        gia_ve: getBaseFare(),             // gia_ve
+        trang_thai_ve: 'Da xac nhan'      // trang_thai_ve
+      })),
       extraServices: extraServices,
       type: 'Một chiều',
       timeLimit: new Date(Date.now() + 24*3600000).toISOString(),
       seat: passengersList[0]?.seat || '12C',
       gate: flightData?.gate || '--',
       aircraft: flightData?.aircraft || 'A321',
-      terminal: 'T1'
+      terminal: flightData?.terminal || 'T1'
     };
     setActionType('success');
+    
+    const result = await (onAddBooking as any)?.(newBooking);
+    
     setTimeout(() => {
       setActionType(null);
-      if (onAddBooking) onAddBooking(newBooking);
-      if (onCheckout) onCheckout(newBooking);
-      if (onNavigate) onNavigate('payments');
+      if (result && result.id) {
+        newBooking.id = result.id;
+        if (onCheckout) onCheckout(newBooking);
+        if (onNavigate) onNavigate('payments');
+      }
     }, 1500);
   };
 
@@ -305,6 +390,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
     <AppLayout 
       activeItem="booking" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
     >
       <div className="booking-page-content">
         
@@ -326,7 +416,7 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
                     <div className="step-actions">
                       {bookingStep > 1 && <Button variant="outline" onClick={() => setBookingStep(s => s - 1)}>Quay lại</Button>}
                       {bookingStep < 4 ? (
-                        <Button onClick={() => setBookingStep(s => s + 1)}>Tiếp theo</Button>
+                        <Button onClick={handleNextStep}>Tiếp theo</Button>
                       ) : (
                         <Button onClick={handleConfirmBooking}>ĐẾN TRANG THANH TOÁN</Button>
                       )}
@@ -470,7 +560,11 @@ const BookingPage: React.FC<BookingPageProps> = ({ onNavigate, initialFlight, on
             allowedClass={selectedFare}
             initialSelectedSeat={passengersList[editingSeatIndex].seat}
             occupiedSeats={[
-              '12B', '14A', '14C', '15D', '15E', '15F', '1A', '1B', '2A', '2C', 
+              // Get seats from all active bookings for this flight
+              ...bookings
+                .filter(b => b.flight === flightData?.id && b.badge !== 'danger' && b.badge !== 'default' && b.badge !== 'warning')
+                .flatMap(b => b.passengersList ? b.passengersList.map((p: any) => p.seat) : (b.seat ? b.seat.split(', ') : [])),
+              // Get seats from other passengers in the current session
               ...passengersList
                 .filter((_, idx) => idx !== editingSeatIndex)
                 .map(p => p.seat)

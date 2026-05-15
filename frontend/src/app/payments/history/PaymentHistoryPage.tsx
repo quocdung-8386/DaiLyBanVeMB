@@ -6,11 +6,31 @@ import { api } from '../../../api';
 
 interface PaymentHistoryPageProps {
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) => {
+const parseAmount = (val: any): number => {
+  if (typeof val === 'number') return val;
+  if (typeof val === 'string') return parseFloat(val.replace(/[^0-9.-]+/g, '')) || 0;
+  return 0;
+};
+
+const formatAmount = (val: any): string => {
+  const num = parseAmount(val);
+  return num.toLocaleString('vi-VN') + 'đ';
+};
+
+const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ 
+  onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount 
+}) => {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [activeFilter, setActiveFilter] = useState('Tất cả');
 
   React.useEffect(() => {
     const fetchPayments = async () => {
@@ -18,28 +38,52 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
         const data = await api.getPayments();
         setTransactions(data);
       } catch (error) {
-        console.error("Failed to fetch payments:", error);
+        console.error('Failed to fetch payments:', error);
       } finally {
         setLoading(false);
       }
     };
     fetchPayments();
+    const intervalId = setInterval(fetchPayments, 15000);
+    return () => clearInterval(intervalId);
   }, []);
 
-  const totalRevenue = transactions.reduce((sum, tx) => {
-    const amount = parseFloat(tx.amount.replace(/[^0-9.-]+/g, ""));
-    return sum + (tx.status === 'Đã thanh toán' ? amount : 0);
-  }, 0);
+  const PAID_STATUSES = ['Đã thanh toán', 'Hoàn tất'];
+  const PENDING_STATUSES = ['Chờ thanh toán'];
 
-  const pendingRevenue = transactions.reduce((sum, tx) => {
-    const amount = parseFloat(tx.amount.replace(/[^0-9.-]+/g, ""));
-    return sum + (tx.status === 'Chờ thanh toán' ? amount : 0);
-  }, 0);
+  const totalRevenue = transactions.reduce((sum, tx) =>
+    sum + (PAID_STATUSES.includes(tx.status) ? parseAmount(tx.amount) : 0), 0);
+
+  const pendingRevenue = transactions.reduce((sum, tx) =>
+    sum + (PENDING_STATUSES.includes(tx.status) ? parseAmount(tx.amount) : 0), 0);
+
+  const filterMap: Record<string, string[] | null> = {
+    'Tất cả': null,
+    'Hoàn tất': ['Đã thanh toán', 'Hoàn tất'],
+    'Chờ duyệt': ['Chờ thanh toán'],
+    'Thất bại': ['Thất bại', 'Đã hủy']
+  };
+
+  const filtered = transactions.filter(tx => {
+    const allowed = filterMap[activeFilter];
+    const statusMatch = !allowed || allowed.includes(tx.status);
+    const q = search.toLowerCase();
+    const searchMatch = !q ||
+      (tx.id || '').toLowerCase().includes(q) ||
+      (tx.bookingId || '').toLowerCase().includes(q) ||
+      (tx.customer || '').toLowerCase().includes(q);
+    return statusMatch && searchMatch;
+  });
 
   return (
     <AppLayout 
-      activeItem="payments" 
+      activeItem="payment_history" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Lịch sử giao dịch' }]}
     >
       <div className="payment-history-content">
@@ -51,7 +95,7 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
             <p>Quản lý dòng tiền, đối soát thanh toán và biên lai điện tử.</p>
           </div>
           <div className="action-buttons">
-            <Button variant="outline"><span className="material-icons-round">calendar_today</span> Tháng 10, 2023</Button>
+            <Button variant="outline"><span className="material-icons-round">calendar_today</span> {new Date().toLocaleDateString('vi-VN', {month:'long', year:'numeric'})}</Button>
             <Button><span className="material-icons-round">cloud_download</span> Xuất báo cáo tài chính</Button>
           </div>
         </div>
@@ -64,7 +108,7 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
             </div>
             <div className="data">
               <p>Tổng doanh thu</p>
-              <h3>{(totalRevenue / 1000000).toFixed(1)}M</h3>
+              <h3>{totalRevenue >= 1000000 ? (totalRevenue/1000000).toFixed(1)+'M' : totalRevenue.toLocaleString('vi-VN')+'đ'}</h3>
             </div>
           </Card>
           <Card className="finance-pill">
@@ -73,7 +117,7 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
             </div>
             <div className="data">
               <p>Chờ thanh toán</p>
-              <h3>{(pendingRevenue / 1000000).toFixed(1)}M</h3>
+              <h3>{pendingRevenue >= 1000000 ? (pendingRevenue/1000000).toFixed(1)+'M' : pendingRevenue.toLocaleString('vi-VN')+'đ'}</h3>
             </div>
           </Card>
           <Card className="finance-pill">
@@ -92,13 +136,13 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
           <div className="toolbar">
             <div className="search-box">
               <span className="material-icons-round">search</span>
-              <input type="text" placeholder="Tìm theo mã giao dịch, PNR, khách hàng..." />
+              <input type="text" placeholder="Tìm theo mã giao dịch, PNR, khách hàng..." value={search} onChange={e => setSearch(e.target.value)} />
+              {search && <span className="material-icons-round" style={{cursor:'pointer',fontSize:16,color:'#94a3b8'}} onClick={()=>setSearch('')}>close</span>}
             </div>
             <div className="filter-chips">
-              <span className="chip active">Tất cả</span>
-              <span className="chip">Hoàn tất</span>
-              <span className="chip">Chờ duyệt</span>
-              <span className="chip">Thất bại</span>
+              {(['Tất cả','Hoàn tất','Chờ duyệt','Thất bại'] as const).map(f => (
+                <span key={f} className={`chip${activeFilter===f?' active':''}`} onClick={()=>setActiveFilter(f)}>{f}</span>
+              ))}
             </div>
           </div>
 
@@ -116,11 +160,24 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
                 </tr>
               </thead>
               <tbody>
-                {transactions.map(tx => (
+                {loading ? (
+                  Array.from({length: 5}).map((_,i) => (
+                    <tr key={i}>
+                      {Array.from({length:7}).map((_,j) => (
+                        <td key={j}><div style={{height:16,background:'#f1f5f9',borderRadius:4,width:'80%',animation:'pulse 1.5s infinite'}} /></td>
+                      ))}
+                    </tr>
+                  ))
+                ) : filtered.length === 0 ? (
+                  <tr><td colSpan={7} style={{textAlign:'center',padding:'40px',color:'#94a3b8'}}>
+                    <span className="material-icons-round" style={{fontSize:36,display:'block',marginBottom:8}}>receipt_long</span>
+                    {search || activeFilter !== 'Tất cả' ? 'Không tìm thấy giao dịch phù hợp' : 'Chưa có giao dịch nào'}
+                  </td></tr>
+                ) : filtered.map(tx => (
                   <tr key={tx.id}>
                     <td>
                       <div className="time-cell">
-                        <b>{tx.date ? tx.date.split('T')[1].substring(0, 5) : '--:--'}</b>
+                        <b>{tx.date ? tx.date.split('T')[1]?.substring(0,5) ?? '--:--' : '--:--'}</b>
                         <span>{tx.date ? tx.date.split('T')[0] : '----/--/--'}</span>
                       </div>
                     </td>
@@ -134,22 +191,19 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
                     <td>
                       <div className="method-cell">
                         <span className="material-icons-round">account_balance_wallet</span>
-                        <div>
-                          <p>{tx.method}</p>
-                        </div>
+                        <div><p>{tx.method || 'Tiền mặt'}</p></div>
                       </div>
                     </td>
-                    <td><b className="amount-text">{tx.amount}</b></td>
+                    <td><b className="amount-text">{formatAmount(tx.amount)}</b></td>
                     <td>
-                      <span className={`status-pill ${tx.status === 'Đã thanh toán' ? 'completed' : tx.status === 'Chờ thanh toán' ? 'pending' : 'failed'}`}>
-                        <i className="dot"></i>
-                        {tx.status}
+                      <span className={`status-pill ${tx.status === 'Đã thanh toán' || tx.status === 'Hoàn tất' ? 'completed' : tx.status === 'Chờ thanh toán' ? 'pending' : 'failed'}`}>
+                        <i className="dot"></i>{tx.status}
                       </span>
                     </td>
                     <td>
                       <div className="action-row">
-                        <button className="icon-btn"><span className="material-icons-round">print</span></button>
-                        <button className="icon-btn"><span className="material-icons-round">info</span></button>
+                        <button className="icon-btn" title="In biên lai"><span className="material-icons-round">print</span></button>
+                        <button className="icon-btn" title="Chi tiết"><span className="material-icons-round">info</span></button>
                       </div>
                     </td>
                   </tr>
@@ -162,6 +216,7 @@ const PaymentHistoryPage: React.FC<PaymentHistoryPageProps> = ({ onNavigate }) =
 
       <style>{`
         .payment-history-content { animation: fadeIn 0.4s ease-out; }
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
         .page-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }

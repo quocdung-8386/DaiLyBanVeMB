@@ -8,47 +8,17 @@ interface TicketsPageProps {
   onNavigate?: (id: string) => void;
   onCheckout?: (ticket: any) => void;
   bookings: any[];
-  onUpdateStatus: (id: string, status: string, badge: string) => void;
+  onUpdateStatus: (id: string, status: string, badge: string, method?: string) => Promise<boolean>;
   onDeleteBooking?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const passengers: Record<string, { 
-  name: string; 
-  seat: string; 
-  dob: string; 
-  passport: string; 
-  tier: string; 
-  eTicket: string;
-  baggage?: { weight: number; price: number };
-  meal?: { selected: boolean; type: string; price: number };
-}[]> = {
-  'BK-001': [
-    { name: 'Nguyễn Văn An', seat: '14A', dob: '15/03/1990', passport: 'B1234567', tier: 'Gold', eTicket: '738-1234567890', baggage: { weight: 20, price: 0 }, meal: { selected: true, type: 'Asian Meal', price: 0 } },
-    { name: 'Nguyễn Thị Lan', seat: '14B', dob: '22/07/1992', passport: 'B1234568', tier: 'Silver', eTicket: '738-1234567891', baggage: { weight: 0, price: 0 }, meal: { selected: false, type: '', price: 0 } },
-  ],
-  'BK-002': [
-    { name: 'Trần Thị Bé', seat: '22C', dob: '01/01/1985', passport: 'C9876543', tier: 'Platinum', eTicket: '975-9876543210', baggage: { weight: 30, price: 0 }, meal: { selected: true, type: 'Western Meal', price: 0 } },
-  ],
-  'BK-003': [
-    { name: 'Lê Hữu Đạt', seat: '8B', dob: '10/11/1995', passport: 'D1112223', tier: 'Member', eTicket: '738-5555666670', baggage: { weight: 20, price: 0 }, meal: { selected: false, type: '', price: 0 } },
-    { name: 'Lê Thị Hoa', seat: '8C', dob: '05/06/1997', passport: 'D1112224', tier: 'Member', eTicket: '738-5555666671', baggage: { weight: 20, price: 0 }, meal: { selected: false, type: '', price: 0 } },
-    { name: 'Lê Văn Bình', seat: '8D', dob: '30/09/1988', passport: 'D1112225', tier: 'Silver', eTicket: '738-5555666672', baggage: { weight: 20, price: 0 }, meal: { selected: true, type: 'Asian Meal', price: 0 } },
-  ],
-  'BK-004': [
-    { name: 'Phạm Tuấn Khải', seat: '31F', dob: '20/02/1980', passport: 'E5556667', tier: 'Gold', eTicket: '976-1111222233', baggage: { weight: 15, price: 0 }, meal: { selected: false, type: '', price: 0 } },
-  ],
-  'BK-005': [
-    { name: 'Nguyễn Quốc Dũng', seat: '12A', dob: '08/05/1990', passport: 'B83868386', tier: 'Platinum', eTicket: 'Chưa xuất', baggage: { weight: 0, price: 0 }, meal: { selected: false, type: '', price: 0 } },
-  ],
-};
-
-const bookings = [
-  { id: 'BK-001', pnr: 'G7X9PQ', flight: 'VN123', from: 'SGN', to: 'HAN', date: '24/10/2023', time: '08:30', total: '6,500,000', status: 'Đã xuất vé', badge: 'success', pax: 2, airline: 'Vietnam Airlines', timeLimit: null, type: 'Khứ hồi' },
-  { id: 'BK-002', pnr: 'A2B4C6', flight: 'VJ456', from: 'DAD', to: 'SGN', date: '25/10/2023', time: '14:15', total: '1,890,000', status: 'Đã hủy', badge: 'danger', pax: 1, airline: 'Vietjet Air', timeLimit: null, type: 'Một chiều' },
-  { id: 'BK-005', pnr: 'HOLD01', flight: 'QH321', from: 'HAN', to: 'DAD', date: '10/05/2026', time: '10:00', total: '2,150,000', status: 'Chờ thanh toán', badge: 'hold', pax: 1, airline: 'Bamboo Airways', timeLimit: '2026-05-09T18:00:00', type: 'Một chiều' },
-  { id: 'BK-003', pnr: 'L9M1N2', flight: 'VN789', from: 'HAN', to: 'PQC', date: '28/10/2023', time: '09:40', total: '12,300,000', status: 'Đã hoàn tiền', badge: 'warning', pax: 3, airline: 'Vietnam Airlines', timeLimit: null, type: 'Khứ hồi' },
-  { id: 'BK-004', pnr: 'X7Y8Z9', flight: 'QH321', from: 'SGN', to: 'HPH', date: '02/11/2023', time: '18:00', total: '2,450,000', status: 'Đã Void', badge: 'default', pax: 1, airline: 'Bamboo Airways', timeLimit: null, type: 'Một chiều' },
-];
+const passengers: Record<string, any[]> = {};
+const bookings: any[] = [];
 
 const tierColors: Record<string, { bg: string; color: string }> = {
   Platinum: { bg: '#1f2937', color: 'white' },
@@ -87,7 +57,10 @@ const CountdownTimer: React.FC<{ limit: string | null }> = ({ limit }) => {
   );
 };
 
-const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, bookings, onUpdateStatus, onDeleteBooking }) => {
+const TicketsPage: React.FC<TicketsPageProps> = ({ 
+  onNavigate, onCheckout, bookings, onUpdateStatus, onDeleteBooking,
+  currentUser, onLogout, bookingPendingCount, flightCount, passengerCount
+}) => {
   const [bookingsData, setBookingsData] = useState(bookings);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState('all');
@@ -238,7 +211,15 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
   };
 
   return (
-    <AppLayout activeItem="tickets" onNavigate={onNavigate || (() => {})}>
+    <AppLayout 
+      activeItem="tickets" 
+      onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
+    >
       <div className="tickets-page-content" style={{ display: 'flex', alignItems: 'flex-start' }}>
 
           {/* ── LEFT PANEL: Ticket List ── */}
@@ -672,13 +653,16 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
               <Button variant="outline" onClick={() => setActionType(null)}>Hủy bỏ</Button>
               <Button 
                 variant={actionType === 'refund' ? 'danger' : 'primary'}
-                onClick={() => { 
+                onClick={async () => { 
+                  let success = false;
                   if (actionType === 'issue') {
                     if (selected) {
-                      onUpdateStatus(selected.id, 'Đã xuất vé', 'success');
-                      if (onCheckout) {
+                      success = await (onUpdateStatus as any)(selected.id, 'Đã xuất vé', 'success');
+                      if (success && onCheckout) {
                         onCheckout({
                           ...selected,
+                          status: 'Đã xuất vé',
+                          badge: 'success',
                           customer: passengersData[selected.id]?.[0]?.name || 'Nhiều khách hàng',
                           airportFrom: selected.from === 'SGN' ? 'Tân Sơn Nhất' : 'Nội Bài',
                           airportTo: selected.to === 'HAN' ? 'Nội Bài' : 'Tân Sơn Nhất',
@@ -690,16 +674,24 @@ const TicketsPage: React.FC<TicketsPageProps> = ({ onNavigate, onCheckout, booki
                       }
                     }
                   } else if (actionType === 'void') {
-                    onUpdateStatus(selectedId!, 'Đã Void', 'default');
+                    success = await (onUpdateStatus as any)(selectedId!, 'Đã Void', 'default');
                   } else if (actionType === 'refund') {
-                    onUpdateStatus(selectedId!, 'Yêu cầu hoàn', 'warning');
+                    success = await (onUpdateStatus as any)(selectedId!, 'Yêu cầu hoàn', 'warning');
                   } else if (actionType === 'delete') {
-                    if (onDeleteBooking) onDeleteBooking(selectedId!);
+                    if (onDeleteBooking) {
+                       await onDeleteBooking(selectedId!);
+                       success = true;
+                    }
                     setBookingsData(prev => prev.filter(b => b.id !== selectedId));
                     setSelectedId(null);
                   }
-                  showToast('Thao tác đã được hệ thống ghi nhận thành công!', 'success');
-                  setActionType(null); 
+
+                  if (success) {
+                    showToast('Thao tác đã được hệ thống ghi nhận thành công!', 'success');
+                    setActionType(null); 
+                  } else {
+                    showToast('Thao tác thất bại. Vui lòng kiểm tra lại Backend.', 'error');
+                  }
                 }} 
               >
                 Đồng ý

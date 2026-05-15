@@ -4,15 +4,25 @@ import AppLayout from '../../components/AppLayout';
 
 interface SeatMapPageProps {
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const SeatMapPage: React.FC<SeatMapPageProps> = ({ onNavigate }) => {
+const SeatMapPage: React.FC<SeatMapPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [selectedFlight, setSelectedFlight] = useState('VN123');
 
   return (
     <AppLayout 
       activeItem="seat-map" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Điều hành', page: 'dashboard' }, { label: 'Sơ đồ ghế' }]}
     >
       <div className="seat-map-page">

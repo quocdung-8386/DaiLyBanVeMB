@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Dashboard from './dashboard/Dashboard';
 import FlightsPage from './flights/FlightsPage';
 import BookingPage from './booking/BookingPage';
@@ -28,27 +28,64 @@ import GateManagementPage from './gate-management/GateManagementPage';
 import { api } from '../api';
 
 export interface BookingData {
-  id: string;
-  pnr: string;
-  customer: string;
-  flight: string;
-  airline: string;
-  from: string;
-  to: string;
-  airportFrom: string;
-  airportTo: string;
-  date: string;
-  time: string;
-  total: string;
-  pax: number;
-  status: string;
+  // ── DatCho fields ──
+  id: string;           // ma_dat_cho
+  ma_kh?: number;       // ma_kh → KhachHang
+  ma_nv?: number;       // ma_nv → NhanVien
+  ngay_dat?: string;    // ngay_dat TIMESTAMP
+  tong_tien?: number;   // tong_tien DECIMAL
+  trang_thai_tt?: string; // trang_thai_tt (Cho thanh toan / Da thanh toan / Da huy)
+
+  // ── VeMayBay fields ──
+  ma_ve?: string;         // ma_ve PRIMARY KEY
+  hang_ghe?: string;      // hang_ghe (Economy / Business / First)
+  trang_thai_ve?: string; // trang_thai_ve (Da xac nhan / Da check-in / Da huy)
+
+  // ── ChuyenBay fields ──
+  flight: string;        // ma_cb
+  airline: string;       // ten_hang via HangHangKhong
+  ma_hang?: string;      // ma_hang (VN / VJ / QH)
+  from: string;          // ma_sb_di via TuyenBay → SanBay
+  to: string;            // ma_sb_den via TuyenBay → SanBay
+  nha_ga?: string;       // nha_ga (T1 / T2)
+  cong_khoi_hanh?: string; // cong_khoi_hanh
+  ma_may_bay?: string;   // ma_may_bay
+  thoi_gian_bay?: number; // thoi_gian_bay INT (phút)
+
+  // ── UI helper fields (derived / display) ──
+  pnr: string;           // random 6-char booking reference
+  customer: string;      // ten_hanh_khach (passenger 0)
+  phone?: string;        // contact phone
+  email?: string;        // contact email
+  airportFrom?: string;  // ten_sb for from airport
+  airportTo?: string;    // ten_sb for to airport
+  date: string;          // ngay_gio_di formatted
+  time: string;          // ngay_gio_di time part
+  total: string;         // tong_tien formatted string
+  pax: number;           // so luong hanh khach
+  status: string;        // trang_thai_tt (display)
   badge: 'success' | 'hold' | 'danger' | 'warning' | 'default';
-  type: string;
-  timeLimit: string | null;
-  gate: string;
-  terminal: string;
-  seat: string;
-  boarding: string;
+  type: string;          // 'Một chiều' | 'Khứ hồi'
+  fareClass?: string;    // hang_ghe selected (Economy/Business/First Class)
+  timeLimit: string | null; // deadline for hold bookings
+  gate: string;          // cong_khoi_hanh
+  terminal: string;      // nha_ga
+  seat: string;          // so_ghe of first passenger
+  boarding?: string;     // boarding time (computed)
+  aircraft?: string;     // ma_may_bay display name
+  passengersList?: Array<{ // VeMayBay records
+    name: string;        // ten_hanh_khach
+    seat: string;        // so_ghe
+    type?: string;       // loai (Nguoi lon / Tre em / Em be)
+    ma_ve?: string;      // ma_ve
+    hang_ghe?: string;   // hang_ghe
+    gia_ve?: number;     // gia_ve
+    trang_thai_ve?: string; // trang_thai_ve
+  }>;
+  extraServices?: {      // Ve_DichVu records
+    baggage: Array<{ weight: number; price: number; ma_dv?: string }>;
+    meals: Array<{ selected: boolean; type: string; price: number; ma_dv?: string }>;
+  };
 }
 
 export default function Home() {
@@ -61,26 +98,76 @@ export default function Home() {
   // Global Bookings State
   const [globalBookings, setGlobalBookings] = useState<BookingData[]>([]);
   const [dashboardStats, setDashboardStats] = useState<any>(null);
-
+  const [reportsData, setReportsData] = useState<any>(null);
   const [globalFlights, setGlobalFlights] = useState<any[]>([]);
 
-  // Fetch initial data from Backend
+  // Current logged-in user
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Load user from localStorage on mount (prevents hydration mismatch)
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('currentUser');
+      if (stored) {
+        const user = JSON.parse(stored);
+        setCurrentUser(user);
+        
+        // Restore last page if it exists
+        const lastPage = localStorage.getItem('lastPage');
+        if (lastPage) {
+          setCurrentPage(lastPage);
+        } else {
+          setCurrentPage('dashboard');
+        }
+      }
+    } catch (e) {
+      console.error("Failed to load session from localStorage", e);
+    }
+  }, []);
+
+  // Save current page to localStorage whenever it changes
+  useEffect(() => {
+    if (currentPage !== 'login') {
+      localStorage.setItem('lastPage', currentPage);
+    }
+  }, [currentPage]);
+
+  const handleLoginSuccess = (user: any) => {
+    setCurrentUser(user);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('currentUser');
+    localStorage.removeItem('lastPage');
+    setCurrentUser(null);
+    setCurrentPage('login');
+  };
+
+  // Fetch data from Backend
   React.useEffect(() => {
-    const initData = async () => {
+    const fetchData = async () => {
       try {
-        const [flights, bookings, stats] = await Promise.all([
+        const [flights, bookings, stats, reports] = await Promise.all([
           api.getFlights(),
           api.getBookings(),
-          api.getStats()
+          api.getStats(),
+          api.getReports()
         ]);
         setGlobalFlights(flights);
         setGlobalBookings(bookings);
         setDashboardStats(stats);
+        setReportsData(reports);
       } catch (error) {
-        console.error("Failed to fetch initial data:", error);
+        console.error("Failed to fetch data:", error);
       }
     };
-    initData();
+    
+    // Initial fetch
+    fetchData();
+    
+    // Auto-sync every 15 seconds
+    const intervalId = setInterval(fetchData, 15000);
+    return () => clearInterval(intervalId);
   }, []);
 
   // Auto-expiry logic for Hold bookings
@@ -102,36 +189,100 @@ export default function Home() {
 
   const addBooking = async (newBooking: any) => {
     try {
+      // Map frontend fields → backend schema (DatCho + VeMayBay)
       const payload = {
-        flight_id: newBooking.flight,
+        // DatCho fields
+        ma_kh: newBooking.ma_kh || null,
+        ma_nv: newBooking.ma_nv || null,
+        tong_tien: newBooking.tong_tien || parseFloat((newBooking.total || '0').toString().replace(/\D/g, '')),
+        trang_thai_tt: newBooking.trang_thai_tt || 'Cho thanh toan',
+
+        // ChuyenBay reference
+        flight_id: newBooking.flight,   // ma_cb
+        ma_hang: newBooking.ma_hang || newBooking.code || '',
+
+        // Contact info
         customer_name: newBooking.customer,
         phone: newBooking.phone || '',
         email: newBooking.email || '',
-        passengers: newBooking.passengersList.map((p: any) => ({
-          name: p.name,
-          seat: p.seat,
-          age_type: p.type
+
+        // VeMayBay records
+        passengers: (newBooking.passengersList || []).map((p: any) => ({
+          ten_hanh_khach: p.name,       // ten_hanh_khach
+          so_ghe: p.seat,              // so_ghe
+          hang_ghe: p.hang_ghe || newBooking.fareClass || 'Economy', // hang_ghe
+          gia_ve: p.gia_ve || newBooking.tong_tien || 0,             // gia_ve
+          trang_thai_ve: p.trang_thai_ve || 'Da xac nhan',           // trang_thai_ve
+          age_type: p.type || 'Nguoi lon'
         })),
-        total_amount: parseFloat(newBooking.total.replace(/,/g, '')),
-        status: newBooking.status,
-        fare_class: newBooking.fareClass || 'Economy'
+
+        // Ve_DichVu records
+        extra_services: newBooking.extraServices || null,
+
+        // Display helpers
+        status: newBooking.status || 'Chờ thanh toán',
+        fare_class: newBooking.fareClass || 'Economy',
+        pnr: newBooking.pnr,
+        type: newBooking.type || 'Một chiều'
       };
       const res = await api.createBooking(payload);
       if (res.id) {
         const bookings = await api.getBookings();
         setGlobalBookings(bookings);
+        return res;
       }
+      return null;
     } catch (error) {
       console.error("Failed to create booking:", error);
     }
   };
 
-  const updateBookingStatus = async (id: string, status: string, badge: any) => {
+  const updateBookingStatus = async (id: string, status: string, badge: any, method: string = 'Tien mat') => {
     try {
-      await api.updateBooking(id, { status });
-      setGlobalBookings(prev => prev.map(b => b.id === id ? { ...b, status, badge, timeLimit: status === 'Đã xuất vé' ? null : b.timeLimit } : b));
+      console.log(`[SYNC] Updating Booking ${id} → trang_thai_tt: ${status}, method: ${method}`);
+      
+      // 1. Nếu xuất vé → tạo bản ghi ThanhToan
+      if (status === 'Đã xuất vé' || status === 'Đã thanh toán') {
+        const booking = globalBookings.find(b => b.id === id);
+        if (booking) {
+          const cleanAmount = (booking.total || '0').toString().replace(/\D/g, '');
+          await api.createPayment({
+            // ThanhToan fields
+            ma_dat_cho: id,                       // REFERENCES DatCho(ma_dat_cho)
+            phuong_thuc: method,                  // phuong_thuc (Tien mat / Chuyen khoan / ...)
+            so_tien: parseFloat(cleanAmount),     // so_tien DECIMAL
+            trang_thai: 'Hoan tat',               // trang_thai
+            // Legacy compat
+            booking_id: id,
+            amount: parseFloat(cleanAmount),
+            method: method,
+            notes: 'Giao dịch qua hệ thống'
+          });
+        }
+      }
+
+      // 2. Cập nhật trang_thai_tt của DatCho
+      const res = await api.updateBooking(id, {
+        status,                    // display status
+        trang_thai_tt: status      // giữ nguyên tiếng Việt có dấu
+      });
+      
+      if (res.status === 'success') {
+        // 3. Lấy dữ liệu mới nhất để sync UI
+        const freshData = await api.getBookings();
+        setGlobalBookings(freshData);
+        
+        if (selectedTicketData && selectedTicketData.id === id) {
+          const updatedTicket = freshData.find((b: any) => b.id === id);
+          if (updatedTicket) setSelectedTicketData(updatedTicket);
+        }
+        
+        return true;
+      }
+      return false;
     } catch (error) {
       console.error("Failed to update booking status:", error);
+      return false;
     }
   };
 
@@ -139,8 +290,10 @@ export default function Home() {
     try {
       await api.updateBooking(updated.id, { status: updated.status, seat: updated.seat });
       setGlobalBookings(prev => prev.map(b => b.id === updated.id ? updated : b));
+      return true;
     } catch (error) {
       console.error("Failed to update booking:", error);
+      return false;
     }
   };
 
@@ -150,8 +303,10 @@ export default function Home() {
       setGlobalFlights(prev => prev.map(f => f.flight === flightCode ? { ...f, aircraft, gate } : f));
       // Also update local bookings for that flight
       setGlobalBookings(prev => prev.map(b => b.flight === flightCode ? { ...b, aircraft, gate } : b));
+      return true;
     } catch (error) {
       console.error("Failed to update flight info:", error);
+      return false;
     }
   };
 
@@ -167,23 +322,31 @@ export default function Home() {
   const addFlight = async (flightData: any) => {
     try {
       // Map frontend flight data to backend schema
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const dateStr = tomorrow.toISOString().split('T')[0];
+      
       const payload = {
         ma_cb: flightData.flight,
         ma_tuyen: `${flightData.from}-${flightData.to}`,
         ma_hang: flightData.code,
-        ngay_gio_di: new Date().toISOString(), // Default for now
-        ngay_gio_den: new Date().toISOString(),
+        ngay_gio_di: `${dateStr}T${flightData.dep}:00Z`,
+        ngay_gio_den: `${dateStr}T${flightData.arr}:00Z`,
         thoi_gian_bay: 120,
         ma_may_bay: flightData.aircraft,
         gia_ve: flightData.price,
         cap: flightData.cap,
-        trang_thai: 'Đang bán vé'
+        trang_thai: flightData.status || 'Đang bán vé',
+        cong_khoi_hanh: flightData.gate || '--',
+        nha_ga: 'T1'
       };
       await api.createFlight(payload);
       const flights = await api.getFlights();
       setGlobalFlights(flights);
+      return true;
     } catch (error) {
       console.error("Failed to add flight:", error);
+      return false;
     }
   };
 
@@ -202,26 +365,36 @@ export default function Home() {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = (ticketId: string) => {
-    updateBookingStatus(ticketId, 'Đã xuất vé', 'success');
+  const handlePaymentSuccess = async (ticketId: string, method?: string) => {
+    // updateBookingStatus can be called here if it wasn't called by the component
+    // In our case, the component might call it, but let's ensure consistency
     setPaymentView('success');
+    // Refresh bookings to show updated status
+    const freshData = await api.getBookings();
+    setGlobalBookings(freshData);
   };
 
   const renderPage = () => {
     switch (currentPage) {
       case 'login':
-        return <LoginPage onNavigate={setCurrentPage} />;
+        return <LoginPage onNavigate={setCurrentPage} onLoginSuccess={handleLoginSuccess} />;
       case 'dashboard':
-        return <Dashboard onNavigate={setCurrentPage} bookings={globalBookings} stats={dashboardStats} flights={globalFlights} />;
+        return <Dashboard onNavigate={setCurrentPage} bookings={globalBookings} stats={dashboardStats} reports={reportsData} flights={globalFlights} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'flights':
         return (
           <FlightsPage 
             onNavigate={setCurrentPage} 
             onSelectFlight={setSelectedFlightData} 
             flights={globalFlights} 
+            bookings={globalBookings}
             onAddFlight={addFlight}
             onUpdateFlight={updateFlightInfo}
             onDeleteFlight={deleteFlight}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length}
+            flightCount={globalFlights.length}
+            passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)}
           />
         );
       case 'booking':
@@ -233,6 +406,12 @@ export default function Home() {
             onCheckout={handleGoToCheckout}
             onAddBooking={addBooking}
             flights={globalFlights}
+            bookings={globalBookings}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length}
+            flightCount={globalFlights.length}
+            passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)}
           />
         );
       case 'tickets':
@@ -243,6 +422,11 @@ export default function Home() {
             bookings={globalBookings}
             onUpdateStatus={updateBookingStatus}
             onDeleteBooking={deleteBooking}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length}
+            flightCount={globalFlights.length}
+            passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)}
           />
         );
       case 'payments':
@@ -255,22 +439,27 @@ export default function Home() {
             onPaymentSuccess={(id) => handlePaymentSuccess(id)}
             onUpdateStatus={updateBookingStatus}
             bookings={globalBookings}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length}
+            flightCount={globalFlights.length}
+            passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)}
           />
         );
       case 'settings':
-        return <SettingsPage onNavigate={setCurrentPage} />;
+        return <SettingsPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'profile':
-        return <ProfilePage onNavigate={setCurrentPage} />;
+        return <ProfilePage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} onUpdateUser={setCurrentUser} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'reports':
-        return <ReportsPage onNavigate={setCurrentPage} />;
+        return <ReportsPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'users':
-        return <UsersPage onNavigate={setCurrentPage} />;
+        return <UsersPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'audit_log':
-        return <AuditLogPage onNavigate={setCurrentPage} />;
+        return <AuditLogPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'payment_history':
-        return <PaymentHistoryPage onNavigate={setCurrentPage} />;
+        return <PaymentHistoryPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'ai_admin':
-        return <AiAdminPage onNavigate={setCurrentPage} />;
+        return <AiAdminPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'issue_ticket':
         return <IssueTicketPage onNavigate={setCurrentPage} ticketData={selectedTicketData} />;
       case 'exchange_ticket':
@@ -278,19 +467,32 @@ export default function Home() {
       case 'cancel_ticket':
         return <CancelTicketPage onNavigate={setCurrentPage} ticketData={selectedTicketData} />;
       case 'refund-management':
-        return <RefundManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} />;
+        return <RefundManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'passengers':
-        return <PassengersPage onNavigate={setCurrentPage} bookings={globalBookings} />;
+        return <PassengersPage onNavigate={setCurrentPage} bookings={globalBookings} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'seat-map':
-        return <SeatMapPage onNavigate={setCurrentPage} />;
+        return <SeatMapPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'loyalty':
-        return <LoyaltyPage onNavigate={setCurrentPage} />;
+        return <LoyaltyPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'checkin':
-        return <CheckinPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateBooking={updateBooking} />;
+        return <CheckinPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateBooking={updateBooking} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'gate-management':
-        return <GateManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} onUpdateBooking={updateBooking} onUpdateFlightInfo={updateFlightInfo} />;
+        return <GateManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} onUpdateBooking={updateBooking} onUpdateFlightInfo={updateFlightInfo} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       default:
-        return <Dashboard onNavigate={setCurrentPage} bookings={globalBookings} stats={dashboardStats} />;
+        return (
+          <Dashboard 
+            onNavigate={setCurrentPage} 
+            bookings={globalBookings} 
+            stats={dashboardStats} 
+            reports={reportsData}
+            flights={globalFlights} 
+            currentUser={currentUser} 
+            onLogout={handleLogout} 
+            bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} 
+            flightCount={globalFlights.length} 
+            passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} 
+          />
+        );
     }
   };
 
@@ -307,8 +509,14 @@ export default function Home() {
             setView={setPaymentView}
             ticketData={selectedTicketData}
             onClose={() => setIsPaymentModalOpen(false)}
-            onPaymentSuccess={() => selectedTicketData && handlePaymentSuccess(selectedTicketData.id)}
+            onPaymentSuccess={(id, method) => handlePaymentSuccess(id, method)}
+            onUpdateStatus={updateBookingStatus}
             bookings={globalBookings}
+            currentUser={currentUser}
+            onLogout={handleLogout}
+            bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length}
+            flightCount={globalFlights.length}
+            passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)}
           />
         </div>
       )}

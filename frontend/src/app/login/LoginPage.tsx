@@ -1,20 +1,38 @@
 import React, { useState } from 'react';
+import { api } from '../../api';
 
 interface LoginPageProps {
   onNavigate?: (page: string) => void;
+  onLoginSuccess?: (user: any) => void;
 }
 
-const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
-  const [email, setEmail] = useState('');
+const LoginPage: React.FC<LoginPageProps> = ({ onNavigate, onLoginSuccess }) => {
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (onNavigate) {
-      onNavigate('dashboard');
+    if (!username.trim() || !password.trim()) {
+      setError('Vui lòng nhập tài khoản và mật khẩu');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const user = await api.login(username.trim(), password);
+      localStorage.setItem('currentUser', JSON.stringify(user));
+      onLoginSuccess?.(user);
+      onNavigate?.('dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Đăng nhập thất bại');
+    } finally {
+      setLoading(false);
     }
   };
+
 
   return (
     <div className="login-container">
@@ -47,18 +65,19 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
         <div className="login-form-wrapper">
           <div className="login-card">
             <h2>Hệ thống Quản lý Đại lý Bán vé<br/>Máy bay</h2>
-            <p className="login-subtitle">Yêu cầu thực thi giao thức. Vui lòng xác thực.</p>
+            <p className="login-subtitle">Yêu cầu thực thi giao thức. V vui lòng xác thực.</p>
 
             <form onSubmit={handleLogin}>
               <div className="form-group">
                 <label>TÊN ĐĂNG NHẬP HOẶC EMAIL</label>
                 <div className="input-with-icon">
                   <span className="material-icons-round icon-left">person_outline</span>
-                  <input 
-                    type="email" 
-                    placeholder="abc@gmail.com" 
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                  <input
+                    type="text"
+                    placeholder="Nhập tên đăng nhập hoặc email"
+                    value={username}
+                    onChange={(e) => { setUsername(e.target.value); setError(''); }}
+                    autoComplete="username"
                     required
                   />
                 </div>
@@ -68,14 +87,15 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
                 <label>MẬT KHẨU</label>
                 <div className="input-with-icon">
                   <span className="material-icons-round icon-left">lock_outline</span>
-                  <input 
-                    type={showPassword ? "text" : "password"} 
-                    placeholder="••••••••" 
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => { setPassword(e.target.value); setError(''); }}
+                    autoComplete="current-password"
                     required
                   />
-                  <span 
+                  <span
                     className="material-icons-round icon-right cursor-pointer"
                     onClick={() => setShowPassword(!showPassword)}
                   >
@@ -83,6 +103,13 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
                   </span>
                 </div>
               </div>
+
+              {error && (
+                <div style={{ background:'#fef2f2', border:'1px solid #fecaca', borderRadius:8, padding:'10px 14px', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
+                  <span className="material-icons-round" style={{ color:'#dc2626', fontSize:18 }}>error_outline</span>
+                  <span style={{ fontSize:13, color:'#b91c1c', fontWeight:600 }}>{error}</span>
+                </div>
+              )}
 
               <div className="form-actions-row">
                 <label className="checkbox-container">
@@ -93,8 +120,9 @@ const LoginPage: React.FC<LoginPageProps> = ({ onNavigate }) => {
                 <a href="#" className="forgot-password">Quên mật khẩu?</a>
               </div>
 
-              <button type="submit" className="btn-login">
-                Đăng nhập <span className="material-icons-round">login</span>
+              <button type="submit" className="btn-login" disabled={loading} style={{ opacity: loading ? 0.7 : 1 }}>
+                {loading ? 'Đang xác thực...' : 'Đăng nhập'}
+                <span className="material-icons-round">{loading ? 'hourglass_empty' : 'login'}</span>
               </button>
             </form>
 

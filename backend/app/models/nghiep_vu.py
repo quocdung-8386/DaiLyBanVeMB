@@ -21,7 +21,7 @@ class DatCho(Base):
     ma_nv: Mapped[int | None] = mapped_column(Integer, ForeignKey("nhanvien.ma_nv"))
     ngay_dat: Mapped[datetime] = mapped_column(TIMESTAMP, server_default=func.now())
     tong_tien: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
-    trang_thai_tt: Mapped[str] = mapped_column(String(20), default="Cho thanh toan")
+    trang_thai_tt: Mapped[str] = mapped_column(String(20), default="Chờ thanh toán")
 
     # Relationships
     khach_hang: Mapped["KhachHang | None"] = relationship(back_populates="dat_chos")
@@ -50,7 +50,7 @@ class VeMayBay(Base):
     so_ghe: Mapped[str | None] = mapped_column(String(10))
     hang_ghe: Mapped[str | None] = mapped_column(String(30))
     gia_ve: Mapped[Decimal | None] = mapped_column(Numeric(18, 2))
-    trang_thai_ve: Mapped[str] = mapped_column(String(20), default="Da xac nhan")
+    trang_thai_ve: Mapped[str] = mapped_column(String(20), default="Đã xác nhận")
 
     # Relationships
     dat_cho: Mapped["DatCho"] = relationship(back_populates="ve_may_bays")

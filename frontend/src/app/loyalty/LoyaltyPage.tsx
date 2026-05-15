@@ -5,9 +5,14 @@ import AppLayout from '../../components/AppLayout';
 
 interface LoyaltyPageProps {
   onNavigate?: (id: string) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate }) => {
+const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [activeTab, setActiveTab] = useState<'members' | 'rules'>('members');
   const [editingMember, setEditingMember] = useState<any>(null);
 
@@ -22,6 +27,11 @@ const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate }) => {
     <AppLayout 
       activeItem="loyalty" 
       onNavigate={onNavigate || (() => {})}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
       breadcrumb={[{ label: 'Khách hàng', page: 'customers' }, { label: 'Chương trình khách hàng thân thiết' }]}
     >
       <div className="loyalty-page-content">

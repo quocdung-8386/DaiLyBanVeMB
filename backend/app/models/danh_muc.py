@@ -73,7 +73,7 @@ class ChuyenBay(Base):
     thoi_gian_bay: Mapped[int | None] = mapped_column(Integer)
     nha_ga: Mapped[str | None] = mapped_column(String(20))
     cong_khoi_hanh: Mapped[str | None] = mapped_column(String(20))
-    trang_thai: Mapped[str] = mapped_column(String(20), default="Scheduled")
+    trang_thai: Mapped[str] = mapped_column(String(20), default="Đang bán vé")
     ma_may_bay: Mapped[str | None] = mapped_column(String(50))
 
     # Relationships
@@ -82,7 +82,9 @@ class ChuyenBay(Base):
     chi_tiet_hang_ghes: Mapped[list["ChiTietHangGhe"]] = relationship(
         back_populates="chuyen_bay", cascade="all, delete-orphan"
     )
-    ve_may_bays: Mapped[list["VeMayBay"]] = relationship(back_populates="chuyen_bay")
+    ve_may_bays: Mapped[list["VeMayBay"]] = relationship(
+        back_populates="chuyen_bay", cascade="all, delete-orphan"
+    )
 
 
 class ChiTietHangGhe(Base):

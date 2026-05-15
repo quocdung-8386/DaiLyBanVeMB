@@ -8,9 +8,17 @@ interface CheckinPageProps {
   onNavigate: (id: string) => void;
   bookings: any[];
   onUpdateBooking?: (updated: any) => void;
+  currentUser?: any;
+  onLogout?: () => void;
+  bookingPendingCount?: number;
+  flightCount?: number;
+  passengerCount?: number;
 }
 
-const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdateBooking }) => {
+const CheckinPage: React.FC<CheckinPageProps> = ({ 
+  onNavigate, bookings, onUpdateBooking, 
+  currentUser, onLogout, bookingPendingCount, flightCount, passengerCount 
+}) => {
   const [pnr, setPnr] = useState('');
   const [lastName, setLastName] = useState('');
   const [foundBooking, setFoundBooking] = useState<any>(null);
@@ -75,7 +83,15 @@ const CheckinPage: React.FC<CheckinPageProps> = ({ onNavigate, bookings, onUpdat
   };
 
   return (
-    <AppLayout activeItem="checkin" onNavigate={onNavigate}>
+    <AppLayout 
+      activeItem="checkin" 
+      onNavigate={onNavigate}
+      currentUser={currentUser}
+      onLogout={onLogout}
+      bookingPendingCount={bookingPendingCount}
+      flightCount={flightCount}
+      passengerCount={passengerCount}
+    >
       <div className="checkin-wrapper">
         <div className="checkin-hero">
           <div className="hero-content">
