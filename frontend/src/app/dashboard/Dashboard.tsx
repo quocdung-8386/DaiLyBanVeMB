@@ -218,20 +218,8 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, currentUser }) => {
     return acc;
   }, []).join(', ') || '#e2e8f0 0% 100%';
 
-  // Dynamic Alerts: hold bookings nearing expiry
-  const holdAlerts = useMemo(() => {
-    const now = new Date();
-    return bookings
-      .filter((b: any) => b.badge === 'hold' && b.timeLimit)
-      .map((b: any) => {
-        const exp = new Date(b.timeLimit!);
-        const diffMin = Math.round((exp.getTime() - now.getTime()) / 60000);
-        return { ...b, diffMin };
-      })
-      .filter((b: any) => b.diffMin > 0 && b.diffMin < 120)
-      .sort((a: any, b: any) => a.diffMin - b.diffMin)
-      .slice(0,2);
-  }, [bookings]);
+  // Dynamic Alerts: hold bookings nearing expiry (Synchronized with Backend)
+  const holdAlerts: any[] = useMemo(() => stats?.priority_alerts || [], [stats]);
 
   // Dynamic agency debt from pending payments
   const agencyDebt = useMemo(() => {
@@ -339,12 +327,12 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, currentUser }) => {
                    <h3 style={{ margin:0, fontSize:14, fontWeight:800, color:'#991b1b' }}>CẢNH BÁO ƯU TIÊN</h3>
                 </div>
                  <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                    {holdAlerts.length > 0 ? holdAlerts.map((b,i) => (
+                    {holdAlerts.length > 0 ? holdAlerts.map((b: any, i: number) => (
                       <div key={i} style={{ display:'flex', gap:10, padding:'10px', background:'white', borderRadius:10, border:'1px solid #fee2e2', boxShadow:'0 2px 4px rgba(239,68,68,0.05)' }}>
                         <div style={{ width:8, height:8, borderRadius:'50%', background: b.diffMin < 30 ? '#ef4444' : '#f59e0b', marginTop:4 }} />
                         <div>
                           <p style={{ margin:'0 0 2px', fontSize:12, fontWeight:800, color:'#1e293b' }}>PNR {b.pnr} hết hạn sau {b.diffMin}p</p>
-                          <p style={{ margin:0, fontSize:11, color:'#64748b' }}>Chặng {b.from}→{b.to} · {b.total ? parseInt((b.total||'0').toString().replace(/\D/g,'')).toLocaleString() : '0'}đ</p>
+                          <p style={{ margin:0, fontSize:11, color:'#64748b' }}>Chặng {b.from}→{b.to} · {Number(b.total || 0).toLocaleString()}đ</p>
                         </div>
                       </div>
                     )) : (
