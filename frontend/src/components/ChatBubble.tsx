@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
+import { api } from '../api';
 
 interface ChatBubbleProps {
   isVisible?: boolean;
@@ -29,12 +30,13 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
     scrollToBottom();
   }, [messages, isOpen]);
 
-  const handleSend = () => {
-    if (!inputValue.trim()) return;
+  const handleSend = async () => {
+    if (!inputValue.trim() || isTyping) return;
 
+    const userMsg = inputValue.trim();
     const userMessage: Message = {
       role: 'user',
-      content: inputValue,
+      content: userMsg,
       id: Date.now()
     };
 
@@ -42,26 +44,28 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
     setInputValue('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
-      const botResponses = [
-        'Tôi có thể giúp bạn tìm chuyến bay phù hợp. Bạn muốn đi từ đâu đến đâu?',
-        'Hiện tại có nhiều chuyến bay với giá ưu đãi. Bạn muốn tìm chuyến vào thời gian nào?',
-        'Tôi có thể kiểm tra lịch bay và giá vé cho bạn. Vui lòng cho tôi biết ngày đi của bạn.',
-        'Bạn có thể xem danh sách chuyến bay trong mục "Chuyến bay" hoặc tôi có thể gợi ý cho bạn ngay bây giờ.'
-      ];
-      
-      const randomResponse = botResponses[Math.floor(Math.random() * botResponses.length)];
+    try {
+      // Real AI API call
+      const res = await api.aiChat(userMsg);
       
       const botMessage: Message = {
         role: 'bot',
-        content: randomResponse,
+        content: res.response,
         id: Date.now() + 1
       };
 
       setMessages(prev => [...prev, botMessage]);
+    } catch (error) {
+      console.error("AI Chat Error:", error);
+      const errorMessage: Message = {
+        role: 'bot',
+        content: 'Xin lỗi, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau hoặc kiểm tra kết nối mạng.',
+        id: Date.now() + 2
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
