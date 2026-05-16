@@ -171,3 +171,35 @@ async def delete_flight(flight_id: str, db: AsyncSession = Depends(get_db)):
         await db.rollback()
         logger.error(f"Error deleting flight: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+@router.get("/{flight_id}/seats")
+async def get_flight_seats(flight_id: str, db: AsyncSession = Depends(get_db)):
+    """Lấy danh sách các ghế đã được đặt cho một chuyến bay."""
+    try:
+        # Lấy danh sách vé đã bán và chưa bị hủy
+        query = select(VeMayBay.so_ghe).where(
+            VeMayBay.ma_cb == flight_id,
+            VeMayBay.trang_thai_ve != 'Đã hủy'
+        )
+        result = await db.execute(query)
+        occupied_seats = [row[0] for row in result.all() if row[0]]
+        
+        # Lấy cấu hình hạng ghế để biết tổng số ghế
+        cap_query = select(ChiTietHangGhe).where(ChiTietHangGhe.ma_cb == flight_id)
+        cap_result = await db.execute(cap_query)
+        caps = cap_result.scalars().all()
+        
+        seat_stats = {}
+        for c in caps:
+            seat_stats[c.hang_ghe] = {
+                "total": c.tong_so_ghe,
+                "available": c.so_ghe_trong
+            }
+
+        return {
+            "flight_id": flight_id,
+            "occupied_seats": occupied_seats,
+            "stats": seat_stats
+        }
+    except Exception as e:
+        logger.error(f"Error fetching flight seats: {e}")
+        raise HTTPException(status_code=500, detail=str(e))

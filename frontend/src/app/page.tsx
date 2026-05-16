@@ -144,31 +144,37 @@ export default function Home() {
     setCurrentPage('login');
   };
 
+  const fetchData = async () => {
+    try {
+      const [flights, bookings, stats, reports] = await Promise.all([
+        api.getFlights(),
+        api.getBookings(),
+        api.getStats(),
+        api.getReports()
+      ]);
+      setGlobalFlights(flights);
+      setGlobalBookings(bookings);
+      setDashboardStats(stats);
+      setReportsData(reports);
+    } catch (err) {
+      console.error("Failed to fetch global data:", err);
+    }
+  };
+
   // Fetch data from Backend
   React.useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [flights, bookings, stats, reports] = await Promise.all([
-          api.getFlights(),
-          api.getBookings(),
-          api.getStats(),
-          api.getReports()
-        ]);
-        setGlobalFlights(flights);
-        setGlobalBookings(bookings);
-        setDashboardStats(stats);
-        setReportsData(reports);
-      } catch (error) {
-        console.error("Failed to fetch data:", error);
-      }
-    };
-    
-    // Initial fetch
     fetchData();
+    
+    // Listen for reload requests from other components
+    const handleReload = () => fetchData();
+    window.addEventListener('reload-data', handleReload);
     
     // Auto-sync every 15 seconds
     const intervalId = setInterval(fetchData, 15000);
-    return () => clearInterval(intervalId);
+    return () => {
+      window.removeEventListener('reload-data', handleReload);
+      clearInterval(intervalId);
+    };
   }, []);
 
   // Auto-expiry logic for Hold bookings
@@ -355,9 +361,11 @@ export default function Home() {
       await api.createFlight(payload);
       const flights = await api.getFlights();
       setGlobalFlights(flights);
+      showToast(`Đã thêm chuyến bay mới: ${flightData.flight}`, 'success');
       return true;
     } catch (error) {
       console.error("Failed to add flight:", error);
+      showToast('Lỗi khi thêm chuyến bay', 'error');
       return false;
     }
   };
@@ -366,8 +374,10 @@ export default function Home() {
     try {
       await api.deleteFlight(id);
       setGlobalFlights(prev => prev.filter(f => f.id !== id));
+      showToast(`Đã xóa chuyến bay: ${id}`, 'info');
     } catch (error) {
       console.error("Failed to delete flight:", error);
+      showToast('Lỗi khi xóa chuyến bay', 'error');
     }
   };
 
@@ -489,7 +499,7 @@ export default function Home() {
       case 'checkin':
         return <CheckinPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateBooking={updateBooking} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       case 'gate-management':
-        return <GateManagementPage onNavigate={setCurrentPage} bookings={globalBookings} onUpdateStatus={updateBookingStatus} onUpdateBooking={updateBooking} onUpdateFlightInfo={updateFlightInfo} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
+        return <GateManagementPage onNavigate={setCurrentPage} currentUser={currentUser} onLogout={handleLogout} bookingPendingCount={globalBookings.filter(b => b.status === 'Chờ thanh toán').length} flightCount={globalFlights.length} passengerCount={globalBookings.reduce((sum, b) => sum + (b.passengersList?.length || 1), 0)} />;
       default:
         return (
           <Dashboard 

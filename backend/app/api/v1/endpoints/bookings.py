@@ -25,6 +25,8 @@ def get_status_badge(status: str) -> str:
     status_map = {
         "Đã thanh toán": "success",
         "Đã xuất vé": "success",
+        "Đã Check-in": "success",
+        "Boarded": "success",
         "Chờ thanh toán": "hold",
         "Đã hủy": "danger",
         "Hết hạn": "danger",

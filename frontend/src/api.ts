@@ -33,6 +33,11 @@ export const api = {
     if (!res.ok) throw new Error('Failed to fetch flights');
     return res.json();
   },
+  getFlightSeats: async (id: string) => {
+    const res = await fetchWithNoCache(`${BASE_URL}/flights/${id}/seats`);
+    if (!res.ok) throw new Error('Failed to fetch flight seats');
+    return res.json();
+  },
   updateFlight: async (id: string, data: any) => {
     const payload = {
       gate: data.gate || data.cong_khoi_hanh,

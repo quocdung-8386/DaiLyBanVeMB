@@ -1,7 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import Sidebar from '../../components/Sidebar';
 import Header from '../../components/Header';
 import AppLayout from '../../components/AppLayout';
+import { api } from '../../api';
 
 interface DashboardProps { 
   onNavigate?: (id: string) => void; 
@@ -32,23 +33,52 @@ const badgeStyle = (status: string) => {
   return { bg:'#dcfce7', color:'#15803d' };
 };
 
-const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats, reports, flights = [], currentUser }) => {
+const Dashboard: React.FC<DashboardProps> = ({ onNavigate, currentUser }) => {
   const [activeTab, setActiveTab] = useState<'today'|'week'|'month'>('today');
+  const [bookings, setBookings] = useState<any[]>([]);
+  const [flights, setFlights] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>(null);
+  const [reports, setReports] = useState<any>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
   const user = currentUser || JSON.parse(localStorage.getItem('currentUser') || '{}');
   const userName = user.fullName || user.username || 'Quản trị viên';
 
+  const fetchData = async () => {
+    try {
+      const [statsRes, reportsRes, bookingsRes, flightsRes, logsRes] = await Promise.all([
+        api.getStats(),
+        api.getReports(),
+        api.getBookings(),
+        api.getFlights(),
+        api.getAuditLogs(10)
+      ]);
+      setStats(statsRes);
+      setReports(reportsRes);
+      setBookings(bookingsRes);
+      setFlights(flightsRes);
+      setAuditLogs(logsRes);
+    } catch (error) {
+      console.error("Failed to fetch dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+    const interval = setInterval(fetchData, 30000); // Tự động cập nhật mỗi 30 giây
+    return () => clearInterval(interval);
+  }, []);
+
   // Dynamic calculations for core metrics
   const totalBooked = bookings.length;
-  const pendingCount = bookings.filter((b: any) => b.status === 'Chờ thanh toán').length;
-  const cancelledCount = bookings.filter((b: any) => b.status === 'Đã hủy').length;
-  const ticketedCount = bookings.filter((b: any) => b.status === 'Đã xuất vé' || b.status === 'Đã thanh toán').length;
+  const pendingCount = bookings.filter((b: any) => (b.status === 'Chờ thanh toán' || b.trang_thai_tt === 'Chờ thanh toán')).length;
+  const cancelledCount = bookings.filter((b: any) => (b.status === 'Đã hủy' || b.trang_thai_tt === 'Đã hủy')).length;
+  const ticketedCount = bookings.filter((b: any) => (b.status === 'Đã xuất vé' || b.status === 'Đã thanh toán' || b.trang_thai_tt === 'Đã thanh toán')).length;
   
-  const totalRevenueNum = bookings
-    .filter((b: any) => b.status === 'Đã xuất vé' || b.status === 'Đã thanh toán' || b.status === 'Hoàn tất')
-    .reduce((sum: number, b: any) => {
-      const price = parseInt((b.total || '0').toString().replace(/\D/g, '') || '0');
-      return sum + price;
-    }, 0);
+  const totalRevenueNum = stats?.total_revenue || 0;
 
   const formatCurrency = (val: number) => {
     if (val >= 1000000000) return (val / 1000000000).toFixed(1) + 'B';
@@ -60,7 +90,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
     { label:'Vé bán hôm nay', value: stats?.active_bookings !== undefined ? stats.active_bookings.toString() : ticketedCount.toString(), sub:'Tổng vé đã xuất', icon:'confirmation_number', color:'#2563eb', bg:'#eff6ff' },
     { label:'Chờ thanh toán', value: stats?.pending_bookings !== undefined ? stats.pending_bookings.toString() : pendingCount.toString(), sub:'Cần xử lý ngay', icon:'pending_actions', color:'#d97706', bg:'#fef3c7' },
     { label:'Vé đã hủy', value: stats?.cancelled_bookings !== undefined ? stats.cancelled_bookings.toString() : cancelledCount.toString(), sub:'Thống kê hệ thống', icon:'cancel', color:'#dc2626', bg:'#fef2f2' },
-    { label:'Doanh thu (Tổng)', value: stats?.total_revenue !== undefined ? formatCurrency(Number(stats.total_revenue)) : formatCurrency(totalRevenueNum), sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
+    { label:'Doanh thu (Tổng)', value: formatCurrency(Number(totalRevenueNum)), sub:'₫ VNĐ', icon:'payments', color:'#16a34a', bg:'#dcfce7' },
     { label:'Số lượng khách', value: stats?.total_passengers !== undefined ? stats.total_passengers.toString() : bookings.reduce((sum: number, b: any) => sum + (b.passengersList?.length || 1), 0).toString(), sub:'Hành khách hệ thống', icon:'groups', color:'#7c3aed', bg:'#f5f3ff' },
     { label:'Booking mới', value: stats?.total_bookings !== undefined ? stats.total_bookings.toString() : totalBooked.toString(), sub:'Tổng số giao dịch', icon:'analytics', color:'#db2777', bg:'#fdf2f8' },
     { label:'Tỷ lệ lấp đầy', value: stats?.avg_occupancy ? stats.avg_occupancy.toFixed(1) + '%' : (flights.length > 0 ? (flights.reduce((s: number, f: any) => s + (f.seatsSold/f.cap), 0) / flights.length * 100).toFixed(1) + '%' : '0%'), sub:'Dựa trên ghế đã bán', icon:'leaderboard', color:'#4f46e5', bg:'#eef2ff' },
@@ -69,14 +99,15 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
 
   // Dynamic Departures from real flights
   const dynamicDepartures = flights.slice(0, 5).map((f: any) => ({
-    flight: f.flight || f.ma_cb || 'N/A',
-    route: `${f.from || f.ma_sb_di || '?'} → ${f.to || f.ma_sb_den || '?'}`,
-    time: f.dep || f.ngay_gio_di || '--:--',
-    seats: f.seatsSold || f.da_ban || 0,
-    cap: f.cap || f.tong_so_ghe || 180,
-    status: f.status === 'Scheduled' ? 'Đang bán vé' : (f.status || f.trang_thai || 'Đang bán vé'),
-    badge: f.status || f.trang_thai
+    flight: f.ma_cb || f.flight || 'N/A',
+    route: `${f.ma_sb_di || f.from || '?'} → ${f.ma_sb_den || f.to || '?'}`,
+    time: f.ngay_gio_di ? new Date(f.ngay_gio_di).toLocaleTimeString('vi-VN', {hour: '2-digit', minute:'2-digit'}) : '--:--',
+    seats: f.da_ban || f.seatsSold || 0,
+    cap: f.tong_so_ghe || f.cap || 180,
+    status: f.trang_thai || f.status || 'Đang bán vé'
   }));
+
+  const airlineColors: Record<string,string> = { 'Vietnam Airlines':'#005a8c','Vietjet Air':'#ed1b24','Bamboo Airways':'#00a563', 'Vietravel Airlines': '#f9d423' };
 
   // Dynamic Top Routes (Prefer Backend Reports Data)
   const dynamicTopRoutes = useMemo(() => {
@@ -93,10 +124,11 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
     // Fallback to frontend calculation
     const routeMap: Record<string, { tickets: number, revenue: number }> = {};
     bookings.forEach((b: any) => {
-      const rKey = `${b.from} → ${b.to}`;
+      const rKey = `${b.from || b.ma_sb_di} → ${b.to || b.ma_sb_den}`;
       if (!routeMap[rKey]) routeMap[rKey] = { tickets: 0, revenue: 0 };
       routeMap[rKey].tickets += 1;
-      routeMap[rKey].revenue += parseInt((b.total || '0').toString().replace(/\D/g, '') || '0');
+      const amount = b.tong_tien || parseInt((b.total || '0').toString().replace(/\D/g, '') || '0');
+      routeMap[rKey].revenue += amount;
     });
     const maxTickets = Math.max(...Object.values(routeMap).map((d: any) => d.tickets), 1);
     return Object.entries(routeMap)
@@ -114,20 +146,21 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
   const revenueByDay = useMemo(() => {
     const days = ['CN','Th 2','Th 3','Th 4','Th 5','Th 6','Th 7'];
     const map: Record<number, number> = {0:0,1:0,2:0,3:0,4:0,5:0,6:0};
-    bookings.filter((b: any) => b.status === 'Đã xuất vé' || b.status === 'Đã thanh toán' || b.status === 'Hoàn tất').forEach((b: any) => {
-      if (b.ngay_dat || b.date) {
+    bookings.filter((b: any) => b.status === 'Đã xuất vé' || b.status === 'Đã thanh toán' || b.trang_thai_tt === 'Đã thanh toán').forEach((b: any) => {
+      const dateStr = b.ngay_dat || b.date || b.created_at;
+      if (dateStr) {
         try {
-          const d = new Date(b.ngay_dat || b.date);
+          const d = new Date(dateStr);
           const day = d.getDay();
-          map[day] += parseInt((b.total || '0').toString().replace(/\D/g, '') || '0') / 1000000;
+          const amount = b.tong_tien || parseInt((b.total || '0').toString().replace(/\D/g, '') || '0');
+          map[day] += amount / 1000000;
         } catch {}
       }
     });
     return days.map((day: string, i: number) => ({ day, val: Math.round(map[i] || 0), intl: 0 }));
   }, [bookings]);
-  const maxBar = Math.max(...revenueByDay.map((d: any) => d.val), 1);
 
-  const airlineColors: Record<string,string> = { 'Vietnam Airlines':'#005a8c','Vietjet Air':'#ed1b24','Bamboo Airways':'#00a563' };
+  const maxBar = Math.max(...revenueByDay.map((d: any) => d.val), 1);
 
   // Dynamic Airline Market Share (Prefer Backend Reports Data)
   const airlineChartData = useMemo(() => {
@@ -207,21 +240,33 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
     return pending;
   }, [bookings]);
 
-  // Dynamic Recent Activities
-  const dynamicActivities = bookings.slice(-6).reverse().map((b: any) => {
-    const isSuccess = b.status === 'Đã xuất vé' || b.status === 'Đã thanh toán';
-    const isHold = b.status === 'Chờ thanh toán' || b.badge === 'hold';
+  // Dynamic Recent Activities from Audit Logs
+  const dynamicActivities = auditLogs.slice(0, 6).map((log: any) => {
+    const isDanger = log.type === 'danger';
+    const isWarning = log.type === 'warning';
     
     return {
-      type: isSuccess ? 'issued' : isHold ? 'payment' : 'cancelled',
-      icon: isSuccess ? 'confirmation_number' : isHold ? 'pending_actions' : 'cancel',
-      color: isSuccess ? '#2563eb' : isHold ? '#d97706' : '#dc2626',
-      bg: isSuccess ? '#eff6ff' : isHold ? '#fef3c7' : '#fef2f2',
-      msg: isSuccess ? `Vé ${b.id} đã được xuất` : `Booking ${b.id} đang chờ`,
-      detail: `PNR ${b.pnr} · ${b.from}→${b.to} · ${b.customer}`,
-      time: 'Vừa xong'
+      type: log.type,
+      icon: isDanger ? 'cancel' : isWarning ? 'history' : 'check_circle',
+      color: isDanger ? '#dc2626' : isWarning ? '#d97706' : '#16a34a',
+      bg: isDanger ? '#fef2f2' : isWarning ? '#fef3c7' : '#f0fdf4',
+      msg: log.action,
+      detail: `${log.module} · ${log.target} · ${log.user}`,
+      time: log.time || 'Vừa xong'
     };
   });
+
+  if (loading) {
+    return (
+      <AppLayout activeItem="dashboard" onNavigate={onNavigate || (() => {})} currentUser={user} bookings={[]}>
+        <div style={{ display:'flex', justifyContent:'center', alignItems:'center', height:'80vh', flexDirection:'column', gap:20 }}>
+           <div className="spinner" style={{ width:50, height:50, border:'5px solid #f3f3f3', borderTop:'5px solid #1e40af', borderRadius:'50%', animation:'spin 1s linear infinite' }} />
+           <p style={{ color:'#64748b', fontWeight:600 }}>Đang tải dữ liệu hệ thống...</p>
+           <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout 
@@ -231,7 +276,7 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
       bookings={bookings}
       bookingPendingCount={pendingCount}
       flightCount={flights.length}
-      passengerCount={bookings.reduce((sum: number, b: any) => sum + (b.passengersList?.length || 1), 0)}
+      passengerCount={bookings.reduce((sum: number, b: any) => sum + (b.passengersList?.length || (b.hanh_khach?.length) || 1), 0)}
     >
       <div className="dashboard-content">
 
@@ -463,26 +508,38 @@ const Dashboard: React.FC<DashboardProps> = ({ onNavigate, bookings = [], stats,
                 </div>
               </div>
 
-              {/* Recent Activities */}
-              <div style={{ ...S.card, flex:1 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:14 }}>
-                  <span className="material-icons-round" style={{ color:'#d97706', fontSize:20 }}>history</span>
-                  <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Hoạt động gần đây</h3>
+              {/* Recent Activities - Log Hệ Thống */}
+              <div style={{ ...S.card, flex:1, display:'flex', flexDirection:'column' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                    <span className="material-icons-round" style={{ color:'#2563eb', fontSize:20 }}>history</span>
+                    <h3 style={{ margin:0, fontSize:15, fontWeight:800, color:'#0f172a' }}>Nhật ký vận hành</h3>
+                  </div>
+                  <button onClick={() => onNavigate?.('audit-logs')} style={{ background:'none', border:'none', color:'#64748b', fontSize:11, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:2 }}>
+                    Tất cả <span className="material-icons-round" style={{fontSize:14}}>arrow_forward</span>
+                  </button>
                 </div>
-                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:14, flex:1 }}>
                   {dynamicActivities.length > 0 ? dynamicActivities.map((a: any, i: number) => (
-                    <div key={i} style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
-                      <div style={{ width:32, height:32, borderRadius:8, background:a.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                        <span className="material-icons-round" style={{ fontSize:16, color:a.color }}>{a.icon}</span>
+                    <div key={i} className="activity-item" style={{ display:'flex', alignItems:'flex-start', gap:12, paddingBottom:12, borderBottom: i === dynamicActivities.length - 1 ? 'none' : '1px solid #f8fafc' }}>
+                      <div style={{ width:36, height:36, borderRadius:10, background:a.bg, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, border:`1px solid ${a.color}20` }}>
+                        <span className="material-icons-round" style={{ fontSize:18, color:a.color }}>{a.icon}</span>
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <p style={{ margin:'0 0 2px', fontSize:13, fontWeight:700, color:'#1e293b' }}>{a.msg}</p>
-                        <p style={{ margin:0, fontSize:11, color:'#64748b' }}>{a.detail}</p>
+                        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:2 }}>
+                           <p style={{ margin:0, fontSize:13, fontWeight:700, color:'#1e293b', lineHeight:'1.2' }}>{a.msg}</p>
+                           <span style={{ fontSize:10, color:'#94a3b8', fontWeight:600, whiteSpace:'nowrap', marginLeft:8 }}>{a.time}</span>
+                        </div>
+                        <p style={{ margin:0, fontSize:11, color:'#64748b', fontWeight:500 }}>
+                           <span style={{ color:a.color, fontWeight:700 }}>{a.detail.split(' · ')[0]}</span> · {a.detail.split(' · ')[1]}
+                        </p>
                       </div>
-                      <span style={{ fontSize:10, color:'#94a3b8', whiteSpace:'nowrap' }}>{a.time}</span>
                     </div>
                   )) : (
-                    <p style={{fontSize:12, color:'#64748b', textAlign:'center', padding:10}}>Chưa có hoạt động mới</p>
+                    <div style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, color:'#94a3b8' }}>
+                       <span className="material-icons-round" style={{fontSize:48, opacity:0.2, marginBottom:12}}>event_busy</span>
+                       <p style={{fontSize:13, fontWeight:600}}>Chưa có hoạt động mới</p>
+                    </div>
                   )}
                 </div>
               </div>

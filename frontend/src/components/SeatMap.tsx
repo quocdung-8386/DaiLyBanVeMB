@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Button from './Button';
 import { showToast } from './AppLayout';
+import { api } from '../api';
 
 interface SeatMapProps {
   flightNumber: string;
+  flightId?: string; // ID thực tế trong DB
   aircraftType?: string;
   occupiedSeats?: string[];
   initialSelectedSeat?: string;
@@ -14,21 +16,46 @@ interface SeatMapProps {
 
 const SeatMap: React.FC<SeatMapProps> = ({ 
   flightNumber, 
+  flightId,
   aircraftType = 'A321', 
-  occupiedSeats = ['12B', '14A', '14C', '15D', '15E', '15F', '1A', '1B', '2A', '2C'], 
+  occupiedSeats: externalOccupiedSeats = [], 
   initialSelectedSeat,
   allowedClass,
   onConfirm, 
   onCancel 
 }) => {
   const [selectedSeat, setSelectedSeat] = useState<string | null>(initialSelectedSeat || null);
+  const [dbOccupiedSeats, setDbOccupiedSeats] = useState<string[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Generate A321 Seat Layout
+  useEffect(() => {
+    if (flightId || flightNumber) {
+      const fetchDbSeats = async () => {
+        setLoading(true);
+        try {
+          const data = await api.getFlightSeats(flightId || flightNumber);
+          setDbOccupiedSeats(data.occupied_seats || []);
+        } catch (err) {
+          console.error("Failed to fetch DB seats:", err);
+        } finally {
+          setLoading(false);
+        }
+      };
+      fetchDbSeats();
+    }
+  }, [flightId, flightNumber]);
+
+  // Kết hợp ghế từ DB và các ghế được truyền từ bên ngoài (ví dụ các khách khác trong cùng booking)
+  const allOccupiedSeats = useMemo(() => {
+    const combined = new Set([...dbOccupiedSeats, ...externalOccupiedSeats]);
+    return Array.from(combined);
+  }, [dbOccupiedSeats, externalOccupiedSeats]);
+
   const businessRows = [1, 2, 3];
   const premiumEconomyRows = [10, 11, 12];
   const economyRows = Array.from({ length: 22 }, (_, i) => i + 13); // Rows 13 to 34
 
-  const isOccupied = (seatId: string) => occupiedSeats.includes(seatId);
+  const isOccupied = (seatId: string) => allOccupiedSeats.includes(seatId);
   const isSelected = (seatId: string) => selectedSeat === seatId;
 
   const handleSeatClick = (seatId: string, rowClass: 'business' | 'premium' | 'economy') => {
@@ -127,7 +154,12 @@ const SeatMap: React.FC<SeatMapProps> = ({
             </div>
           </div>
 
-          <div className="plane-container">
+          <div className="plane-container" style={{ position: 'relative' }}>
+            {loading && (
+              <div style={{ position:'absolute', inset:0, background:'rgba(255,255,255,0.7)', zIndex:10, display:'flex', alignItems:'center', justifyContent:'center', borderRadius:40 }}>
+                <div style={{ width:30, height:30, border:'3px solid #f3f3f3', borderTop:'3px solid #2563eb', borderRadius:'50%', animation:'spin 1s linear infinite' }}></div>
+              </div>
+            )}
             <div className="plane-nose"></div>
             <div className="plane-body">
               <div className="cabin-section">

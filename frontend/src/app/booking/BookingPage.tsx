@@ -639,15 +639,16 @@ const BookingPage: React.FC<BookingPageProps> = ({
         .step-content h3 { font-size: 18px; color: #1e293b; margin-bottom: 24px; }
         .step-actions { display: flex; justify-content: space-between; margin-top: 32px; padding-top: 24px; border-top: 1px solid #f1f5f9; }
 
-        .fare-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-        .fare-card { padding: 20px; border: 2px solid #f1f5f9; border-radius: 16px; cursor: pointer; transition: all 0.2s; }
-        .fare-card:hover { border-color: #bfdbfe; background: #f8fbff; }
-        .fare-card.active { border-color: #2563eb; background: #eff6ff; }
-        .fare-card h4 { margin: 0 0 8px; color: #1e293b; font-size: 15px; }
-        .fare-card .price { margin: 0 0 16px; color: #2563eb; font-size: 18px; font-weight: 900; }
-        .fare-card ul { padding: 0; list-style: none; margin: 0; }
-        .fare-card li { font-size: 11px; color: #64748b; margin-bottom: 6px; display: flex; align-items: center; gap: 4px; }
-        .fare-card li::before { content: 'check'; font-family: 'Material Icons Round'; font-size: 12px; color: #10b981; }
+        .fare-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .fare-card { padding: 16px; border: 1px solid #e2e8f0; border-radius: 12px; cursor: pointer; transition: all 0.2s; background: white; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+        .fare-card:hover { border-color: #2563eb; background: #f8fafc; transform: translateY(-2px); }
+        .fare-card.active { border-color: #2563eb; background: #eff6ff; box-shadow: 0 4px 12px rgba(37,99,235,0.08); }
+        .fare-card.active::before { content: 'check_circle'; font-family: 'Material Icons Round'; position: absolute; top: 12px; right: 12px; color: #2563eb; font-size: 20px; }
+        .fare-card h4 { margin: 0 0 4px; color: #1e293b; font-size: 14px; font-weight: 700; }
+        .fare-card .price { margin: 0 0 12px; color: #2563eb; font-size: 16px; font-weight: 900; }
+        .fare-card ul { padding: 0; list-style: none; margin: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+        .fare-card li { font-size: 10px; color: #64748b; display: flex; align-items: center; gap: 4px; line-height: 1.2; }
+        .fare-card li::before { content: 'done'; font-family: 'Material Icons Round'; font-size: 11px; color: #10b981; }
 
         .seat-map-wrapper { background: #f8fafc; padding: 20px; border-radius: 12px; }
         .seat-legend { display: flex; gap: 16px; justify-content: center; margin-bottom: 20px; }

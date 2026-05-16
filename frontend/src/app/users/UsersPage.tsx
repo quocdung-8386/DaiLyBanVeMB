@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import AppLayout from '../../components/AppLayout';
+import React, { useState, useEffect } from 'react';
+import AppLayout, { showToast } from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import { api } from '../../api';
@@ -27,12 +27,12 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
     try {
       const data = await api.getStaff();
       setUsersList(data.map((s: any) => ({
-        id: String(s.id),
-        name: s.username,
+        id: s.ma_nv || s.id,
+        name: s.ten_nv || s.username || 'Nhân viên',
         username: s.username,
-        role: s.department || 'STAFF',
-        agency: s.agency || 'DAILY_01',
-        status: s.status || 'Hoạt động'
+        role: s.department || s.ma_cv || 'STAFF',
+        agency: s.agency || s.ma_cn || 'DAILY_01',
+        status: s.status || s.trang_thai || 'Hoạt động'
       })));
     } catch (error) {
       console.error("Failed to fetch staff:", error);
@@ -89,17 +89,6 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
 
   const [searchTerm, setSearchTerm] = useState('');
   const [formData, setFormData] = useState({ name: '', username: '', role: 'STAFF', agency: 'DAILY_01', status: 'Hoạt động', password: '' });
-
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
-    visible: false,
-    message: '',
-    type: 'success',
-  });
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
-  };
 
   const handleOpenEdit = (user: any) => {
     setEditingUser(user);
@@ -408,45 +397,48 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
         )}
 
         {/* Role Popup */}
-        {showRolePopup && editingRole && (
-          <div className="user-popup-overlay" onClick={() => setShowRolePopup(false)}>
-            <div className="user-popup-card" onClick={e => e.stopPropagation()} style={{ width: '600px' }}>
-              <div className="user-popup-header">
-                <h3>Chỉnh Sửa Quyền Hạn: {editingRole.name || 'Vai trò mới'}</h3>
-                <button className="user-popup-close" onClick={() => setShowRolePopup(false)}><span className="material-icons-round">close</span></button>
-              </div>
-              <div className="user-popup-body">
-                <div className="form-group">
-                  <label>Tên vai trò</label>
-                  <input type="text" value={editingRole.name} onChange={e => setEditingRole({ ...editingRole, name: e.target.value })} placeholder="VD: Trưởng phòng vé" />
+        {showRolePopup && (() => {
+          if (!editingRole) return null;
+          return (
+            <div className="user-popup-overlay" onClick={() => setShowRolePopup(false)}>
+              <div className="user-popup-card" onClick={e => e.stopPropagation()} style={{ width: '600px' }}>
+                <div className="user-popup-header">
+                  <h3>Chỉnh Sửa Quyền Hạn: {editingRole.name || 'Vai trò mới'}</h3>
+                  <button className="user-popup-close" onClick={() => setShowRolePopup(false)}><span className="material-icons-round">close</span></button>
                 </div>
-                <div className="form-group">
-                  <label>Danh sách quyền hạn</label>
-                  <div className="permission-list">
-                    {availablePermissions.map(p => (
-                      <div key={p.id} className={`permission-item ${editingRole.permissions.includes(p.id) ? 'active' : ''}`}
-                        onClick={() => {
-                          const newPerms = editingRole.permissions.includes(p.id) ? editingRole.permissions.filter((id: any) => id !== p.id) : [...editingRole.permissions, p.id];
-                          setEditingRole({ ...editingRole, permissions: newPerms });
-                        }}>
-                        <span className="material-icons-round check-icon" style={{ fontSize: 18 }}>check_circle</span>
-                        <div>
-                          <p style={{ margin: 0, fontWeight: 600 }}>{p.label}</p>
-                          <p style={{ margin: 0, fontSize: 11, opacity: 0.7 }}>{p.desc}</p>
-                        </div>
-                      </div>
-                    ))}
+                <div className="user-popup-body">
+                  <div className="form-group">
+                    <label>Tên vai trò</label>
+                    <input type="text" value={editingRole.name} onChange={e => setEditingRole({ ...editingRole, name: e.target.value })} placeholder="VD: Trưởng phòng vé" />
                   </div>
-
+                  <div className="form-group">
+                    <label>Danh sách quyền hạn</label>
+                    <div className="permission-list">
+                      {availablePermissions.map(p => (
+                        <div key={p.id} className={`permission-item ${editingRole.permissions?.includes(p.id) ? 'active' : ''}`}
+                          onClick={() => {
+                            const currentPerms = editingRole.permissions || [];
+                            const newPerms = currentPerms.includes(p.id) ? currentPerms.filter((id: any) => id !== p.id) : [...currentPerms, p.id];
+                            setEditingRole({ ...editingRole, permissions: newPerms });
+                          }}>
+                          <span className="material-icons-round check-icon" style={{ fontSize: 18 }}>check_circle</span>
+                          <div>
+                            <p style={{ margin: 0, fontWeight: 600 }}>{p.label}</p>
+                            <p style={{ margin: 0, fontSize: 11, opacity: 0.7 }}>{p.desc}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div className="user-popup-footer">
-                <button className="btn-cancel" onClick={() => setShowRolePopup(false)}>Hủy</button>
-                <button className="btn-save" onClick={handleSaveRole}><span className="material-icons-round" style={{ fontSize: 18 }}>save</span> Lưu quyền hạn</button>
+                <div className="user-popup-footer">
+                  <button className="btn-cancel" onClick={() => setShowRolePopup(false)}>Hủy</button>
+                  <button className="btn-save" onClick={handleSaveRole}><span className="material-icons-round" style={{ fontSize: 18 }}>save</span> Lưu quyền hạn</button>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* Delete Confirmation */}
         {showDeleteConfirm && (
@@ -463,13 +455,6 @@ const UsersPage: React.FC<UsersPageProps> = ({ onNavigate, currentUser, onLogout
           </div>
         )}
 
-        {toast.visible && (
-          <div className={`toast-notification ${toast.type}`}>
-            <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
-            <span>{toast.message}</span>
-            <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
-          </div>
-        )}
       </div>
 
       <style>{`

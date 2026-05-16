@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import AppLayout from '../../components/AppLayout';
+import AppLayout, { showToast } from '../../components/AppLayout';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 
@@ -21,16 +21,6 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({
   const [selectedRefundId, setSelectedRefundId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [toast, setToast] = useState<{ visible: boolean; message: string; type: 'success' | 'error' }>({
-    visible: false,
-    message: '',
-    type: 'success',
-  });
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    setToast({ visible: true, message, type });
-    setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
-  };
   
   // Combine global bookings that are 'Cancelled' or 'Refunding' with static mock data
   const [localRefunds, setLocalRefunds] = useState([
@@ -352,13 +342,6 @@ const RefundManagementPage: React.FC<RefundManagementPageProps> = ({
           );
         })()}
 
-        {toast.visible && (
-          <div className={`toast-notification ${toast.type}`}>
-            <span className="material-icons-round">{toast.type === 'success' ? 'check_circle' : 'error'}</span>
-            <span>{toast.message}</span>
-            <button onClick={() => setToast({ ...toast, visible: false })}><span className="material-icons-round" style={{ fontSize: 18 }}>close</span></button>
-          </div>
-        )}
       </div>
 
       <style>{`

@@ -181,12 +181,19 @@ const AppLayout: React.FC<AppLayoutProps> = ({
 
   React.useEffect(() => {
     const handleLog = (e: any) => {
-      const user = currentUser || (() => { try { return JSON.parse(localStorage.getItem('currentUser') || '{}'); } catch { return {}; } })();
+      let user = currentUser;
+      if (!user) {
+        try {
+          const stored = localStorage.getItem('currentUser');
+          if (stored) user = JSON.parse(stored);
+        } catch (err) {}
+      }
+      
       // Fire-and-forget: persist to database
       api.createAuditLog({
         hanh_dong: e.detail.message,
         bang_tac_dong: activeItem.toUpperCase(),
-        ghi_chu: e.detail.type,
+        ghi_chu: `${e.detail.type} | Admin: ${user?.name || 'Hệ thống'}`,
         ma_nv: user?.id ? Number(user.id) : undefined,
       }).catch(() => null);
     };
