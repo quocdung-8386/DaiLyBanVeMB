@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Card from '../../components/Card';
 import Button from '../../components/Button';
 import AppLayout from '../../components/AppLayout';
+import { api } from '../../api';
 
 interface AiAdminPageProps {
   onNavigate?: (id: string) => void;
@@ -12,8 +13,78 @@ interface AiAdminPageProps {
   passengerCount?: number;
 }
 
+interface Message {
+  role: 'bot' | 'user';
+  text: string;
+}
+
 const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [activeTab, setActiveTab] = useState<'assistant' | 'prediction' | 'settings'>('assistant');
+  const [messages, setMessages] = useState<Message[]>([
+    { role: 'bot', text: 'Chào Admin! Tôi là Skyward AI. Tôi đã sẵn sàng hỗ trợ bạn phân tích dữ liệu và tối ưu hóa vận hành.' }
+  ]);
+  const [inputText, setInputText] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [predictionData, setPredictionData] = useState<any>(null);
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (activeTab === 'prediction' && !predictionData) {
+      fetchPredictions();
+    }
+  }, [activeTab]);
+
+  const fetchPredictions = async () => {
+    setIsPredicting(true);
+    setPredictionData(null); // Clear old data to show loading
+    try {
+      const data = await api.getAiPrediction();
+      setPredictionData(data);
+    } catch (error) {
+      console.error("Failed to fetch predictions:", error);
+      setPredictionData({ summary: "Lỗi khi tải dự báo từ AI. Vui lòng thử lại.", predictions: [] });
+    } finally {
+      setIsPredicting(false);
+    }
+  };
+
+  const handleSend = async () => {
+    if (!inputText.trim() || isLoading) return;
+
+    const userMsg = inputText.trim();
+    setInputText('');
+    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    setIsLoading(true);
+
+    try {
+      const res = await api.aiChat(userMsg);
+      setMessages(prev => [...prev, { role: 'bot', text: res.response }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { role: 'bot', text: 'Lỗi kết nối máy chủ AI. Vui lòng kiểm tra API Key hoặc backend.' }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleApplyAction = async (p: any, idx: number) => {
+    if (!p.action_id) return;
+    setActionLoading(`${idx}`);
+    try {
+      const res = await api.aiAction(p.action_id, p.params);
+      alert(res.message || "Đã áp dụng thành công!");
+    } catch (error) {
+      alert("Lỗi khi thực hiện hành động.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
 
   return (
     <AppLayout 
@@ -36,7 +107,7 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
               CORE AI ENGINE: ONLINE
             </div>
             <h1>Intelligence Command Center</h1>
-            <p>Sử dụng trí tuệ nhân tạo để tối ưu hóa giá vé, dự báo nhu cầu và tự động hóa quy trình nghiệp vụ.</p>
+            <p>Sử dụng trí tuệ nhân tạo để tối ưu hóa giá vé, dự báo nhu cầu và tự động hóa quy trình nghiệp vụ dựa trên dữ liệu thực tế.</p>
           </div>
           <div className="ai-hero-visual">
             <div className="neural-network-mock">
@@ -70,36 +141,37 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
             <div className="chat-interface">
               <Card className="chat-container">
                 <div className="chat-messages">
-                  <div className="msg bot">
-                    <div className="bot-avatar"><span className="material-icons-round">smart_toy</span></div>
-                    <div className="msg-content">
-                      <p>Chào Admin! Dựa trên phân tích 24h qua, tôi nhận thấy nhu cầu bay <strong>Hà Nội - Phú Quốc</strong> đang tăng đột biến 15% cho tuần tới.</p>
-                      <div className="ai-suggestion-box">
-                        <p>💡 Gợi ý: Tăng Markup thêm <b>25,000đ</b> cho các booking thực hiện từ 20h - 23h.</p>
-                        <Button size="sm">Áp dụng ngay</Button>
+                  {messages.map((msg, idx) => (
+                    <div key={idx} className={`msg ${msg.role}`}>
+                      {msg.role === 'bot' && (
+                        <div className="bot-avatar"><span className="material-icons-round">smart_toy</span></div>
+                      )}
+                      <div className="msg-content">
+                        <p>{msg.text}</p>
                       </div>
                     </div>
-                  </div>
-                  <div className="msg user">
-                    <div className="msg-content">
-                      <p>Cho tôi báo cáo hiệu quả của đợt khuyến mãi Vietnam Airlines vừa qua.</p>
-                    </div>
-                  </div>
-                  <div className="msg bot">
-                    <div className="bot-avatar"><span className="material-icons-round">smart_toy</span></div>
-                    <div className="msg-content">
-                      <p>Đang trích xuất dữ liệu...</p>
-                      <div className="mini-report">
-                        <div className="report-stat"><span>Vé phát hành:</span> <b>+142 vé</b></div>
-                        <div className="report-stat"><span>Doanh thu:</span> <b>+215.4M</b></div>
-                        <div className="report-stat"><span>Tỷ lệ lấp đầy:</span> <b>88%</b></div>
+                  ))}
+                  {isLoading && (
+                    <div className="msg bot">
+                      <div className="bot-avatar"><span className="material-icons-round">smart_toy</span></div>
+                      <div className="msg-content loading-dots">
+                        <span>.</span><span>.</span><span>.</span>
                       </div>
                     </div>
-                  </div>
+                  )}
+                  <div ref={chatEndRef} />
                 </div>
                 <div className="chat-input-wrapper">
-                  <input type="text" placeholder="Hỏi AI về chiến lược kinh doanh hoặc cấu hình tự động..." />
-                  <button className="send-btn"><span className="material-icons-round">send</span></button>
+                  <input 
+                    type="text" 
+                    placeholder="Hỏi AI về chiến lược kinh doanh..." 
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                  />
+                  <button className="send-btn" onClick={handleSend} disabled={isLoading}>
+                    <span className="material-icons-round">send</span>
+                  </button>
                 </div>
               </Card>
             </div>
@@ -114,34 +186,116 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                   </svg>
                   <div className="gauge-val">94.2%</div>
                 </div>
-                <p>Mô hình <b>Dynamic Pricing v2.4</b> đang hoạt động ổn định.</p>
+                <p>Mô hình <b>Gemini 3 Flash</b> đang hoạt động ổn định.</p>
               </Card>
               
               <Card className="ai-automation-list">
                 <h3>Tự động hóa đang bật</h3>
                 <div className="auto-item">
-                  <div className="info">
-                    <p>Cân bằng Markup</p>
-                    <span>Tự điều chỉnh theo giá sàn</span>
-                  </div>
+                  <div className="info"><p>Cân bằng Markup</p><span>Tự điều chỉnh theo giá sàn</span></div>
                   <div className="toggle active"></div>
                 </div>
                 <div className="auto-item">
-                  <div className="info">
-                    <p>Thông báo PNR sắp hết hạn</p>
-                    <span>Gửi SMS nhắc khách tự động</span>
-                  </div>
-                  <div className="toggle active"></div>
-                </div>
-                <div className="auto-item">
-                  <div className="info">
-                    <p>Quét giá cạnh tranh</p>
-                    <span>Cập nhật mỗi 15 phút</span>
-                  </div>
+                  <div className="info"><p>Quét giá cạnh tranh</p><span>Cập nhật mỗi 15 phút</span></div>
                   <div className="toggle"></div>
                 </div>
               </Card>
             </aside>
+          </div>
+        )}
+
+        {activeTab === 'prediction' && (
+          <div className="ai-prediction-view">
+            <Card className="prediction-main-card">
+              <div className="card-header-with-action">
+                <div>
+                  <h2>Dự báo Nhu cầu & Gợi ý Giá</h2>
+                  <p>Phân tích xu hướng thị trường và dữ liệu lịch sử để đưa ra đề xuất kinh doanh.</p>
+                </div>
+                <Button variant="outline" onClick={fetchPredictions} disabled={isPredicting}>
+                  <span className="material-icons-round">{isPredicting ? 'sync' : 'refresh'}</span>
+                  {isPredicting ? 'Đang phân tích...' : 'Cập nhật dự báo'}
+                </Button>
+              </div>
+
+              {isPredicting ? (
+                <div className="prediction-loading">
+                  <div className="loader"></div>
+                  <p>Đang sử dụng AI để phân tích dữ liệu hệ thống...</p>
+                </div>
+              ) : predictionData ? (
+                <div className="prediction-results">
+                  <div className="prediction-summary-box">
+                    <span className="material-icons-round">lightbulb</span>
+                    <p>{predictionData.summary}</p>
+                  </div>
+                  <div className="prediction-grid">
+                    {predictionData.predictions.map((p: any, i: number) => (
+                      <div key={i} className="prediction-item">
+                        <div className="p-route">
+                          <span className="material-icons-round">flight_takeoff</span>
+                          {p.route}
+                        </div>
+                        <div className={`p-trend ${p.trend?.includes('Tăng') ? 'up' : 'down'}`}>
+                          {p.trend}
+                        </div>
+                        <div className="p-reason"><strong>Lý do:</strong> {p.reason}</div>
+                        <div className="p-suggestion"><strong>Hành động:</strong> {p.suggestion}</div>
+                        {p.action_id && (
+                          <Button 
+                            className="p-apply-btn" 
+                            size="sm" 
+                            fullWidth
+                            onClick={() => handleApplyAction(p, i)}
+                            disabled={actionLoading === `${i}`}
+                          >
+                            {actionLoading === `${i}` ? 'Đang áp dụng...' : 'Áp dụng ngay'}
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="prediction-empty">
+                  <p>Bấm "Cập nhật dự báo" để bắt đầu phân tích dữ liệu.</p>
+                </div>
+              )}
+            </Card>
+          </div>
+        )}
+
+        {activeTab === 'settings' && (
+          <div className="ai-settings-view">
+            <div className="settings-grid">
+              <Card className="settings-card">
+                <h3>Cấu hình Model AI</h3>
+                <div className="setting-group">
+                  <label>Mô hình ngôn ngữ (LLM)</label>
+                  <select defaultValue="gemini-3-flash-preview">
+                    <option value="gemini-3-flash-preview">Google Gemini 3 Flash (Preview)</option>
+                    <option value="gemini-2.0-flash">Google Gemini 2.0 Flash</option>
+                    <option value="gemini-pro">Google Gemini Pro</option>
+                  </select>
+                </div>
+                <Button fullWidth>Lưu cấu hình</Button>
+              </Card>
+
+              <Card className="settings-card">
+                <h3>Nguồn dữ liệu Training</h3>
+                <div className="data-source-list">
+                  <div className="source-item">
+                    <input type="checkbox" defaultChecked />
+                    <div className="source-info"><p>Dữ liệu Bán vé</p><span>Đã kết nối</span></div>
+                  </div>
+                  <div className="source-item">
+                    <input type="checkbox" defaultChecked />
+                    <div className="source-info"><p>Dữ liệu Chuyến bay</p><span>Đã kết nối</span></div>
+                  </div>
+                </div>
+                <Button variant="outline" fullWidth>Đồng bộ thủ công</Button>
+              </Card>
+            </div>
           </div>
         )}
       </div>
@@ -166,41 +320,55 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
         .chat-interface { height: 100%; }
         .chat-container { height: 100%; padding: 0; display: flex; flex-direction: column; overflow: hidden; border: none; }
         .chat-messages { flex: 1; padding: 24px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; background: #fdfdfd; }
-        .msg { display: flex; gap: 14px; max-width: 80%; }
+        .msg { display: flex; gap: 14px; max-width: 85%; }
         .msg.bot { align-self: flex-start; }
         .msg.user { align-self: flex-end; flex-direction: row-reverse; }
-        .bot-avatar { width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; }
-        .msg-content { padding: 14px 18px; border-radius: 16px; font-size: 14px; line-height: 1.6; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .bot-avatar { width: 36px; height: 36px; border-radius: 10px; background: #eff6ff; color: #2563eb; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+        .msg-content { padding: 14px 18px; border-radius: 16px; font-size: 14px; line-height: 1.6; box-shadow: 0 4px 12px rgba(0,0,0,0.05); white-space: pre-wrap; }
         .msg.bot .msg-content { background: white; color: #1e293b; border-top-left-radius: 4px; }
         .msg.user .msg-content { background: #1e293b; color: white; border-top-right-radius: 4px; }
         
-        .ai-suggestion-box { margin-top: 12px; background: #f0f7ff; border: 1px solid #dbeafe; padding: 12px; border-radius: 12px; }
-        .ai-suggestion-box p { font-size: 13px; color: #1e40af; margin-bottom: 10px; }
-        
-        .mini-report { margin-top: 10px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-        .report-stat { background: #f8fafc; padding: 8px 12px; border-radius: 8px; font-size: 12px; display: flex; flex-direction: column; }
-        .report-stat b { font-size: 14px; color: #1e293b; }
+        .loading-dots { display: flex; gap: 4px; }
+        .loading-dots span { animation: blink 1.4s infinite both; font-size: 24px; line-height: 1; }
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes blink { 0% { opacity: 0.2; } 20% { opacity: 1; } 100% { opacity: 0.2; } }
 
         .chat-input-wrapper { padding: 20px 24px; border-top: 1px solid #f1f5f9; display: flex; gap: 12px; background: white; }
         .chat-input-wrapper input { flex: 1; border: 1px solid #e2e8f0; border-radius: 30px; padding: 12px 20px; font-size: 14px; outline: none; }
         .send-btn { width: 44px; height: 44px; border-radius: 50%; background: #2563eb; color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .send-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        .prediction-main-card { padding: 24px; border: none; }
+        .card-header-with-action { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .prediction-loading { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 100px 0; }
+        .loader { width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #2563eb; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .prediction-summary-box { background: #f0f7ff; border: 1px solid #dbeafe; padding: 20px; border-radius: 12px; display: flex; gap: 16px; margin-bottom: 24px; }
+        .prediction-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+        .prediction-item { background: white; border: 1px solid #f1f5f9; padding: 20px; border-radius: 16px; transition: all 0.2s; }
+        .p-route { display: flex; align-items: center; gap: 8px; font-weight: 700; margin-bottom: 12px; }
+        .p-trend { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; margin-bottom: 12px; }
+        .p-trend.up { background: #ecfdf5; color: #059669; }
+        .p-trend.down { background: #fef2f2; color: #dc2626; }
+        .p-reason, .p-suggestion { font-size: 13px; color: #64748b; margin-bottom: 8px; line-height: 1.5; }
+        .p-apply-btn { margin-top: 12px; }
+
+        .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .settings-card { padding: 24px; border: none; }
+        .setting-group { margin-bottom: 20px; }
+        .setting-group label { display: block; font-size: 13px; font-weight: 600; color: #64748b; margin-bottom: 8px; }
+        .setting-group select { width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        
+        .data-source-list { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+        .source-item { display: flex; gap: 12px; align-items: center; padding: 12px; background: #f8fafc; border-radius: 10px; }
+        .source-info p { font-size: 13px; font-weight: 700; }
+        .source-info span { font-size: 11px; color: #94a3b8; }
 
         .ai-stat-card { padding: 24px; text-align: center; border: none; }
-        .gauge-wrap { position: relative; width: 160px; margin: 20px auto; }
-        .gauge-val { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); font-size: 24px; font-weight: 800; color: #1e293b; }
-        .ai-stat-card h3 { font-size: 15px; color: #64748b; margin-bottom: 10px; }
-        .ai-stat-card p { font-size: 13px; color: #64748b; margin-top: 12px; line-height: 1.5; }
-
-        .ai-automation-list { padding: 20px; border: none; }
-        .ai-automation-list h3 { font-size: 15px; color: #1e293b; margin-bottom: 16px; }
-        .auto-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; }
-        .auto-item:last-child { border-bottom: none; }
-        .auto-item .info p { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 2px; }
-        .auto-item .info span { font-size: 11px; color: #94a3b8; }
-        .toggle { width: 40px; height: 20px; background: #e2e8f0; border-radius: 10px; position: relative; cursor: pointer; transition: all 0.2s; }
-        .toggle::after { content: ''; position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: all 0.2s; }
-        .toggle.active { background: #10b981; }
-        .toggle.active::after { left: 22px; }
+        .gauge-wrap { position: relative; width: 140px; margin: 10px auto; }
+        .gauge-val { position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); font-size: 20px; font-weight: 800; }
       `}</style>
     </AppLayout>
   );

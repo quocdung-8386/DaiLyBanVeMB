@@ -401,4 +401,29 @@ export const api = {
     if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.detail || 'Error'); }
     return res.json();
   },
+
+  // AI
+  aiChat: async (message: string, history: any[] = []) => {
+    const res = await fetch(`${BASE_URL}/ai/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message, history }),
+    });
+    if (!res.ok) throw new Error('Failed to chat with AI');
+    return res.json();
+  },
+  getAiPrediction: async () => {
+    const res = await fetch(`${BASE_URL}/ai/prediction`);
+    if (!res.ok) throw new Error('Failed to fetch AI prediction');
+    return res.json();
+  },
+  aiAction: async (actionType: string, data: any) => {
+    const res = await fetch(`${BASE_URL}/ai/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action_type: actionType, data }),
+    });
+    if (!res.ok) throw new Error('Failed to perform AI action');
+    return res.json();
+  },
 };
