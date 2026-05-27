@@ -22,7 +22,7 @@ const BookingPage: React.FC<BookingPageProps> = ({
   onNavigate, initialFlight, onCheckout, onAddBooking, flights, bookings = [],
   currentUser, onLogout, bookingPendingCount, flightCount, passengerCount
 }) => {
-  const [flightData, setFlightData] = useState<any>(initialFlight || null);
+  const [flightData, setFlightData] = useState<any>(initialFlight || (flights && flights.length > 0 ? flights[0] : null));
   const [actionType, setActionType] = useState<'hold' | 'success' | null>(null);
 
   const [contactInfo, setContactInfo] = useState({ name: '', phone: '', email: '' });
@@ -100,6 +100,10 @@ const BookingPage: React.FC<BookingPageProps> = ({
   };
 
   const handleHoldBooking = async () => {
+    if (!flightData) {
+      showToast('Vui lòng chọn chuyến bay trước khi đặt vé', 'error');
+      return;
+    }
     if (bookingStep >= 2 && !validateBooking()) return;
     const newBooking: any = {
       // ── DatCho fields ──
@@ -111,11 +115,11 @@ const BookingPage: React.FC<BookingPageProps> = ({
       trang_thai_ve: 'Đã xác nhận',              // trang_thai_ve
 
       // ── ChuyenBay reference ──
-      flight: flightData?.id || 'VN-204',         // ma_cb
-      ma_hang: flightData?.logo || '',            // ma_hang
-      ma_may_bay: flightData?.aircraft || 'A321', // ma_may_bay
-      nha_ga: flightData?.terminal || 'T1',       // nha_ga
-      cong_khoi_hanh: flightData?.gate || '--',  // cong_khoi_hanh
+      flight: flightData.id,                      // ma_cb
+      ma_hang: flightData.logo || flightData.code || '',            // ma_hang
+      ma_may_bay: flightData.aircraft || 'A321', // ma_may_bay
+      nha_ga: flightData.terminal || 'T1',       // nha_ga
+      cong_khoi_hanh: flightData.gate || '--',  // cong_khoi_hanh
 
       // ── UI/display fields ──
       pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),
@@ -159,6 +163,10 @@ const BookingPage: React.FC<BookingPageProps> = ({
   };
 
   const handleConfirmBooking = async () => {
+    if (!flightData) {
+      showToast('Vui lòng chọn chuyến bay trước khi đặt vé', 'error');
+      return;
+    }
     if (bookingStep >= 2 && !validateBooking()) return;
     const newBooking: any = {
       // ── DatCho fields ──
@@ -170,11 +178,11 @@ const BookingPage: React.FC<BookingPageProps> = ({
       trang_thai_ve: 'Đã xác nhận',              // trang_thai_ve
 
       // ── ChuyenBay reference ──
-      flight: flightData?.id || 'VN-204',         // ma_cb
-      ma_hang: flightData?.logo || '',            // ma_hang
-      ma_may_bay: flightData?.aircraft || 'A321', // ma_may_bay
-      nha_ga: flightData?.terminal || 'T1',       // nha_ga
-      cong_khoi_hanh: flightData?.gate || '--',  // cong_khoi_hanh
+      flight: flightData.id,                      // ma_cb
+      ma_hang: flightData.logo || flightData.code || '',            // ma_hang
+      ma_may_bay: flightData.aircraft || 'A321', // ma_may_bay
+      nha_ga: flightData.terminal || 'T1',       // nha_ga
+      cong_khoi_hanh: flightData.gate || '--',  // cong_khoi_hanh
 
       // ── UI/display fields ──
       pnr: Math.random().toString(36).substring(2, 8).toUpperCase(),

@@ -319,8 +319,12 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({
                     ) : (
                       <div className="remote-payment-gen">
                         <div className="qr-preview">
-                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=pay_me" alt="QR Code" />
-                          <p>Quét mã để thanh toán <strong>{currentTicket?.total ?? '0'} đ</strong></p>
+                          <img 
+                            src={`https://img.vietqr.io/image/MB-9603052056666-compact2.png?amount=${currentTicket?.total ? parseInt(currentTicket.total.toString().replace(/\D/g, '')) : 0}&addInfo=Thanh toan ve ${currentTicket?.pnr || 'May Bay'}&accountName=NONG QUOC DUNG`} 
+                            alt="VietQR Code" 
+                            style={{ width: 'auto', height: 220, objectFit: 'contain', marginBottom: 16, borderRadius: 8 }}
+                          />
+                          <p>Dùng App <strong>Ngân hàng, MoMo hoặc VNPay</strong> để quét mã</p>
                         </div>
                         <div className="remote-actions">
                           <Button className="w-full btn-outline-primary mb-sm"><span className="material-icons-round">content_copy</span> Copy Link Thanh Toán</Button>
