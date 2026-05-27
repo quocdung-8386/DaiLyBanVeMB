@@ -388,7 +388,19 @@ const PaymentsPage: React.FC<PaymentsPageProps> = ({
                         <span className="material-icons-round">done_all</span>
                         Xác nhận thu tiền
                       </Button>
-                      <Button variant="outline" className="w-full text-danger border-danger" onClick={() => {
+                      <Button variant="outline" className="w-full text-danger border-danger" onClick={async () => {
+                        if (currentTicket && currentTicket !== localTicket) {
+                          try {
+                            if (onUpdateStatus) {
+                              const success = await onUpdateStatus(currentTicket.id, 'Đã hủy', 'danger');
+                              if (success) {
+                                showToast('Đã hủy giao dịch và hoàn trả chỗ thành công!', 'success');
+                              }
+                            }
+                          } catch (err) {
+                            showToast('Lỗi khi hủy giao dịch.', 'error');
+                          }
+                        }
                         if (onClose) onClose();
                         else {
                           setLocalTicket(null);

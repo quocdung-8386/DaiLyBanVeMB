@@ -3,6 +3,7 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import AppLayout from '../../components/AppLayout';
 import { api } from '../../api';
+import { aiChatStore, ChatMessage } from '../../store/aiChatStore';
 
 interface AiAdminPageProps {
   onNavigate?: (id: string) => void;
@@ -13,27 +14,50 @@ interface AiAdminPageProps {
   passengerCount?: number;
 }
 
-interface Message {
-  role: 'bot' | 'user';
-  text: string;
-}
-
 const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLogout, bookingPendingCount, flightCount, passengerCount }) => {
   const [activeTab, setActiveTab] = useState<'assistant' | 'prediction' | 'settings'>('assistant');
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', text: 'Chào Admin! Tôi là Skyward AI. Tôi đã sẵn sàng hỗ trợ bạn phân tích dữ liệu và tối ưu hóa vận hành.' }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(aiChatStore.getMessages());
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [predictionData, setPredictionData] = useState<any>(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  // AI Configuration States
+  const [aiConfig, setAiConfig] = useState<{ has_key: boolean; api_key_masked: string; model_name: string }>({
+    has_key: false,
+    api_key_masked: '',
+    model_name: 'gemini-2.5-flash'
+  });
+  const [newApiKey, setNewApiKey] = useState('');
+  const [newModelName, setNewModelName] = useState('gemini-2.5-flash');
+  const [showApiKey, setShowApiKey] = useState(false);
+  const [configSaving, setConfigSaving] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const unsubscribe = aiChatStore.subscribe(setMessages);
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const fetchConfig = async () => {
+    try {
+      const config = await api.getAiConfig();
+      setAiConfig(config);
+      setNewModelName(config.model_name);
+    } catch (error) {
+      console.error("Failed to fetch AI configuration:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'prediction' && !predictionData) {
@@ -60,14 +84,14 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
 
     const userMsg = inputText.trim();
     setInputText('');
-    setMessages(prev => [...prev, { role: 'user', text: userMsg }]);
+    aiChatStore.addMessage({ id: Date.now(), role: 'user', text: userMsg });
     setIsLoading(true);
 
     try {
       const res = await api.aiChat(userMsg);
-      setMessages(prev => [...prev, { role: 'bot', text: res.response }]);
+      aiChatStore.addMessage({ id: Date.now() + 1, role: 'bot', text: res.response });
     } catch (error) {
-      setMessages(prev => [...prev, { role: 'bot', text: 'Lỗi kết nối máy chủ AI. Vui lòng kiểm tra API Key hoặc backend.' }]);
+      aiChatStore.addMessage({ id: Date.now() + 1, role: 'bot', text: 'Lỗi kết nối máy chủ AI. Vui lòng kiểm tra API Key hoặc backend.' });
     } finally {
       setIsLoading(false);
     }
@@ -83,6 +107,25 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
       alert("Lỗi khi thực hiện hành động.");
     } finally {
       setActionLoading(null);
+    }
+  };
+
+  const handleSaveConfig = async () => {
+    if (!newApiKey.trim() && !aiConfig.has_key) {
+      alert("Vui lòng điền GEMINI_API_KEY!");
+      return;
+    }
+    setConfigSaving(true);
+    try {
+      const res = await api.updateAiConfig(newApiKey, newModelName);
+      alert(res.message || "Đã cấu hình thành công!");
+      setNewApiKey('');
+      await fetchConfig();
+    } catch (error) {
+      console.error("Failed to save config:", error);
+      alert("Có lỗi xảy ra khi lưu cấu hình.");
+    } finally {
+      setConfigSaving(false);
     }
   };
 
@@ -102,9 +145,16 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
         {/* ── HERO HEADER ── */}
         <div className="ai-hero-banner">
           <div className="ai-hero-content">
-            <div className="ai-status-pill">
-              <span className="pulse-dot"></span>
-              CORE AI ENGINE: ONLINE
+            <div 
+              className="ai-status-pill" 
+              style={{ 
+                background: aiConfig.has_key ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
+                color: aiConfig.has_key ? '#10b981' : '#f59e0b', 
+                border: aiConfig.has_key ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)' 
+              }}
+            >
+              <span className="pulse-dot" style={{ backgroundColor: aiConfig.has_key ? '#10b981' : '#f59e0b' }}></span>
+              CORE AI ENGINE: {aiConfig.has_key ? 'ONLINE' : 'OFFLINE FALLBACK'}
             </div>
             <h1>Intelligence Command Center</h1>
             <p>Sử dụng trí tuệ nhân tạo để tối ưu hóa giá vé, dự báo nhu cầu và tự động hóa quy trình nghiệp vụ dựa trên dữ liệu thực tế.</p>
@@ -147,7 +197,16 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                         <div className="bot-avatar"><span className="material-icons-round">smart_toy</span></div>
                       )}
                       <div className="msg-content">
-                        <p>{msg.text}</p>
+                        {msg.role === 'bot' ? (
+                          <div dangerouslySetInnerHTML={{
+                            __html: msg.text
+                              .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+                              .replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px">$1</code>')
+                              .replace(/\n/g, '<br/>')
+                          }} />
+                        ) : (
+                          <p>{msg.text}</p>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -184,9 +243,11 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                     <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#f1f5f9" strokeWidth="8"></path>
                     <path d="M 10 50 A 40 40 0 0 1 90 50" fill="none" stroke="#2563eb" strokeWidth="8" strokeDasharray="125 125" strokeDashoffset="25"></path>
                   </svg>
-                  <div className="gauge-val">94.2%</div>
+                  <div className="gauge-val">{aiConfig.has_key ? '94.2%' : '80.0%'}</div>
                 </div>
-                <p>Mô hình <b>Gemini 3 Flash</b> đang hoạt động ổn định.</p>
+                <p>
+                  Mô hình <b>{aiConfig.has_key ? aiConfig.model_name : 'Offline Fallback'}</b> đang hoạt động.
+                </p>
               </Card>
               
               <Card className="ai-automation-list">
@@ -270,15 +331,68 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
             <div className="settings-grid">
               <Card className="settings-card">
                 <h3>Cấu hình Model AI</h3>
-                <div className="setting-group">
-                  <label>Mô hình ngôn ngữ (LLM)</label>
-                  <select defaultValue="gemini-3-flash-preview">
-                    <option value="gemini-3-flash-preview">Google Gemini 3 Flash (Preview)</option>
+                
+                <div className="status-indicator-box" style={{ padding: '16px', borderRadius: '12px', background: aiConfig.has_key ? '#f0fdf4' : '#fffbeb', border: aiConfig.has_key ? '1px solid #bbf7d0' : '1px solid #fef3c7', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span className="material-icons-round" style={{ color: aiConfig.has_key ? '#16a34a' : '#d97706', fontSize: '28px' }}>
+                    {aiConfig.has_key ? 'check_circle' : 'warning'}
+                  </span>
+                  <div>
+                    <h4 style={{ margin: 0, fontSize: '14px', color: aiConfig.has_key ? '#14532d' : '#78350f' }}>
+                      {aiConfig.has_key ? 'Đã cấu hình GEMINI_API_KEY' : 'Chưa cấu hình GEMINI_API_KEY'}
+                    </h4>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: aiConfig.has_key ? '#166534' : '#92400e' }}>
+                      {aiConfig.has_key 
+                        ? `Khóa hiện tại: ${aiConfig.api_key_masked} (Model: ${aiConfig.model_name})` 
+                        : 'Vui lòng nhập API Key để kích hoạt đầy đủ tính năng thông minh.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="setting-group" style={{ marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>GEMINI_API_KEY</label>
+                  <div className="input-group-with-toggle" style={{ display: 'flex', gap: '8px' }}>
+                    <input 
+                      type={showApiKey ? "text" : "password"} 
+                      className="input-field" 
+                      placeholder={aiConfig.has_key ? "Nhập khóa mới để ghi đè..." : "Nhập khóa Google Gemini API Key của bạn..."} 
+                      value={newApiKey}
+                      onChange={(e) => setNewApiKey(e.target.value)}
+                      style={{ flex: 1, padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', outline: 'none' }}
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setShowApiKey(!showApiKey)}
+                      style={{ border: '1px solid #e2e8f0', background: 'white', borderRadius: '10px', padding: '0 12px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                    >
+                      <span className="material-icons-round" style={{ fontSize: '20px', color: '#64748b' }}>
+                        {showApiKey ? 'visibility_off' : 'visibility'}
+                      </span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="setting-group" style={{ marginBottom: '24px' }}>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>Mô hình ngôn ngữ (LLM)</label>
+                  <select 
+                    value={newModelName}
+                    onChange={(e) => setNewModelName(e.target.value)}
+                    style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', outline: 'none', background: 'white' }}
+                  >
+                    <option value="gemini-2.5-flash">Google Gemini 2.5 Flash ✅ (Hiện tại)</option>
+                    <option value="gemini-3.5-flash">Google Gemini 3.5 Flash ⭐ (Khuyến nghị)</option>
+                    <option value="gemini-3-flash-preview">Google Gemini 3 Flash Preview</option>
                     <option value="gemini-2.0-flash">Google Gemini 2.0 Flash</option>
-                    <option value="gemini-pro">Google Gemini Pro</option>
+                    <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (Nâng cao)</option>
                   </select>
                 </div>
-                <Button fullWidth>Lưu cấu hình</Button>
+
+                <Button 
+                  onClick={handleSaveConfig} 
+                  disabled={configSaving} 
+                  fullWidth
+                >
+                  {configSaving ? 'Đang lưu...' : 'Lưu cấu hình'}
+                </Button>
               </Card>
 
               <Card className="settings-card">
@@ -365,6 +479,15 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
         .source-item { display: flex; gap: 12px; align-items: center; padding: 12px; background: #f8fafc; border-radius: 10px; }
         .source-info p { font-size: 13px; font-weight: 700; }
         .source-info span { font-size: 11px; color: #94a3b8; }
+
+        .ai-automation-list h3 { margin-bottom: 16px; font-size: 14px; font-weight: 700; }
+        .auto-item { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: #f8fafc; border-radius: 10px; margin-bottom: 10px; }
+        .auto-item .info p { font-size: 13px; font-weight: 700; margin: 0; }
+        .auto-item .info span { font-size: 11px; color: #94a3b8; }
+        .auto-item .toggle { width: 40px; height: 22px; border-radius: 11px; background: #e2e8f0; position: relative; flex-shrink: 0; cursor: pointer; transition: background 0.2s; }
+        .auto-item .toggle::after { content: ''; position: absolute; width: 16px; height: 16px; border-radius: 50%; background: white; top: 3px; left: 3px; transition: transform 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+        .auto-item .toggle.active { background: #2563eb; }
+        .auto-item .toggle.active::after { transform: translateX(18px); }
 
         .ai-stat-card { padding: 24px; text-align: center; border: none; }
         .gauge-wrap { position: relative; width: 140px; margin: 10px auto; }

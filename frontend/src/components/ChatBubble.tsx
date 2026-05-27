@@ -2,22 +2,15 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { api } from '../api';
+import { aiChatStore, ChatMessage } from '../store/aiChatStore';
 
 interface ChatBubbleProps {
   isVisible?: boolean;
 }
 
-interface Message {
-  role: 'user' | 'bot';
-  content: string;
-  id: number;
-}
-
 const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { role: 'bot', content: 'Xin chào! Tôi là Skyward AI Assistant. Tôi có thể giúp bạn tìm kiếm chuyến bay, kiểm tra giá vé, và hỗ trợ đặt vé. Bạn cần giúp gì?', id: 1 }
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>(aiChatStore.getMessages());
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -27,6 +20,11 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
   };
 
   useEffect(() => {
+    const unsubscribe = aiChatStore.subscribe(setMessages);
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
     scrollToBottom();
   }, [messages, isOpen]);
 
@@ -34,45 +32,40 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
     if (!inputValue.trim() || isTyping) return;
 
     const userMsg = inputValue.trim();
-    const userMessage: Message = {
-      role: 'user',
-      content: userMsg,
-      id: Date.now()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    aiChatStore.addMessage({ role: 'user', text: userMsg, id: Date.now() });
+    
     setInputValue('');
     setIsTyping(true);
 
     try {
       // Real AI API call
       const res = await api.aiChat(userMsg);
-      
-      const botMessage: Message = {
-        role: 'bot',
-        content: res.response,
-        id: Date.now() + 1
-      };
-
-      setMessages(prev => [...prev, botMessage]);
+      aiChatStore.addMessage({ role: 'bot', text: res.response, id: Date.now() + 1 });
     } catch (error) {
       console.error("AI Chat Error:", error);
-      const errorMessage: Message = {
-        role: 'bot',
-        content: 'Xin lỗi, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau hoặc kiểm tra kết nối mạng.',
-        id: Date.now() + 2
-      };
-      setMessages(prev => [...prev, errorMessage]);
+      aiChatStore.addMessage({ 
+        role: 'bot', 
+        text: 'Xin lỗi, tôi đang gặp sự cố kết nối. Vui lòng thử lại sau hoặc kiểm tra kết nối mạng.', 
+        id: Date.now() + 2 
+      });
     } finally {
       setIsTyping(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const renderBotMessage = (content: string) => {
+    const html = content
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/`([^`]+)`/g, '<code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;font-size:12px">$1</code>')
+      .replace(/\n/g, '<br/>');
+    return <div dangerouslySetInnerHTML={{ __html: html }} />;
   };
 
   if (!isVisible) return null;
@@ -122,7 +115,9 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
                     {msg.role === 'bot' && (
                       <span className="material-icons-round bot-avatar">smart_toy</span>
                     )}
-                    <div className="message-content">{msg.content}</div>
+                    <div className="message-content">
+                      {msg.role === 'bot' ? renderBotMessage(msg.text) : msg.text}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -148,12 +143,12 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
                 placeholder="Nhập tin nhắn..."
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                onKeyPress={handleKeyPress}
+                onKeyDown={handleKeyDown}
               />
               <button
                 className="chat-send-btn"
                 onClick={handleSend}
-                disabled={!inputValue.trim()}
+                disabled={!inputValue.trim() || isTyping}
                 aria-label="Gửi tin nhắn"
               >
                 <span className="material-icons-round">send</span>
@@ -346,6 +341,7 @@ const ChatBubble: React.FC<ChatBubbleProps> = ({ isVisible = true }) => {
           font-size: 14px;
           line-height: 1.5;
           word-wrap: break-word;
+          white-space: pre-wrap;
         }
 
         .chat-message.user .chat-bubble-msg .message-content {

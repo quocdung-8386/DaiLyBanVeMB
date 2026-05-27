@@ -90,10 +90,14 @@ const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate, currentUser, onLo
     }
   };
 
-  const filtered = members.filter(m =>
-    m.name.toLowerCase().includes(search.toLowerCase()) ||
-    m.id.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = members.filter(m => {
+    const searchLower = search.toLowerCase();
+    return (
+      m.name.toLowerCase().includes(searchLower) ||
+      m.id.toLowerCase().includes(searchLower) ||
+      (m.sdt && m.sdt.toLowerCase().includes(searchLower))
+    );
+  });
 
   return (
     <AppLayout
@@ -158,7 +162,7 @@ const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate, currentUser, onLo
             <div className="toolbar">
               <div className="search-premium">
                 <span className="material-icons-round">search</span>
-                <input type="text" placeholder="Tìm thành viên..." value={search} onChange={e => setSearch(e.target.value)} />
+                <input type="text" placeholder="Tìm theo tên, mã KH, sđt..." value={search} onChange={e => setSearch(e.target.value)} />
               </div>
               <span style={{ fontSize: 13, color: '#94a3b8' }}>{filtered.length} thành viên</span>
             </div>
@@ -196,7 +200,7 @@ const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate, currentUser, onLo
                               <div className="avatar-sm">{m.initials}</div>
                               <div>
                                 <p className="name">{m.name}</p>
-                                <p className="uid">{m.id}</p>
+                                <p className="uid">{m.id} &bull; {m.sdt}</p>
                               </div>
                             </div>
                           </td>
@@ -236,23 +240,65 @@ const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate, currentUser, onLo
             <Card className="rule-card">
               <div className="rule-header">
                 <span className="material-icons-round text-success">add_task</span>
-                <h3>Cơ chế tích lũy điểm</h3>
+                <h3>Cơ chế tích lũy điểm (Quy đổi từ VNĐ)</h3>
               </div>
+              <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.5 }}>
+                Khách hàng tích lũy điểm thưởng dựa trên tổng giá trị thanh toán thực tế của mỗi giao dịch vé máy bay hoặc dịch vụ bổ sung thành công.
+              </p>
               <ul className="rule-list">
-                <li><span className="bullet" />Vé nội địa: 10,000đ = <b>1 điểm</b></li>
-                <li><span className="bullet" />Vé quốc tế: 10,000đ = <b>1.5 điểm</b></li>
-                <li><span className="bullet" />Hành lý thêm: 10,000đ = <b>2 điểm</b></li>
+                <li>
+                  <div className="rule-icon"><span className="material-icons-round" style={{color: '#10b981'}}>flight</span></div>
+                  <div>
+                    <div style={{fontWeight: 700, color: '#1e293b', marginBottom: 2}}>Vé máy bay nội địa</div>
+                    <div style={{fontSize: 13, color: '#475569'}}>Mỗi <b>10,000 VNĐ</b> chi tiêu = <b>1 điểm</b></div>
+                  </div>
+                </li>
+                <li>
+                  <div className="rule-icon"><span className="material-icons-round" style={{color: '#3b82f6'}}>flight_takeoff</span></div>
+                  <div>
+                    <div style={{fontWeight: 700, color: '#1e293b', marginBottom: 2}}>Vé máy bay quốc tế</div>
+                    <div style={{fontSize: 13, color: '#475569'}}>Mỗi <b>10,000 VNĐ</b> chi tiêu = <b>1.5 điểm</b></div>
+                  </div>
+                </li>
+                <li>
+                  <div className="rule-icon"><span className="material-icons-round" style={{color: '#f59e0b'}}>luggage</span></div>
+                  <div>
+                    <div style={{fontWeight: 700, color: '#1e293b', marginBottom: 2}}>Dịch vụ bổ sung (Hành lý, Suất ăn)</div>
+                    <div style={{fontSize: 13, color: '#475569'}}>Mỗi <b>10,000 VNĐ</b> chi tiêu = <b>2 điểm</b></div>
+                  </div>
+                </li>
               </ul>
             </Card>
             <Card className="rule-card">
               <div className="rule-header">
                 <span className="material-icons-round text-primary">card_giftcard</span>
-                <h3>Chính sách đổi thưởng</h3>
+                <h3>Chính sách quy đổi thưởng (Sử dụng điểm)</h3>
               </div>
+              <p style={{ fontSize: 13, color: '#64748b', marginBottom: 20, lineHeight: 1.5 }}>
+                Điểm thưởng tích lũy có thể được sử dụng linh hoạt để giảm giá trực tiếp cho các giao dịch tiếp theo hoặc đổi lấy các tiện ích giá trị.
+              </p>
               <ul className="rule-list">
-                <li><span className="bullet" />1,000 điểm = Giảm <b>100,000đ</b></li>
-                <li><span className="bullet" />5,000 điểm = Miễn phí <b>20kg hành lý</b></li>
-                <li><span className="bullet" />20,000 điểm = Vé khứ hồi nội địa <b>0đ</b></li>
+                <li>
+                  <div className="rule-icon"><span className="material-icons-round" style={{color: '#ef4444'}}>local_offer</span></div>
+                  <div>
+                    <div style={{fontWeight: 700, color: '#1e293b', marginBottom: 2}}>Giảm giá trực tiếp đơn hàng</div>
+                    <div style={{fontSize: 13, color: '#475569'}}>Đổi <b>1,000 điểm</b> = Giảm <b>100,000 VNĐ</b></div>
+                  </div>
+                </li>
+                <li>
+                  <div className="rule-icon"><span className="material-icons-round" style={{color: '#8b5cf6'}}>work</span></div>
+                  <div>
+                    <div style={{fontWeight: 700, color: '#1e293b', marginBottom: 2}}>Nâng cấp hành lý miễn phí</div>
+                    <div style={{fontSize: 13, color: '#475569'}}>Đổi <b>5,000 điểm</b> = Miễn phí <b>Gói 20kg hành lý</b></div>
+                  </div>
+                </li>
+                <li>
+                  <div className="rule-icon"><span className="material-icons-round" style={{color: '#ec4899'}}>airplane_ticket</span></div>
+                  <div>
+                    <div style={{fontWeight: 700, color: '#1e293b', marginBottom: 2}}>Đổi vé máy bay thưởng</div>
+                    <div style={{fontSize: 13, color: '#475569'}}>Đổi <b>20,000 điểm</b> = Vé nội địa khứ hồi <b>0 VNĐ</b></div>
+                  </div>
+                </li>
               </ul>
             </Card>
           </div>
@@ -383,8 +429,10 @@ const LoyaltyPage: React.FC<LoyaltyPageProps> = ({ onNavigate, currentUser, onLo
         .rule-card { padding:24px; border:none; }
         .rule-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
         .rule-header h3 { font-size:16px; color:#1e293b; margin:0; }
-        .rule-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:16px; }
-        .rule-list li { display:flex; align-items:center; gap:12px; font-size:14px; color:#475569; }
+        .rule-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:20px; }
+        .rule-list li { display:flex; align-items:flex-start; gap:16px; font-size:14px; color:#475569; }
+        .rule-icon { width:40px; height:40px; border-radius:12px; background:#f1f5f9; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+        .rule-icon .material-icons-round { font-size:20px; }
         .bullet { width:6px; height:6px; border-radius:50%; background:#cbd5e1; flex-shrink:0; }
         .text-success { color:#10b981; }
         .text-primary { color:#2563eb; }

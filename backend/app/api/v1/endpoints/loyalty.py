@@ -45,6 +45,7 @@ async def get_loyalty_members(db: AsyncSession = Depends(get_db)):
             name = kh.ho_ten or "N/A"
             initials = "".join([w[0].upper() for w in name.split() if w])[:2]
             points = kh.diem_tich_luy or 0
+            sdt = nd.sdt if nd and nd.sdt else "Chưa cập nhật"
             members.append({
                 "id": f"CUS-{kh.ma_kh:03d}",
                 "ma_kh": kh.ma_kh,
@@ -54,6 +55,7 @@ async def get_loyalty_members(db: AsyncSession = Depends(get_db)):
                 "loai_khach": kh.loai_khach,
                 "joined": "N/A",
                 "initials": initials or "KH",
+                "sdt": sdt,
             })
         return members
     except Exception as e:

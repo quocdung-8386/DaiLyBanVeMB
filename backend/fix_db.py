@@ -21,14 +21,14 @@ async def fix():
             eco = res_eco.scalar()
             base_price = float(eco.gia_co_ban) if eco else 1500000
             
-            for h, m in [('Economy', 1), ('Business', 2.5), ('First Class', 4.5)]:
+            for h, m, cap in [('Economy', 1, 150), ('Premium Economy', 1.5, 30), ('Business', 2.5, 20), ('First Class', 4.5, 10)]:
                 res = await session.execute(select(ChiTietHangGhe).where(ChiTietHangGhe.ma_cb == f.ma_cb, ChiTietHangGhe.hang_ghe == h))
                 if not res.scalar():
                     session.add(ChiTietHangGhe(
                         ma_cb=f.ma_cb,
                         hang_ghe=h,
-                        tong_so_ghe=50,
-                        so_ghe_trong=50,
+                        tong_so_ghe=cap,
+                        so_ghe_trong=cap,
                         gia_co_ban=base_price * m
                     ))
         await session.flush()

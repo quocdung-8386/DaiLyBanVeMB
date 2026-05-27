@@ -1,4 +1,5 @@
-const BASE_URL = 'http://localhost:8000/api/v1';
+const BASE_URL = 'http://127.0.0.1:8000/api/v1';
+
 
 const fetchWithNoCache = async (url: string, options: any = {}) => {
   const ts = new Date().getTime();
@@ -424,6 +425,20 @@ export const api = {
       body: JSON.stringify({ action_type: actionType, data }),
     });
     if (!res.ok) throw new Error('Failed to perform AI action');
+    return res.json();
+  },
+  getAiConfig: async () => {
+    const res = await fetch(`${BASE_URL}/ai/config`);
+    if (!res.ok) throw new Error('Failed to fetch AI configuration');
+    return res.json();
+  },
+  updateAiConfig: async (apiKey: string, modelName: string) => {
+    const res = await fetch(`${BASE_URL}/ai/config`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ api_key: apiKey, model_name: modelName }),
+    });
+    if (!res.ok) throw new Error('Failed to update AI configuration');
     return res.json();
   },
 };

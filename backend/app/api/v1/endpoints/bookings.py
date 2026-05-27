@@ -16,6 +16,22 @@ from app.schemas.booking import BookingCreate, BookingUpdate
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+# Mapping tên hạng vé từ frontend → tên chuẩn trong DB (chitiethangghe.hang_ghe)
+FARE_CLASS_MAP = {
+    "economy": "Economy",
+    "premium economy": "Premium Economy",
+    "business": "Business",
+    "first class": "First Class",
+    "eco": "Economy",
+    "biz": "Business",
+}
+
+def normalize_fare_class(fare_class: str | None) -> str:
+    """Chuẩn hóa tên hạng vé về đúng giá trị lưu trong DB."""
+    if not fare_class:
+        return "Economy"
+    return FARE_CLASS_MAP.get(fare_class.strip().lower(), fare_class.strip())
+
 # --- UTILS ---
 def generate_id(prefix="BK", length=6):
     suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -182,7 +198,7 @@ async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_
                 ma_cb=booking.flight_id,
                 ten_hanh_khach=pax.name.upper(),
                 so_ghe=pax.seat,
-                hang_ghe=booking.fare_class or "ECO",
+                hang_ghe=normalize_fare_class(booking.fare_class),
                 gia_ve=booking.total_amount / len(booking.passengers) if len(booking.passengers) > 0 else booking.total_amount,
                 trang_thai_ve="Đã xác nhận"
             )
@@ -190,9 +206,10 @@ async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_
             ve_num += 1
             
         # 4. Inventory Management
+        normalized_fare = normalize_fare_class(booking.fare_class)
         seat_query = select(ChiTietHangGhe).where(
             ChiTietHangGhe.ma_cb == booking.flight_id,
-            ChiTietHangGhe.hang_ghe == (booking.fare_class or "ECO")
+            ChiTietHangGhe.hang_ghe == normalized_fare
         )
         seat_result = await db.execute(seat_query)
         seat_detail = seat_result.scalar_one_or_none()
@@ -216,16 +233,44 @@ async def update_booking(booking_id: str, update_data: BookingUpdate, db: AsyncS
     print(f"\n>>>> [FORCE UPDATE] ID: {booking_id} | MỚI: {update_data.status}")
     
     try:
+        # Check current booking status before updating it
+        current_booking_query = select(DatCho).where(DatCho.ma_dat_cho == booking_id)
+        current_booking_res = await db.execute(current_booking_query)
+        dc = current_booking_res.scalar_one_or_none()
+        
+        if not dc:
+            print(f">>>> ❌ KHÔNG TÌM THẤY BOOKING CHO ID: {booking_id}")
+            raise HTTPException(status_code=404, detail="Không tìm thấy booking")
+
         # 1. Cập nhật trạng thái Booking bằng câu lệnh SQL trực tiếp
         if update_data.status:
+            cancelled_statuses = ["Đã hủy", "Hết hạn", "Đã Void"]
+            # If transitioning to a cancelled status from an active status, restore seats
+            if update_data.status in cancelled_statuses and dc.trang_thai_tt not in cancelled_statuses:
+                # Retrieve tickets to get flight and class details
+                ve_query = select(VeMayBay).where(VeMayBay.ma_dat_cho == booking_id)
+                ve_res = await db.execute(ve_query)
+                tickets = ve_res.scalars().all()
+                if tickets:
+                    flight_id = tickets[0].ma_cb
+                    fare_class = tickets[0].hang_ghe
+                    num_pax = len(tickets)
+                    
+                    # Restore seats in ChiTietHangGhe
+                    await db.execute(update(ChiTietHangGhe).where(
+                        ChiTietHangGhe.ma_cb == flight_id,
+                        ChiTietHangGhe.hang_ghe == fare_class
+                    ).values(so_ghe_trong=ChiTietHangGhe.so_ghe_trong + num_pax))
+                    
+                    # Set ticket status to "Đã hủy"
+                    await db.execute(update(VeMayBay).where(
+                        VeMayBay.ma_dat_cho == booking_id
+                    ).values(trang_thai_ve="Đã hủy"))
+
             stmt = update(DatCho).where(DatCho.ma_dat_cho == booking_id).values(trang_thai_tt=update_data.status)
             res = await db.execute(stmt)
             
-            if res.rowcount == 0:
-                print(f">>>> ❌ KHÔNG TÌM THẤY DÒNG NÀO ĐỂ CẬP NHẬT CHO {booking_id}")
-                raise HTTPException(status_code=404, detail="Không tìm thấy booking")
-
-            # 2. Nếu Xuất vé -> Cập nhật toàn bộ vé
+            # 2. Nếu Xuất vé -> Cập nhật toàn bộ vé thành Đã xác nhận
             if update_data.status in ["Đã xuất vé", "Đã thanh toán"]:
                 ve_stmt = update(VeMayBay).where(VeMayBay.ma_dat_cho == booking_id).values(trang_thai_ve="Đã xác nhận")
                 await db.execute(ve_stmt)

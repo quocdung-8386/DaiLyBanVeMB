@@ -64,7 +64,7 @@ async def populate():
                         await session.flush()
                         
                         # Add Seating
-                        for hang, multiplier, cap in [('Economy', 1, 150), ('Business', 2.5, 20), ('First Class', 4.5, 10)]:
+                        for hang, multiplier, cap in [('Economy', 1, 150), ('Premium Economy', 1.5, 30), ('Business', 2.5, 20), ('First Class', 4.5, 10)]:
                             # Count actual tickets sold
                             tickets_res = await session.execute(select(VeMayBay).where(VeMayBay.ma_cb == ma_cb, VeMayBay.hang_ghe == hang))
                             sold = len(tickets_res.scalars().all())
