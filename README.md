@@ -132,12 +132,15 @@ DaiLyBanVeMB/
 │   │   │   ├── Header.tsx           # Dashboard Header
 │   │   │   ├── Card.tsx             # Standardized Card Component
 │   │   │   └── ...                  # Reusable UI Elements
+│   │   ├── store/                   # Global State Management
+│   │   │   └── aiChatStore.ts       # Shared AI Chat Store
 │   │   └── index.css                # Core Design System Tokens (Navy/Blue)
 │   ├── package.json
 │   └── tsconfig.json
 │
 ├── backend/                         # FastAPI Backend
 │   ├── app/
+│   │   ├── api/                     # API Endpoints (v1 Routes)
 │   │   ├── core/                    # Core Config & Security
 │   │   ├── domain/                  # DDD (Domain-Driven Design) Modules
 │   │   │   ├── checkin/             # Web Check-in & Boarding
