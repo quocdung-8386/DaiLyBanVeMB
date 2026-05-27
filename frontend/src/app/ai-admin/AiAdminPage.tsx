@@ -33,7 +33,7 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
   const [newModelName, setNewModelName] = useState('gemini-2.5-flash');
   const [showApiKey, setShowApiKey] = useState(false);
   const [configSaving, setConfigSaving] = useState(false);
-  
+
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -130,9 +130,9 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
   };
 
   return (
-    <AppLayout 
-      activeItem="ai_admin" 
-      onNavigate={onNavigate || (() => {})}
+    <AppLayout
+      activeItem="ai_admin"
+      onNavigate={onNavigate || (() => { })}
       currentUser={currentUser}
       onLogout={onLogout}
       bookingPendingCount={bookingPendingCount}
@@ -141,16 +141,16 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
       breadcrumb={[{ label: 'Hệ thống', page: 'dashboard' }, { label: 'Quản trị AI & Tự động hóa' }]}
     >
       <div className="ai-admin-page-content">
-        
+
         {/* ── HERO HEADER ── */}
         <div className="ai-hero-banner">
           <div className="ai-hero-content">
-            <div 
-              className="ai-status-pill" 
-              style={{ 
-                background: aiConfig.has_key ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)', 
-                color: aiConfig.has_key ? '#10b981' : '#f59e0b', 
-                border: aiConfig.has_key ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)' 
+            <div
+              className="ai-status-pill"
+              style={{
+                background: aiConfig.has_key ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                color: aiConfig.has_key ? '#10b981' : '#f59e0b',
+                border: aiConfig.has_key ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)'
               }}
             >
               <span className="pulse-dot" style={{ backgroundColor: aiConfig.has_key ? '#10b981' : '#f59e0b' }}></span>
@@ -221,9 +221,9 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                   <div ref={chatEndRef} />
                 </div>
                 <div className="chat-input-wrapper">
-                  <input 
-                    type="text" 
-                    placeholder="Hỏi AI về chiến lược kinh doanh..." 
+                  <input
+                    type="text"
+                    placeholder="Hỏi AI về chiến lược kinh doanh..."
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSend()}
@@ -234,7 +234,7 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                 </div>
               </Card>
             </div>
-            
+
             <aside className="ai-side-panel">
               <Card className="ai-stat-card">
                 <h3>Độ chính xác Model</h3>
@@ -249,7 +249,7 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                   Mô hình <b>{aiConfig.has_key ? aiConfig.model_name : 'Offline Fallback'}</b> đang hoạt động.
                 </p>
               </Card>
-              
+
               <Card className="ai-automation-list">
                 <h3>Tự động hóa đang bật</h3>
                 <div className="auto-item">
@@ -303,9 +303,9 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                         <div className="p-reason"><strong>Lý do:</strong> {p.reason}</div>
                         <div className="p-suggestion"><strong>Hành động:</strong> {p.suggestion}</div>
                         {p.action_id && (
-                          <Button 
-                            className="p-apply-btn" 
-                            size="sm" 
+                          <Button
+                            className="p-apply-btn"
+                            size="sm"
                             fullWidth
                             onClick={() => handleApplyAction(p, i)}
                             disabled={actionLoading === `${i}`}
@@ -331,7 +331,7 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
             <div className="settings-grid">
               <Card className="settings-card">
                 <h3>Cấu hình Model AI</h3>
-                
+
                 <div className="status-indicator-box" style={{ padding: '16px', borderRadius: '12px', background: aiConfig.has_key ? '#f0fdf4' : '#fffbeb', border: aiConfig.has_key ? '1px solid #bbf7d0' : '1px solid #fef3c7', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <span className="material-icons-round" style={{ color: aiConfig.has_key ? '#16a34a' : '#d97706', fontSize: '28px' }}>
                     {aiConfig.has_key ? 'check_circle' : 'warning'}
@@ -341,8 +341,8 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                       {aiConfig.has_key ? 'Đã cấu hình GEMINI_API_KEY' : 'Chưa cấu hình GEMINI_API_KEY'}
                     </h4>
                     <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: aiConfig.has_key ? '#166534' : '#92400e' }}>
-                      {aiConfig.has_key 
-                        ? `Khóa hiện tại: ${aiConfig.api_key_masked} (Model: ${aiConfig.model_name})` 
+                      {aiConfig.has_key
+                        ? `Khóa hiện tại: ${aiConfig.api_key_masked} (Model: ${aiConfig.model_name})`
                         : 'Vui lòng nhập API Key để kích hoạt đầy đủ tính năng thông minh.'}
                     </p>
                   </div>
@@ -351,16 +351,16 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
                 <div className="setting-group" style={{ marginBottom: '16px' }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>GEMINI_API_KEY</label>
                   <div className="input-group-with-toggle" style={{ display: 'flex', gap: '8px' }}>
-                    <input 
-                      type={showApiKey ? "text" : "password"} 
-                      className="input-field" 
-                      placeholder={aiConfig.has_key ? "Nhập khóa mới để ghi đè..." : "Nhập khóa Google Gemini API Key của bạn..."} 
+                    <input
+                      type={showApiKey ? "text" : "password"}
+                      className="input-field"
+                      placeholder={aiConfig.has_key ? "Nhập khóa mới để ghi đè..." : "Nhập khóa Google Gemini API Key của bạn..."}
                       value={newApiKey}
                       onChange={(e) => setNewApiKey(e.target.value)}
                       style={{ flex: 1, padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', outline: 'none' }}
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={() => setShowApiKey(!showApiKey)}
                       style={{ border: '1px solid #e2e8f0', background: 'white', borderRadius: '10px', padding: '0 12px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
                     >
@@ -373,22 +373,22 @@ const AiAdminPage: React.FC<AiAdminPageProps> = ({ onNavigate, currentUser, onLo
 
                 <div className="setting-group" style={{ marginBottom: '24px' }}>
                   <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '8px' }}>Mô hình ngôn ngữ (LLM)</label>
-                  <select 
+                  <select
                     value={newModelName}
                     onChange={(e) => setNewModelName(e.target.value)}
                     style={{ width: '100%', padding: '10px 14px', border: '1px solid #e2e8f0', borderRadius: '10px', fontSize: '14px', outline: 'none', background: 'white' }}
                   >
-                    <option value="gemini-2.5-flash">Google Gemini 2.5 Flash ✅ (Hiện tại)</option>
-                    <option value="gemini-3.5-flash">Google Gemini 3.5 Flash ⭐ (Khuyến nghị)</option>
+                    <option value="gemini-2.5-flash">Google Gemini 2.5 Flash</option>
+                    <option value="gemini-3.5-flash">Google Gemini 3.5 Flash</option>
                     <option value="gemini-3-flash-preview">Google Gemini 3 Flash Preview</option>
                     <option value="gemini-2.0-flash">Google Gemini 2.0 Flash</option>
-                    <option value="gemini-2.5-pro">Google Gemini 2.5 Pro (Nâng cao)</option>
+                    <option value="gemini-2.5-pro">Google Gemini 2.5 Pro</option>
                   </select>
                 </div>
 
-                <Button 
-                  onClick={handleSaveConfig} 
-                  disabled={configSaving} 
+                <Button
+                  onClick={handleSaveConfig}
+                  disabled={configSaving}
                   fullWidth
                 >
                   {configSaving ? 'Đang lưu...' : 'Lưu cấu hình'}
