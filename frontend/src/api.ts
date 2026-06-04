@@ -110,7 +110,8 @@ export const api = {
         name: p.name || p.ten_hanh_khach,
         seat: p.seat || p.so_ghe,
         age_type: p.type || p.age_type || "Người lớn"
-      }))
+      })),
+      extra_services: data.extra_services || data.extraServices
     };
     const res = await fetchWithNoCache(`${BASE_URL}/bookings`, {
       method: 'POST',

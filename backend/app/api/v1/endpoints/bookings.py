@@ -8,9 +8,9 @@ import random
 import string
 
 from app.core.database import get_db
-from app.models.nghiep_vu import DatCho, VeMayBay
+from app.models.nghiep_vu import DatCho, VeMayBay, Ve_DichVu
 from app.models.quan_tri import KhachHang, NguoiDung
-from app.models.danh_muc import ChuyenBay, TuyenBay, HangHangKhong, ChiTietHangGhe
+from app.models.danh_muc import ChuyenBay, TuyenBay, HangHangKhong, ChiTietHangGhe, DichVuBoSung
 from app.schemas.booking import BookingCreate, BookingUpdate
 
 router = APIRouter()
@@ -124,12 +124,52 @@ async def get_bookings(db: AsyncSession = Depends(get_db)):
                     "name": ve.ten_hanh_khach,
                     "seat": ve.so_ghe or "--",
                     "type": "Người lớn", # Default
-                    "fare_class": ve.hang_ghe or "ECO"
+                    "fare_class": ve.hang_ghe or "ECO",
+                    "ma_ve": ve.ma_ve
                 })
                 
                 # Aggregated seat display
                 seats = [p["seat"] for p in bookings_map[bid]["passengersList"] if p["seat"] != "--"]
                 bookings_map[bid]["seat"] = ", ".join(seats) if seats else "--"
+
+        # Fetch extra services for all tickets
+        all_ma_ve = []
+        for b in bookings_map.values():
+            for pax in b["passengersList"]:
+                if "ma_ve" in pax:
+                    all_ma_ve.append(pax["ma_ve"])
+
+        if all_ma_ve:
+            srv_query = select(Ve_DichVu, DichVuBoSung).join(
+                DichVuBoSung, Ve_DichVu.ma_dv == DichVuBoSung.ma_dv
+            ).where(Ve_DichVu.ma_ve.in_(all_ma_ve))
+            srv_result = await db.execute(srv_query)
+            srv_rows = srv_result.all()
+
+            services_by_ve = {}
+            for vdv, dv in srv_rows:
+                if vdv.ma_ve not in services_by_ve:
+                    services_by_ve[vdv.ma_ve] = {"baggage": {"weight": 0, "price": 0}, "meal": {"selected": False, "type": "", "price": 0}}
+                
+                if dv.ma_dv.startswith("LUG"):
+                    try:
+                        weight = int(dv.ma_dv.replace("LUG", ""))
+                    except:
+                        weight = 0
+                    services_by_ve[vdv.ma_ve]["baggage"] = {"weight": weight, "price": int(vdv.tong_tien or 0)}
+                elif dv.ma_dv.startswith("MEAL"):
+                    services_by_ve[vdv.ma_ve]["meal"] = {"selected": True, "type": dv.ten_dv, "price": int(vdv.tong_tien or 0)}
+
+        for b in bookings_map.values():
+            b["extraServices"] = {"baggage": [], "meals": []}
+            for pax in b["passengersList"]:
+                ma_ve = pax.pop("ma_ve", None)
+                if all_ma_ve and ma_ve in services_by_ve:
+                    srv = services_by_ve[ma_ve]
+                else:
+                    srv = {"baggage": {"weight": 0, "price": 0}, "meal": {"selected": False, "type": "", "price": 0}}
+                b["extraServices"]["baggage"].append(srv["baggage"])
+                b["extraServices"]["meals"].append(srv["meal"])
 
         return list(bookings_map.values())
     except Exception as e:
@@ -191,7 +231,7 @@ async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_
         else:
             ve_num = 1
 
-        for pax in booking.passengers:
+        for i, pax in enumerate(booking.passengers):
             new_ve = VeMayBay(
                 ma_ve=f"TKT_{ve_num:03d}",
                 ma_dat_cho=booking_id,
@@ -203,6 +243,30 @@ async def create_booking(booking: BookingCreate, db: AsyncSession = Depends(get_
                 trang_thai_ve="Đã xác nhận"
             )
             db.add(new_ve)
+            await db.flush() # Need ma_ve for Ve_DichVu
+            
+            if booking.extra_services:
+                if i < len(booking.extra_services.baggage):
+                    bag = booking.extra_services.baggage[i]
+                    if bag.get("weight", 0) > 0:
+                        w = bag["weight"]
+                        p = bag["price"]
+                        ma_dv = bag.get("ma_dv") or f"LUG{w}"
+                        db.add(Ve_DichVu(ma_ve=new_ve.ma_ve, ma_dv=ma_dv, so_luong=1, tong_tien=p))
+                
+                if i < len(booking.extra_services.meals):
+                    meal = booking.extra_services.meals[i]
+                    if meal.get("selected", False) and meal.get("type"):
+                        # We need ma_dv. We can pass ma_dv from frontend, but right now frontend sends type=ten_dv.
+                        # Let's map it if frontend sends ma_dv.
+                        ma_dv = meal.get("ma_dv")
+                        if not ma_dv:
+                            # Fallback map for seed data
+                            if "Vietnamese" in meal["type"]: ma_dv = "MEAL_VN"
+                            elif "Western" in meal["type"]: ma_dv = "MEAL_EN"
+                            else: ma_dv = "MEAL_VN" # Default
+                        db.add(Ve_DichVu(ma_ve=new_ve.ma_ve, ma_dv=ma_dv, so_luong=1, tong_tien=meal["price"]))
+
             ve_num += 1
             
         # 4. Inventory Management

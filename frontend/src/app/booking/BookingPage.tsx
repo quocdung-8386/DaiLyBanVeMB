@@ -3,6 +3,7 @@ import Card from '../../components/Card';
 import Button from '../../components/Button';
 import AppLayout, { showToast } from '../../components/AppLayout';
 import SeatMap from '../../components/SeatMap';
+import { api } from '../../api';
 
 interface BookingPageProps {
   onNavigate?: (id: string) => void;
@@ -30,6 +31,20 @@ const BookingPage: React.FC<BookingPageProps> = ({
   const [bookingStep, setBookingStep] = useState(1);
   const [selectedFare, setSelectedFare] = useState(initialFlight?.cls || 'Economy');
   
+  const [availableServices, setAvailableServices] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchServices = async () => {
+      try {
+        const data = await api.getServices();
+        setAvailableServices(data);
+      } catch (err) {
+        console.error('Failed to fetch services', err);
+      }
+    };
+    fetchServices();
+  }, []);
+  
   // Effect to handle fare change and seat validation
   React.useEffect(() => {
     // If the fare changes, we should ideally validate seats. 
@@ -55,8 +70,8 @@ const BookingPage: React.FC<BookingPageProps> = ({
 
   // Extra services state
   const [extraServices, setExtraServices] = useState({
-    baggage: passengersList.map(() => ({ weight: 0, price: 0 })),
-    meals: passengersList.map(() => ({ selected: false, type: '', price: 0 })),
+    baggage: passengersList.map(() => ({ weight: 0, price: 0, ma_dv: '' })),
+    meals: passengersList.map(() => ({ selected: false, type: '', price: 0, ma_dv: '' })),
   });
 
   const getBaseFare = () => {
@@ -262,8 +277,8 @@ const BookingPage: React.FC<BookingPageProps> = ({
                 <Button variant="outline" size="sm" onClick={() => {
                   setPassengersList([...passengersList, { id: Date.now(), name: '', type: 'Người lớn', seat: '' }]);
                   setExtraServices({
-                    baggage: [...extraServices.baggage, { weight: 0, price: 0 }],
-                    meals: [...extraServices.meals, { selected: false, type: '', price: 0 }],
+                    baggage: [...extraServices.baggage, { weight: 0, price: 0, ma_dv: '' }],
+                    meals: [...extraServices.meals, { selected: false, type: '', price: 0, ma_dv: '' }],
                   });
                 }}>
                   <span className="material-icons-round" style={{ fontSize: 16 }}>add</span> Thêm khách
@@ -375,16 +390,27 @@ const BookingPage: React.FC<BookingPageProps> = ({
                         value={extraServices.baggage[i]?.weight || 0}
                         onChange={(e) => {
                           const weight = parseInt(e.target.value);
-                          const price = weight === 15 ? 150000 : weight === 20 ? 250000 : weight === 30 ? 450000 : 0;
+                          let price = 0;
+                          let ma_dv = '';
+                          if (weight > 0) {
+                            ma_dv = `LUG${weight}`;
+                            const svc = availableServices.find(s => s.ma_dv === ma_dv);
+                            if (svc) price = svc.gia_tien;
+                          }
                           const newBaggage = [...extraServices.baggage];
-                          newBaggage[i] = { weight, price };
+                          newBaggage[i] = { weight, price, ma_dv };
                           setExtraServices({ ...extraServices, baggage: newBaggage });
                         }}
                       >
                         <option value={0}>0kg - 0đ</option>
-                        <option value={15}>15kg - 150.000đ</option>
-                        <option value={20}>20kg - 250.000đ</option>
-                        <option value={30}>30kg - 450.000đ</option>
+                        {availableServices.filter(s => s.ma_dv.startsWith('LUG')).map(s => {
+                          const w = parseInt(s.ma_dv.replace('LUG', ''));
+                          return (
+                            <option key={s.ma_dv} value={w}>
+                              {w}kg - {s.gia_tien.toLocaleString('vi')}đ
+                            </option>
+                          );
+                        })}
                       </select>
                     </div>
                     <div className="anc-card">
@@ -399,16 +425,26 @@ const BookingPage: React.FC<BookingPageProps> = ({
                         onChange={(e) => {
                           const type = e.target.value;
                           const selected = type !== '';
-                          const price = selected ? 85000 : 0;
+                          let price = 0;
+                          let ma_dv = '';
+                          if (selected) {
+                            const svc = availableServices.find(s => s.ten_dv === type);
+                            if (svc) {
+                                price = svc.gia_tien;
+                                ma_dv = svc.ma_dv;
+                            }
+                          }
                           const newMeals = [...extraServices.meals];
-                          newMeals[i] = { selected, type, price };
+                          newMeals[i] = { selected, type, price, ma_dv };
                           setExtraServices({ ...extraServices, meals: newMeals });
                         }}
                       >
                         <option value="">Không chọn</option>
-                        <option value="Cơm gà Hội An">Cơm gà Hội An - 85.000đ</option>
-                        <option value="Phở bò truyền thống">Phở bò truyền thống - 85.000đ</option>
-                        <option value="Mì xào hải sản">Mì xào hải sản - 85.000đ</option>
+                        {availableServices.filter(s => s.ma_dv.startsWith('MEAL')).map(s => (
+                          <option key={s.ma_dv} value={s.ten_dv}>
+                            {s.ten_dv} - {s.gia_tien.toLocaleString('vi')}đ
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>

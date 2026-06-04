@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import flights, bookings, dashboard, users, finance, auth, reports, audit_logs, catalog, loyalty, ai
+from app.api.v1.endpoints import flights, bookings, dashboard, users, finance, auth, reports, audit_logs, catalog, loyalty, ai, services
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["Auth"])
@@ -13,3 +13,4 @@ api_router.include_router(audit_logs.router, prefix="/audit-logs", tags=["AuditL
 api_router.include_router(catalog.router, prefix="/catalog", tags=["Catalog"])
 api_router.include_router(loyalty.router, prefix="/loyalty", tags=["Loyalty"])
 api_router.include_router(ai.router, prefix="/ai", tags=["AI"])
+api_router.include_router(services.router, prefix="/services", tags=["Services"])

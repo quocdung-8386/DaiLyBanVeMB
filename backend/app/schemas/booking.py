@@ -21,6 +21,7 @@ class BookingCreate(BaseModel):
     total_amount: Decimal
     status: str = "Chờ thanh toán"
     fare_class: str = "Economy"
+    extra_services: Optional[ExtraServicesCreate] = None
 
 class BookingUpdate(BaseModel):
     status: Optional[str] = None

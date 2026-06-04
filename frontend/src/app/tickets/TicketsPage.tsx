@@ -803,8 +803,13 @@ const TicketsPage: React.FC<TicketsPageProps> = ({
                <div className="detail-sec">
                   <h4><span className="material-icons-round">history</span> Lịch sử giao dịch</h4>
                   <div className="history-list">
-                     <p><span>08/05/2026</span> <b>Thanh toán thành công</b> <span>+3,250,000đ</span></p>
-                     <p><span>08/05/2026</span> <b>Phí đổi hành trình</b> <span>+500,000đ</span></p>
+                     <p><span>{activeViewingTicket.ticket.bookingDate?.split(' ')[0] || '--/--/----'}</span> <b>Tạo đặt chỗ mới</b> <span></span></p>
+                     {activeViewingTicket.ticket.badge === 'success' && (
+                       <p><span>{activeViewingTicket.ticket.bookingDate?.split(' ')[0] || '--/--/----'}</span> <b>Thanh toán thành công</b> <span>+{activeViewingTicket.ticket.total}đ</span></p>
+                     )}
+                     {(activeViewingTicket.baggage?.weight > 0 || activeViewingTicket.meal?.selected) && (
+                       <p><span>{activeViewingTicket.ticket.bookingDate?.split(' ')[0] || '--/--/----'}</span> <b>Mua thêm dịch vụ</b> <span></span></p>
+                     )}
                   </div>
                </div>
                <div className="detail-sec">
